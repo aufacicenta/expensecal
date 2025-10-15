@@ -4,6 +4,8 @@ applyTo: '**'
 
 The README.md file at the root of this project contains a plan for ExpenseCal. The __Feature Plan__ at this README.md file is a list of completed and pending tasks that should be marked by you, the AI Agent. Marking a feature from this plan as completed implies that corresponding E2E tests are implemented to test flows of each feature part.
 
+__!!! We will always discuss is sub item of each feature before implementing it. Resolve all doubts and questions you may have before proceeding to edit any files__.
+
 Follow this development patterns when necessary:
 
 ## Database

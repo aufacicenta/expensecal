@@ -1,4 +1,5 @@
 import "@/styles/globals.css";
+import { StackProvider, StackTheme } from "@stackframe/stack";
 import clsx from "clsx";
 import { Metadata, Viewport } from "next";
 
@@ -6,6 +7,7 @@ import { Providers } from "./providers";
 
 import { fontSans } from "@/config/fonts";
 import { siteConfig } from "@/config/site";
+import { stackClientApp } from "@/stack/client";
 
 export const metadata: Metadata = {
   title: {
@@ -35,17 +37,23 @@ export default function RootLayout({
       <head />
       <body
         className={clsx(
-          "min-h-screen text-foreground bg-background font-sans antialiased",
+          "text-foreground bg-background min-h-screen font-sans antialiased",
           fontSans.variable,
         )}
       >
-        <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
-          <div className="relative flex flex-col h-screen">
-            <main className="container mx-auto max-w-7xl pt-16 px-6 flex-grow">
-              {children}
-            </main>
-          </div>
-        </Providers>
+        <StackProvider app={stackClientApp}>
+          <StackTheme>
+            <Providers
+              themeProps={{ attribute: "class", defaultTheme: "dark" }}
+            >
+              <div className="relative flex h-screen flex-col">
+                <main className="container mx-auto max-w-7xl flex-grow px-6 pt-16">
+                  {children}
+                </main>
+              </div>
+            </Providers>
+          </StackTheme>
+        </StackProvider>
       </body>
     </html>
   );
