@@ -7,6 +7,11 @@ export const routes = {
       example: {
         create: () => `/api/v1/example`,
       },
+      events: {
+        parse: () => `/api/v1/events/parse`,
+        create: () => `/api/v1/events/create`,
+        createFromText: () => `/api/v1/events/create-from-text`,
+      },
     },
   },
 };

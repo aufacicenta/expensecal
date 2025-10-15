@@ -89,7 +89,7 @@ Core functionality for creating, parsing, and managing expense calendar events.
 
 #### 2.1 Event Model
 
-- [x] **Event Model**: Create `./database/models/Event.ts` with fields: `id`, `user_id` (FK to neon_auth.users_sync), `type` (EXPENSE/INCOME), `amount` (DECIMAL 28,8 for crypto), `currency_id` (FK to currencies), `description`, `event_date`, `parent_event_id` (for recurring events), `recurrence_rule` (RFC 5545 RRULE), `recurrence_end_date`, `created_at`, `updated_at`, `deleted_at` (soft deletes)
+- [x] **Event Model**: Create `./database/models/Event.ts` with fields: `id`, `user_id` (FK to neon_auth.users_sync), `type` (EXPENSE/INCOME), `amount` (DECIMAL 28,8 for crypto), `currency_id` (FK to currencies), `quantity` (INTEGER, default 1), `description`, `event_date`, `parent_event_id` (for recurring events), `recurrence_rule` (RFC 5545 RRULE), `recurrence_end_date`, `created_at`, `updated_at`, `deleted_at` (soft deletes)
 - [x] **EventInstallment Model**: Create `./database/models/EventInstallment.ts` junction table with fields: `id`, `parent_event_id` (FK to events), `installment_event_id` (FK to events), `created_at`. Installments are Events themselves, tracked via this junction table.
 - [x] **Currency Model**: Already created in `./database/models/Currency.ts` with fields: `id`, `symbol`, `name`, `decimal_units`
 - [x] **Event Model Tests**: Create `./database/__tests__/Event.test.ts` with comprehensive tests for: event creation, recurring events, associations, soft deletes, queries and filters
@@ -101,6 +101,7 @@ Core functionality for creating, parsing, and managing expense calendar events.
 **Design Notes**:
 - Event type is ENUM ('EXPENSE', 'INCOME') - TRANSFER type deferred for later
 - Amount uses DECIMAL(28,8) to support crypto precision (8 decimals)
+- Quantity field (INTEGER, default 1) allows tracking multiple units of the same expense (e.g., "5 coffees at 3 USD each")
 - Recurring events use RFC 5545 RRULE format (compatible with Google Calendar)
 - Installments are Events themselves, linked via EventInstallment junction table
 - Soft deletes enabled via `deleted_at` field (paranoid mode)
@@ -117,11 +118,15 @@ Core functionality for creating, parsing, and managing expense calendar events.
 
 #### 2.3 Create Expense Event API
 
-- [ ] **API Endpoint - Create Event**: Create `./web/app/api/v1/events/create/route.ts` with POST handler
-- [ ] **API Types - Create Event**: Create `./web/app/api/v1/events/create/types.ts` with request/response types
-- [ ] **API Endpoint - Parse Text**: Create `./web/app/api/v1/events/parse/route.ts` for parsing natural language input
-- [ ] **API Types - Parse Text**: Create `./web/app/api/v1/events/parse/types.ts`
-- [ ] **useRoutes Hook Update**: Add event creation and parsing routes
+- [x] **API Endpoint - Create Event**: Create `./web/app/api/v1/events/create/route.ts` with POST handler
+- [x] **API Types - Create Event**: Create `./web/app/api/v1/events/create/types.ts` with request/response types
+- [x] **API Endpoint - Parse Text**: Create `./web/app/api/v1/events/parse/route.ts` for parsing natural language input
+- [x] **API Types - Parse Text**: Create `./web/app/api/v1/events/parse/types.ts`
+- [x] **API Endpoint - Create from Text**: Create `./web/app/api/v1/events/create-from-text/route.ts` combining parse + create
+- [x] **API Types - Create from Text**: Create `./web/app/api/v1/events/create-from-text/types.ts`
+- [ ] **API Endpoint - Batch Create**: Create `./web/app/api/v1/events/batch/route.ts` for creating multiple events in one request (deferred)
+- [ ] **API Types - Batch Create**: Create `./web/app/api/v1/events/batch/types.ts` (deferred)
+- [x] **useRoutes Hook Update**: Add event creation and parsing routes
 - [ ] **E2E Tests - Create Event**: Create Cypress test for: manual event creation, parsed event creation, validation errors
 
 #### 2.4 Installment Events
@@ -926,6 +931,21 @@ Additional features for enhanced functionality.
 - [ ] **API Keys**: Implement API key authentication for external access
 - [ ] **API Documentation**: Document public API for third-party integrations
 - [ ] **E2E Tests - Webhooks**: Create tests for: creating webhook, receiving webhook events
+
+#### 20.5 API Keys & Programmatic Access
+
+- [ ] **API Key Model**: Create `./database/models/ApiKey.ts` with fields: `id`, `user_id` (FK), `name`, `key_hash`, `prefix`, `last_used_at`, `expires_at`, `scopes` (JSON), `is_active`, `created_at`, `updated_at`
+- [ ] **API Key Tests**: Create `./database/__tests__/ApiKey.test.ts`
+- [ ] **API Key Migration**: Generate migration for `api_keys` table
+- [ ] **API Key Generation**: Create utility for generating secure API keys with prefixes (e.g., `expensecal_live_...`)
+- [ ] **API Key Middleware**: Create middleware for validating API key authentication
+- [ ] **API Endpoint - Manage Keys**: Create `./web/app/api/v1/user/api-keys/route.ts` for CRUD operations
+- [ ] **API Types - API Keys**: Create `./web/app/api/v1/user/api-keys/types.ts`
+- [ ] **Scope-based Permissions**: Implement permission scopes (read:events, write:events, read:budgets, etc.)
+- [ ] **API Keys UI**: Create `./web/components/ApiKeysManager/ApiKeysManager.tsx` in settings
+- [ ] **API Keys Types**: Create `./web/components/ApiKeysManager/ApiKeysManager.types.ts`
+- [ ] **useRoutes Hook Update**: Add API keys management routes
+- [ ] **E2E Tests - API Keys**: Create tests for: generating API key, using API key for authentication, revoking API key, scope validation
 
 ---
 

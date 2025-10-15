@@ -14,6 +14,9 @@ importers:
       sequelize:
         specifier: ^6.37.4
         version: 6.37.7(pg@8.16.3)(sqlite3@5.1.7)
+      sequelize-json-schema:
+        specifier: ^2.1.1
+        version: 2.1.1(sequelize@6.37.7(pg@8.16.3)(sqlite3@5.1.7))
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3.1.0
@@ -1942,6 +1945,12 @@ packages:
     resolution: {integrity: sha512-1YYPrcSRt/bpMDDSKM5ubY1mnJ2TEwIaGZcqITw4hLtGtE64nIqaBnLtMvH8VKHg6FbWpXTiFNc2mS/BtQCXZw==}
     engines: {node: '>=10.0.0'}
     hasBin: true
+
+  sequelize-json-schema@2.1.1:
+    resolution: {integrity: sha512-yCGaHnmQQeL6MQ/fOxhkR5C2aOGZyTD6OrgjP4yw1rbuujuIUVdzWN3AsC6r6AvlGZ3EUBBbCJHKl8OIFFES4Q==}
+    engines: {node: '>= 8'}
+    peerDependencies:
+      sequelize: '>= 4'
 
   sequelize-pool@7.1.0:
     resolution: {integrity: sha512-G9c0qlIWQSK29pR/5U2JF5dDQeqqHRragoyahj/Nx4KOOQ3CPPfzxnfqFPCSB7x5UgjOgnZ61nSxz+fjDpRlJg==}
@@ -4595,6 +4604,10 @@ snapshots:
       resolve: 1.22.10
       umzug: 2.3.0
       yargs: 16.2.0
+
+  sequelize-json-schema@2.1.1(sequelize@6.37.7(pg@8.16.3)(sqlite3@5.1.7)):
+    dependencies:
+      sequelize: 6.37.7(pg@8.16.3)(sqlite3@5.1.7)
 
   sequelize-pool@7.1.0: {}
 

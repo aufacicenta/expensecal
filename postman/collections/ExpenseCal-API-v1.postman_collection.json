@@ -1,0 +1,274 @@
+{
+    "info": {
+        "name": "ExpenseCal API v1",
+        "description": "API collection for ExpenseCal - Financial event parsing and management",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_exporter_id": "expensecal"
+    },
+    "item": [
+        {
+            "name": "Events",
+            "item": [
+                {
+                    "name": "Parse Event Text",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"text\": \"100 USD for yesterday's dinner\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/events/parse",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "events",
+                                "parse"
+                            ]
+                        },
+                        "description": "Parse natural language expense text into structured data.\n\n**Request Body:**\n- `text` (string, required): Natural language description of the expense/income\n- `current_date` (string, optional): ISO 8601 date string for relative date parsing\n\n**Response:**\n- `success` (boolean): Whether the parsing was successful\n- `data` (object): Parsed event data including amount, currency, description, date, type, confidence\n- `error` (string): Error message if parsing failed\n\n**Examples:**\n- \"100 USD for yesterday's dinner\"\n- \"3500 MXN for a new cheap cellphone next year\"\n- \"12000 euros in 10 monthly installments for my new bike\""
+                    },
+                    "response": [
+                        {
+                            "name": "Success - Simple Expense",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"text\": \"100 USD for yesterday's dinner\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/events/parse",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "events",
+                                        "parse"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"amount\": 100,\n    \"currency\": \"USD\",\n    \"quantity\": 1,\n    \"description\": \"dinner\",\n    \"event_date\": \"2025-10-14T00:00:00.000Z\",\n    \"type\": \"EXPENSE\",\n    \"confidence\": 0.95,\n    \"raw_text\": \"100 USD for yesterday's dinner\"\n  }\n}"
+                        },
+                        {
+                            "name": "Success - With Current Date",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"text\": \"3500 MXN for a new cheap cellphone next year\",\n  \"current_date\": \"2025-10-15T00:00:00.000Z\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/events/parse",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "events",
+                                        "parse"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": true,\n  \"data\": {\n    \"amount\": 3500,\n    \"currency\": \"MXN\",\n    \"quantity\": 1,\n    \"description\": \"new cheap cellphone\",\n    \"event_date\": \"2026-01-01T00:00:00.000Z\",\n    \"type\": \"EXPENSE\",\n    \"confidence\": 0.88,\n    \"raw_text\": \"3500 MXN for a new cheap cellphone next year\"\n  }\n}"
+                        },
+                        {
+                            "name": "Error - Missing Text",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"text\": \"\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/events/parse",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "events",
+                                        "parse"
+                                    ]
+                                }
+                            },
+                            "status": "Bad Request",
+                            "code": 400,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": false,\n  \"error\": \"Invalid request body\",\n  \"details\": \"Field 'text' is required and must be a non-empty string\"\n}"
+                        },
+                        {
+                            "name": "Error - Invalid Date",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"text\": \"100 USD for dinner\",\n  \"current_date\": \"invalid-date\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/events/parse",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "events",
+                                        "parse"
+                                    ]
+                                }
+                            },
+                            "status": "Bad Request",
+                            "code": 400,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": false,\n  \"error\": \"Invalid current_date\",\n  \"details\": \"current_date must be a valid ISO 8601 date string\"\n}"
+                        },
+                        {
+                            "name": "Error - LLM Unavailable",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"text\": \"100 USD for dinner\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/events/parse",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "events",
+                                        "parse"
+                                    ]
+                                }
+                            },
+                            "status": "Service Unavailable",
+                            "code": 503,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": false,\n  \"error\": \"LLM parser unavailable\",\n  \"details\": \"Ollama service is not running\"\n}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3000",
+            "type": "string"
+        }
+    ]
+}

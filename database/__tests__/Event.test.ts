@@ -40,6 +40,7 @@ describe("Event Model", () => {
   describe("Event Creation", () => {
     it("should create a basic expense event", async () => {
       const event = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "100.50",
@@ -61,6 +62,7 @@ describe("Event Model", () => {
 
     it("should create an income event", async () => {
       const event = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.INCOME,
         amount: "5000.00",
@@ -75,6 +77,7 @@ describe("Event Model", () => {
 
     it("should support crypto precision (8 decimals)", async () => {
       const event = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "0.00123456",
@@ -89,6 +92,7 @@ describe("Event Model", () => {
     it("should require all mandatory fields", async () => {
       await expect(
         Event.create({
+          quantity: 1,
           user_id: testUserId,
           type: EventType.EXPENSE,
           // Missing amount
@@ -103,6 +107,7 @@ describe("Event Model", () => {
   describe("Recurring Events", () => {
     it("should create a parent recurring event", async () => {
       const parentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "1000.00",
@@ -121,6 +126,7 @@ describe("Event Model", () => {
     it("should create recurring event instances with parent reference", async () => {
       // Create parent event
       const parentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "1000.00",
@@ -132,6 +138,7 @@ describe("Event Model", () => {
 
       // Create recurring instances
       const instance1 = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "1000.00",
@@ -142,6 +149,7 @@ describe("Event Model", () => {
       });
 
       const instance2 = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "1000.00",
@@ -159,6 +167,7 @@ describe("Event Model", () => {
 
     it("should query all instances of a recurring event", async () => {
       const parentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "500.00",
@@ -172,6 +181,7 @@ describe("Event Model", () => {
       await Event.bulkCreate([
         {
           user_id: testUserId,
+          quantity: 1,
           type: EventType.EXPENSE,
           amount: "500.00",
           currency_id: testCurrency.id,
@@ -181,6 +191,7 @@ describe("Event Model", () => {
         },
         {
           user_id: testUserId,
+          quantity: 1,
           type: EventType.EXPENSE,
           amount: "500.00",
           currency_id: testCurrency.id,
@@ -190,6 +201,7 @@ describe("Event Model", () => {
         },
         {
           user_id: testUserId,
+          quantity: 1,
           type: EventType.EXPENSE,
           amount: "500.00",
           currency_id: testCurrency.id,
@@ -214,6 +226,7 @@ describe("Event Model", () => {
   describe("Associations", () => {
     it("should associate event with currency", async () => {
       const event = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "100.00",
@@ -233,6 +246,7 @@ describe("Event Model", () => {
 
     it("should associate parent event with child events", async () => {
       const parentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "1000.00",
@@ -245,6 +259,7 @@ describe("Event Model", () => {
       await Event.bulkCreate([
         {
           user_id: testUserId,
+          quantity: 1,
           type: EventType.EXPENSE,
           amount: "1000.00",
           currency_id: testCurrency.id,
@@ -254,6 +269,7 @@ describe("Event Model", () => {
         },
         {
           user_id: testUserId,
+          quantity: 1,
           type: EventType.EXPENSE,
           amount: "1000.00",
           currency_id: testCurrency.id,
@@ -274,6 +290,7 @@ describe("Event Model", () => {
   describe("Soft Deletes", () => {
     it("should soft delete an event", async () => {
       const event = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "100.00",
@@ -296,6 +313,7 @@ describe("Event Model", () => {
 
     it("should restore a soft-deleted event", async () => {
       const event = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "100.00",
@@ -314,6 +332,7 @@ describe("Event Model", () => {
 
     it("should permanently delete with force option", async () => {
       const event = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "100.00",
@@ -335,6 +354,7 @@ describe("Event Model", () => {
       await Event.bulkCreate([
         {
           user_id: testUserId,
+          quantity: 1,
           type: EventType.EXPENSE,
           amount: "100.00",
           currency_id: testCurrency.id,
@@ -343,6 +363,7 @@ describe("Event Model", () => {
         },
         {
           user_id: testUserId,
+          quantity: 1,
           type: EventType.EXPENSE,
           amount: "200.00",
           currency_id: testCurrency.id,
@@ -351,6 +372,7 @@ describe("Event Model", () => {
         },
         {
           user_id: testUserId,
+          quantity: 1,
           type: EventType.INCOME,
           amount: "5000.00",
           currency_id: testCurrency.id,

@@ -43,6 +43,7 @@ describe("EventInstallment Model", () => {
     it("should create an installment relationship", async () => {
       // Create parent event (total amount)
       const parentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "1000.00",
@@ -53,6 +54,7 @@ describe("EventInstallment Model", () => {
 
       // Create installment event
       const installmentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "100.00",
@@ -76,6 +78,7 @@ describe("EventInstallment Model", () => {
 
     it("should prevent duplicate installment relationships", async () => {
       const parentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "1000.00",
@@ -85,6 +88,7 @@ describe("EventInstallment Model", () => {
       });
 
       const installmentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "100.00",
@@ -113,6 +117,7 @@ describe("EventInstallment Model", () => {
     it("should create a complete installment plan (10 installments)", async () => {
       // Create parent event
       const parentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "1000.00",
@@ -128,6 +133,7 @@ describe("EventInstallment Model", () => {
         installmentDate.setMonth(installmentDate.getMonth() + i);
 
         const installmentEvent = await Event.create({
+          quantity: 1,
           user_id: testUserId,
           type: EventType.EXPENSE,
           amount: "100.00",
@@ -156,6 +162,7 @@ describe("EventInstallment Model", () => {
 
     it("should calculate total installments using COUNT", async () => {
       const parentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "1200.00",
@@ -167,6 +174,7 @@ describe("EventInstallment Model", () => {
       // Create 12 installments
       for (let i = 0; i < 12; i++) {
         const installmentEvent = await Event.create({
+          quantity: 1,
           user_id: testUserId,
           type: EventType.EXPENSE,
           amount: "100.00",
@@ -192,6 +200,7 @@ describe("EventInstallment Model", () => {
 
     it("should get installment order by event_date", async () => {
       const parentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "300.00",
@@ -209,6 +218,7 @@ describe("EventInstallment Model", () => {
 
       for (const date of dates) {
         const installmentEvent = await Event.create({
+          quantity: 1,
           user_id: testUserId,
           type: EventType.EXPENSE,
           amount: "100.00",
@@ -246,6 +256,7 @@ describe("EventInstallment Model", () => {
   describe("Associations", () => {
     it("should load parent event with installment", async () => {
       const parentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "500.00",
@@ -255,6 +266,7 @@ describe("EventInstallment Model", () => {
       });
 
       const installmentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "100.00",
@@ -280,6 +292,7 @@ describe("EventInstallment Model", () => {
 
     it("should load installment event with relationship", async () => {
       const parentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "500.00",
@@ -289,6 +302,7 @@ describe("EventInstallment Model", () => {
       });
 
       const installmentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "100.00",
@@ -316,6 +330,7 @@ describe("EventInstallment Model", () => {
   describe("Cascade Deletes", () => {
     it("should cascade delete installment relationships when parent event is deleted", async () => {
       const parentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "300.00",
@@ -325,6 +340,7 @@ describe("EventInstallment Model", () => {
       });
 
       const installmentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "100.00",
@@ -354,6 +370,7 @@ describe("EventInstallment Model", () => {
   describe("Complex Queries", () => {
     it("should get all installment events with parent and currency info", async () => {
       const parentEvent = await Event.create({
+        quantity: 1,
         user_id: testUserId,
         type: EventType.EXPENSE,
         amount: "600.00",
@@ -365,6 +382,7 @@ describe("EventInstallment Model", () => {
       // Create 6 installments
       for (let i = 0; i < 6; i++) {
         const installmentEvent = await Event.create({
+          quantity: 1,
           user_id: testUserId,
           type: EventType.EXPENSE,
           amount: "100.00",

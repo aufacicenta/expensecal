@@ -6,6 +6,8 @@ The README.md file at the root of this project contains a plan for ExpenseCal. T
 
 __!!! We will always discuss is sub item of each feature before implementing it. Resolve all doubts and questions you may have before proceeding to edit any files__.
 
+_Don't create additional comprehensive summary files. Use the main README if necessary — Update the Feature Plan with details instead if necessary_.
+
 Follow this development patterns when necessary:
 
 ## Package Management
@@ -21,6 +23,8 @@ Contains sequelize models used by `./web/`. They are referenced with a `pnpm lin
 The driver is postgresql. Use these database models for any permament storage operation.
 
 Migration files should be automatically generated using the sequelize-cli with the proxy commands defined in `./database/package.json`.
+
+Migration command is: `source .env.local && pnpm db:migrate --env development`
 
 Always keep database models well tested inside organized files in `./database/__tests__/`. Jest is already installed.
 
@@ -57,3 +61,9 @@ IMPORTANT:
 ## E2E Testing
 
 Use cucumber statements and a headless browser instance to run Cypress tests through the CLI. Organize these test files in an optimal way.
+
+## Typescript
+
+### Typings
+
+Prefer `type` over `interface`.

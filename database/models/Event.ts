@@ -12,6 +12,7 @@ export interface EventAttributes {
   type: EventType;
   amount: string; // Using string for DECIMAL to avoid precision issues
   currency_id: string;
+  quantity: number;
   description: string;
   event_date: Date;
   parent_event_id?: string | null;
@@ -28,6 +29,7 @@ export class Event extends Model<EventAttributes> implements EventAttributes {
   declare type: EventType;
   declare amount: string;
   declare currency_id: ForeignKey<Currency["id"]>;
+  declare quantity: number;
   declare description: string;
   declare event_date: Date;
   declare parent_event_id: ForeignKey<Event["id"]> | null;
@@ -72,6 +74,12 @@ export class Event extends Model<EventAttributes> implements EventAttributes {
             model: Currency,
             key: "id",
           },
+        },
+        quantity: {
+          type: DataTypes.INTEGER,
+          allowNull: false,
+          defaultValue: 1,
+          comment: "Number of units (e.g., 5 coffees at 3 USD each)",
         },
         description: {
           type: DataTypes.TEXT,
@@ -153,6 +161,65 @@ export class Event extends Model<EventAttributes> implements EventAttributes {
       foreignKey: "parent_event_id",
       as: "childEvents",
     });
+  }
+
+  /**
+   * Generate JSON schema for parseable Event fields
+   * Used for LLM structured output validation
+   * Excludes IDs, timestamps, and foreign keys
+   */
+  static getParserSchema() {
+    return {
+      type: "object",
+      properties: {
+        type: {
+          type: "string",
+          enum: ["EXPENSE", "INCOME"],
+          description: "Event type",
+        },
+        amount: {
+          type: "string",
+          pattern: "^\\d+(\\.\\d{1,8})?$",
+          description: "Amount as decimal string (up to 8 decimal places)",
+        },
+        quantity: {
+          type: "integer",
+          minimum: 1,
+          description: "Number of units",
+        },
+        description: {
+          type: "string",
+          minLength: 1,
+          description: "Event description",
+        },
+        event_date: {
+          type: "string",
+          format: "date-time",
+          description: "Event date in ISO 8601 format (UTC)",
+        },
+        recurrence_rule: {
+          type: ["string", "null"],
+          description: "RFC 5545 RRULE format (optional)",
+        },
+        recurrence_end_date: {
+          type: ["string", "null"],
+          format: "date-time",
+          description: "Recurrence end date in ISO 8601 format (optional)",
+        },
+        currency: {
+          type: "string",
+          description: "Currency symbol (e.g., USD, EUR, BTC)",
+        },
+        confidence: {
+          type: "number",
+          minimum: 0,
+          maximum: 1,
+          description: "Confidence score of the parsing (0.0 to 1.0)",
+        },
+      },
+      required: ["type", "amount", "quantity", "description", "event_date", "currency", "confidence"],
+      additionalProperties: false,
+    };
   }
 }
 
