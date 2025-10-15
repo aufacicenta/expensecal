@@ -1,6 +1,6 @@
 # ExpenseCal
 
-ExpenseCal is a SaaS that lets a person or AI Agent create calendar events for financial forecasting or expense tracking, among other use cases.
+ExpenseCal is a SaaS that lets a person or AI Agent create calendar events for financial forecasting or expense tracking, among other use cases. This is not another calendar service, it is a financial tool.
 
 ## Examples
 
@@ -87,12 +87,26 @@ This project uses [Neon Auth](https://neon.tech/docs/guides/neon-authorize) with
 
 Core functionality for creating, parsing, and managing expense calendar events.
 
-#### 2.1 Expense Event Model
+#### 2.1 Event Model
 
-- [ ] **ExpenseEvent Model**: Create `./database/models/ExpenseEvent.ts` with fields: `id`, `user_id` (FK), `amount`, `currency`, `description`, `event_date`, `parent_event_id` (nullable, for installments), `is_recurring`, `recurrence_pattern`, `created_at`, `updated_at`
-- [ ] **ExpenseEvent Model Tests**: Create `./database/__tests__/ExpenseEvent.test.ts` with tests for: event creation, user association, currency validation, date handling, parent-child relationships
-- [ ] **ExpenseEvent Migration**: Generate migration for `expense_events` table with proper indexes and foreign keys
-- [ ] **Currency Enum**: Create `./database/types/Currency.ts` with supported currency codes (USD, EUR, MXN, etc.)
+- [x] **Event Model**: Create `./database/models/Event.ts` with fields: `id`, `user_id` (FK to neon_auth.users_sync), `type` (EXPENSE/INCOME), `amount` (DECIMAL 28,8 for crypto), `currency_id` (FK to currencies), `description`, `event_date`, `parent_event_id` (for recurring events), `recurrence_rule` (RFC 5545 RRULE), `recurrence_end_date`, `created_at`, `updated_at`, `deleted_at` (soft deletes)
+- [x] **EventInstallment Model**: Create `./database/models/EventInstallment.ts` junction table with fields: `id`, `parent_event_id` (FK to events), `installment_event_id` (FK to events), `created_at`. Installments are Events themselves, tracked via this junction table.
+- [x] **Currency Model**: Already created in `./database/models/Currency.ts` with fields: `id`, `symbol`, `name`, `decimal_units`
+- [x] **Event Model Tests**: Create `./database/__tests__/Event.test.ts` with comprehensive tests for: event creation, recurring events, associations, soft deletes, queries and filters
+- [x] **EventInstallment Model Tests**: Create `./database/__tests__/EventInstallment.test.ts` with tests for: installment relationships, cascade deletes, complex queries
+- [x] **Database Migrations**: Created migrations for `currencies`, `events`, and `event_installments` tables with proper indexes and foreign keys
+- [x] **Currency Seeder**: Created seeder with common currencies (USD, EUR, GBP, MXN, JPY, BTC, ETH, CAD, AUD, CHF)
+- [x] **Models Index Update**: Updated `./database/models/index.ts` to include Currency, Event, and EventInstallment with proper associations
+
+**Design Notes**:
+- Event type is ENUM ('EXPENSE', 'INCOME') - TRANSFER type deferred for later
+- Amount uses DECIMAL(28,8) to support crypto precision (8 decimals)
+- Recurring events use RFC 5545 RRULE format (compatible with Google Calendar)
+- Installments are Events themselves, linked via EventInstallment junction table
+- Soft deletes enabled via `deleted_at` field (paranoid mode)
+- All timestamps stored in UTC
+- Integration tracking (created_via, synced_to_google) deferred to separate model
+- Categories deferred to Feature 7
 
 #### 2.2 Natural Language Parser
 

@@ -8,6 +8,10 @@ __!!! We will always discuss is sub item of each feature before implementing it.
 
 Follow this development patterns when necessary:
 
+## Package Management
+
+JS & Typescript: pnpm
+
 ## Database
 
 Directory: `./database/`
@@ -19,6 +23,10 @@ The driver is postgresql. Use these database models for any permament storage op
 Migration files should be automatically generated using the sequelize-cli with the proxy commands defined in `./database/package.json`.
 
 Always keep database models well tested inside organized files in `./database/__tests__/`. Jest is already installed.
+
+ID fields use UUID types, not integers.
+
+Whenever a model is added, remember to put it in the `./database/models/index.ts` file.
 
 ## Web
 
