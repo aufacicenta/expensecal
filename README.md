@@ -16,6 +16,45 @@ _12000 euros in 10 monthly installments for my new bike_
 
 The system creates 10 calendar events associated to a parent total amount record of EUR currency for the purpose as described by the user.
 
+### Basic Examples (Simple Expenses & Income)
+
+100 USD for yesterday's dinner with friends
+Expected parsing: 100 USD expense from yesterday, description: "dinner with friends"
+
+5 coffees at 3 EUR each this morning
+Expected parsing: 3 EUR expense, quantity: 5, description: "coffees", today's date
+
+Received 5000 dollars salary today
+Expected parsing: 5000 USD income, description: "salary", today's date
+
+Complex Examples (Installments & Recurring)
+
+12000 euros in 10 monthly installments for my new bike
+Expected parsing: Monthly recurring expense, 12000 EUR total, 10 installments, description: "new bike"
+
+Monthly rent of 1500 USD starting today
+Expected parsing: 1500 USD recurring expense, monthly recurrence, description: "rent"
+
+3500 MXN for a new cheap cellphone next year
+Expected parsing: 3500 MXN expense, date: ~January next year, description: "new cellphone"
+
+### Edge Cases & Variations
+
+500 GBP for groceries last week
+Expected parsing: 500 GBP expense, relative date 7 days ago, description: "groceries"
+
+2 BTC received as bonus tomorrow
+Expected parsing: 2 BTC income, tomorrow's date, description: "bonus"
+
+Weekly gym membership 25 CHF
+Expected parsing: 25 CHF recurring expense, weekly pattern, description: "gym membership"
+
+Paid 750 JPY for dinner with 2 friends but I only paid for 1
+Expected parsing: 750 JPY expense, description: "dinner with 2 friends", quantity detection
+
+50 AUD quarterly insurance next month
+Expected parsing: 50 AUD recurring expense, quarterly pattern, description: "insurance"
+
 ## Feature Plan
 
 ### 1. Authentication
@@ -118,15 +157,15 @@ Core functionality for creating, parsing, and managing expense calendar events.
 
 #### 2.3 Create Expense Event API
 
-- [x] **API Endpoint - Create Event**: Create `./web/app/api/v1/events/create/route.ts` with POST handler
-- [x] **API Types - Create Event**: Create `./web/app/api/v1/events/create/types.ts` with request/response types
-- [x] **API Endpoint - Parse Text**: Create `./web/app/api/v1/events/parse/route.ts` for parsing natural language input
-- [x] **API Types - Parse Text**: Create `./web/app/api/v1/events/parse/types.ts`
-- [x] **API Endpoint - Create from Text**: Create `./web/app/api/v1/events/create-from-text/route.ts` combining parse + create
-- [x] **API Types - Create from Text**: Create `./web/app/api/v1/events/create-from-text/types.ts`
+- [x] **API Endpoint - Create Event**: `./web/app/api/v1/events/create/route.ts` with POST handler ✅
+- [x] **API Types - Create Event**: `./web/app/api/v1/events/create/types.ts` with request/response types ✅
+- [x] **API Endpoint - Parse Text**: `./web/app/api/v1/events/parse/route.ts` for parsing natural language input ✅
+- [x] **API Types - Parse Text**: `./web/app/api/v1/events/parse/types.ts` ✅
+- [x] **API Endpoint - Create from Text**: `./web/app/api/v1/events/create-from-text/route.ts` combining parse + create ✅
+- [x] **API Types - Create from Text**: `./web/app/api/v1/events/create-from-text/types.ts` ✅
 - [ ] **API Endpoint - Batch Create**: Create `./web/app/api/v1/events/batch/route.ts` for creating multiple events in one request (deferred)
 - [ ] **API Types - Batch Create**: Create `./web/app/api/v1/events/batch/types.ts` (deferred)
-- [x] **useRoutes Hook Update**: Add event creation and parsing routes
+- [x] **useRoutes Hook Update**: Add event creation and parsing routes ✅
 - [ ] **E2E Tests - Create Event**: Create Cypress test for: manual event creation, parsed event creation, validation errors
 
 #### 2.4 Installment Events

@@ -14,6 +14,7 @@ export type ParseRequestBody = {
 export type ParsedEventData = {
   amount: EventAttributes["amount"];
   currency: string;
+  currency_id?: string; // UUID of the currency, optional (will be filled by parse endpoint)
   quantity: number;
   description: string;
   event_date: string; // ISO 8601 format

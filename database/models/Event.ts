@@ -114,6 +114,18 @@ export class Event extends Model<EventAttributes> implements EventAttributes {
           allowNull: true,
           comment: "Soft delete timestamp in UTC",
         },
+        created_at: {
+          type: DataTypes.DATE,
+          allowNull: false,
+          field: "created_at",
+          defaultValue: DataTypes.NOW,
+        },
+        updated_at: {
+          type: DataTypes.DATE,
+          allowNull: false,
+          field: "updated_at",
+          defaultValue: DataTypes.NOW,
+        },
       },
       {
         sequelize,

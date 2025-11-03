@@ -1,4 +1,7 @@
 import { getLocalLMStudioParser } from "@/lib/parser/localLMStudioParser";
+import db from "@expensecal/database/db";
+import { initModels } from "@expensecal/database/models";
+import { Currency } from "@expensecal/database/models/Currency";
 import { NextRequest, NextResponse } from "next/server";
 import { ParseRequestBody, ParseResponse } from "./types";
 
@@ -75,11 +78,34 @@ export async function POST(
       );
     }
 
-    // Return parsed data
+    // Initialize database models and lookup currency by symbol
+    initModels(db);
+    const currency = await Currency.findOne({
+      where: { symbol: result.currency },
+    });
+
+    if (!currency) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Currency not found",
+          details: `No currency found with symbol: ${result.currency}`,
+        },
+        { status: 422 },
+      );
+    }
+
+    // Add currency_id to the result
+    const resultWithCurrencyId = {
+      ...result,
+      currency_id: currency.id,
+    };
+
+    // Return parsed data with currency_id
     return NextResponse.json(
       {
         success: true,
-        data: result,
+        data: resultWithCurrencyId,
       },
       { status: 200 },
     );

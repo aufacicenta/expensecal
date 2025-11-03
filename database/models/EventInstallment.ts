@@ -49,6 +49,7 @@ export class EventInstallment extends Model<EventInstallmentAttributes> implemen
         },
         created_at: {
           type: DataTypes.DATE,
+          field: "created_at",
           allowNull: false,
           defaultValue: DataTypes.NOW,
         },
