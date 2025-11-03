@@ -3,6 +3,10 @@
 import { useState } from "react";
 
 import { CreateEventRequestBody } from "@/app/api/v1/events/create/types";
+import {
+  CreateInstallmentsRequestBody,
+  DeleteInstallmentsRequestBody,
+} from "@/app/api/v1/events/installments/types";
 import { ParseRequestBody } from "@/app/api/v1/events/parse/types";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 import { EventsContext } from "./EventsContext";
@@ -62,9 +66,80 @@ export const EventsContextController = ({
     }
   };
 
+  const createInstallments = async (body: CreateInstallmentsRequestBody) => {
+    try {
+      const response = await fetch(routes.api.v1.events.installments.create(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error creating installments:", error);
+      throw error;
+    }
+  };
+
+  const listInstallments = async (parentEventId: string) => {
+    try {
+      const response = await fetch(
+        `${routes.api.v1.events.installments.list()}?parent_event_id=${encodeURIComponent(parentEventId)}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error listing installments:", error);
+      throw error;
+    }
+  };
+
+  const deleteInstallments = async (body: DeleteInstallmentsRequestBody) => {
+    try {
+      const response = await fetch(routes.api.v1.events.installments.delete(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error deleting installments:", error);
+      throw error;
+    }
+  };
+
   const props: EventsContextType = {
     parseEventText,
     createEvent,
+    createInstallments,
+    listInstallments,
+    deleteInstallments,
   };
 
   return (

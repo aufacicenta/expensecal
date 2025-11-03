@@ -1,0 +1,222 @@
+import { createInstallments } from "@/lib/events/createInstallments";
+import { stackServerApp } from "@/stack/server";
+import db from "@expensecal/database/db";
+import { initModels } from "@expensecal/database/models";
+import { Event } from "@expensecal/database/models/Event";
+import { NextRequest, NextResponse } from "next/server";
+import {
+  CreateInstallmentsRequestBody,
+  CreateInstallmentsResponse,
+} from "../types";
+
+/**
+ * POST /api/v1/events/installments/create
+ * Create installment events from a parent recurring event
+ * Protected endpoint (requires authentication)
+ *
+ * Takes a parent event with a recurrence_rule and generates individual
+ * installment events based on the recurrence pattern. The parent event's
+ * amount is distributed equally across all installments.
+ *
+ * @example
+ * POST /api/v1/events/installments/create
+ * {
+ *   "parent_event_id": "550e8400-e29b-41d4-a716-446655440000"
+ * }
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "parent_event": {...},
+ *     "installments": [...],
+ *     "installment_count": 12,
+ *     "amount_per_installment": "125.00"
+ *   }
+ * }
+ */
+export async function POST(
+  request: NextRequest,
+): Promise<NextResponse<CreateInstallmentsResponse>> {
+  try {
+    // Authenticate user with Stackframe
+    const user = await stackServerApp.getUser();
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized",
+          details: "You must be logged in to create installments",
+        },
+        { status: 401 },
+      );
+    }
+
+    const body: CreateInstallmentsRequestBody = await request.json();
+
+    // Validate required fields
+    if (!body.parent_event_id || typeof body.parent_event_id !== "string") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid parent_event_id",
+          details:
+            "parent_event_id is required and must be a valid UUID string",
+        },
+        { status: 400 },
+      );
+    }
+
+    // Validate end_date format if provided
+    let endDate: Date | undefined;
+    if (body.end_date) {
+      endDate = new Date(body.end_date);
+      if (isNaN(endDate.getTime())) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Invalid end_date format",
+            details: "end_date must be a valid ISO 8601 date string",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Initialize models
+    initModels(db);
+
+    // Verify parent event exists and belongs to the user
+    const parentEvent = await Event.findByPk(body.parent_event_id);
+    if (!parentEvent) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Parent event not found",
+          details: `No event found with id: ${body.parent_event_id}`,
+        },
+        { status: 404 },
+      );
+    }
+
+    // Verify the parent event belongs to the authenticated user
+    if (parentEvent.user_id !== user.id) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized",
+          details: "You do not have permission to access this event",
+        },
+        { status: 403 },
+      );
+    }
+
+    // Verify the parent event has a recurrence rule
+    if (!parentEvent.recurrence_rule) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid parent event",
+          details:
+            "Parent event must have a recurrence_rule to generate installments",
+        },
+        { status: 400 },
+      );
+    }
+
+    // Create the installments
+    const result = await createInstallments({
+      parentEventId: body.parent_event_id,
+      endDate,
+    });
+
+    if (!result.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to create installments",
+          details: result.error,
+        },
+        { status: 400 },
+      );
+    }
+
+    // Fetch the parent event again with fresh data
+    const updatedParent = await Event.findByPk(body.parent_event_id);
+    if (!updatedParent) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to retrieve parent event",
+        },
+        { status: 500 },
+      );
+    }
+
+    // Fetch all installment events
+    const installmentEvents = await Event.findAll({
+      where: {
+        id: result.installmentIds,
+      },
+      order: [["event_date", "ASC"]],
+    });
+
+    // Calculate amount per installment
+    const amountPerInstallment = installmentEvents.length
+      ? installmentEvents[0].amount
+      : "0";
+
+    // Return success response
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          parent_event: {
+            id: updatedParent.id,
+            user_id: updatedParent.user_id,
+            type: updatedParent.type,
+            amount: updatedParent.amount,
+            currency_id: updatedParent.currency_id,
+            quantity: updatedParent.quantity,
+            description: updatedParent.description,
+            event_date: updatedParent.event_date.toISOString(),
+            parent_event_id: null,
+            recurrence_rule: updatedParent.recurrence_rule || "",
+            recurrence_end_date:
+              updatedParent.recurrence_end_date?.toISOString() || null,
+            created_at: updatedParent.created_at.toISOString(),
+            updated_at: updatedParent.updated_at.toISOString(),
+          },
+          installments: installmentEvents.map((event) => ({
+            id: event.id,
+            user_id: event.user_id,
+            type: event.type,
+            amount: event.amount,
+            currency_id: event.currency_id,
+            quantity: event.quantity,
+            description: event.description,
+            event_date: event.event_date.toISOString(),
+            parent_event_id: event.parent_event_id!,
+            recurrence_rule: null,
+            recurrence_end_date: null,
+            created_at: event.created_at.toISOString(),
+            updated_at: event.updated_at.toISOString(),
+          })),
+          installment_count: result.installmentCount,
+          amount_per_installment: amountPerInstallment,
+        },
+      },
+      { status: 201 },
+    );
+  } catch (error) {
+    console.error("Create installments endpoint error:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
+  }
+}

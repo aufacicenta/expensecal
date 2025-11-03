@@ -11,6 +11,11 @@ export const routes = {
         parse: () => `/api/v1/events/parse`,
         create: () => `/api/v1/events/create`,
         createFromText: () => `/api/v1/events/create-from-text`,
+        installments: {
+          create: () => `/api/v1/events/installments/create`,
+          list: () => `/api/v1/events/installments/list`,
+          delete: () => `/api/v1/events/installments/delete`,
+        },
       },
     },
   },
