@@ -20,6 +20,8 @@ export type ParsedEventData = {
   type: "EXPENSE" | "INCOME";
   confidence: number; // 0-1 score
   raw_text: string;
+  recurrence_rule?: string | null; // RFC 5545 RRULE format, optional
+  recurrence_end_date?: string | null; // ISO 8601 date string, optional
 };
 
 export type ParseSuccessResponse = {

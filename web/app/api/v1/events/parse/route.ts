@@ -1,4 +1,4 @@
-import { getLiteLLMParser } from "@/lib/parser/litellmParser";
+import { getLocalLMStudioParser } from "@/lib/parser/localLMStudioParser";
 import { NextRequest, NextResponse } from "next/server";
 import { ParseRequestBody, ParseResponse } from "./types";
 
@@ -45,16 +45,16 @@ export async function POST(
       }
     }
 
-    const parser = getLiteLLMParser();
+    const parser = getLocalLMStudioParser();
 
-    // Check if Ollama is available
+    // Check if LM Studio is available
     const health = await parser.checkHealth();
     if (!health.available) {
       return NextResponse.json(
         {
           success: false,
           error: "LLM parser unavailable",
-          details: health.error || "Ollama service is not running",
+          details: health.error || "LM Studio service is not running",
         },
         { status: 503 },
       );
