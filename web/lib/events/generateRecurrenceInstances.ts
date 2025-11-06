@@ -79,11 +79,11 @@ export function generateRecurrenceInstances(
       if (untilMatch) {
         maxDate = new Date(untilMatch[1]);
       } else {
-        // Default to 10 years from start date if no UNTIL or COUNT
+        // Default to using COUNT if no UNTIL specified
         const hasCount = /COUNT=\d+/.test(rruleInput);
         if (!hasCount) {
-          maxDate = new Date(startDate);
-          maxDate.setFullYear(maxDate.getFullYear() + 10);
+          // Will default to 12 instances below
+          maxDate = undefined;
         }
       }
     }

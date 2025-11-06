@@ -22,6 +22,34 @@ export const EventsContextController = ({
 
   const routes = useRoutes();
 
+  const createEventFromText = async (
+    body: ParseRequestBody & { create_installments?: boolean },
+  ) => {
+    try {
+      const response = await fetch(
+        routes.api.v1.events.createFromText?.() ||
+          "/api/v1/events/create-from-text",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error creating event from text:", error);
+      throw error;
+    }
+  };
+
   const parseEventText = async (body: ParseRequestBody) => {
     try {
       const response = await fetch(routes.api.v1.events.parse(), {
@@ -135,6 +163,7 @@ export const EventsContextController = ({
   };
 
   const props: EventsContextType = {
+    createEventFromText,
     parseEventText,
     createEvent,
     createInstallments,

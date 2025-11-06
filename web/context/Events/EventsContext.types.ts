@@ -1,4 +1,8 @@
 import {
+  CreateFromTextRequestBody,
+  CreateFromTextResponse,
+} from "@/app/api/v1/events/create-from-text/types";
+import {
   CreateEventRequestBody,
   CreateEventResponse,
 } from "@/app/api/v1/events/create/types";
@@ -20,6 +24,9 @@ export type EventsContextControllerProps = {
 };
 
 export type EventsContextType = {
+  createEventFromText: (
+    body: CreateFromTextRequestBody,
+  ) => Promise<CreateFromTextResponse>;
   parseEventText: (body: ParseRequestBody) => Promise<ParseResponse>;
   createEvent: (body: CreateEventRequestBody) => Promise<CreateEventResponse>;
   createInstallments: (

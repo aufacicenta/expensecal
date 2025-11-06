@@ -17,35 +17,24 @@ export default function Home() {
       setResult("");
 
       try {
-        // Step 1: Parse the event text
-        const parseResponse = await eventsController.parseEventText({
+        // Single call: Parse text, create event, and optionally create installments
+        const response = await eventsController.createEventFromText({
           text: input,
+          create_installments: true, // Automatically create installments if recurrence rule detected
         });
 
-        if ("error" in parseResponse) {
-          setResult(`Error parsing: ${parseResponse.error}`);
-          setLoading(false);
-          return;
-        }
-
-        // Step 2: Create the event from parsed data
-        const createResponse = await eventsController.createEvent({
-          type: parseResponse.data.type,
-          amount: parseResponse.data.amount,
-          currency_id: parseResponse.data.currency_id!,
-          quantity: parseResponse.data.quantity,
-          description: parseResponse.data.description,
-          event_date: parseResponse.data.event_date,
-          recurrence_rule: parseResponse.data.recurrence_rule || null,
-          recurrence_end_date: parseResponse.data.recurrence_end_date || null,
-        });
-
-        if ("error" in createResponse) {
-          setResult(`Error creating event: ${createResponse.error}`);
+        if ("error" in response) {
+          setResult(`Error: ${response.error}`);
         } else {
-          setResult(
-            `Success! Created event: ${createResponse.data.description}`,
-          );
+          const eventData = response.data;
+          let successMessage = `Success! Created event: ${eventData.event.description}`;
+
+          // Add installment info if installments were created
+          if (eventData.installments) {
+            successMessage += ` (${eventData.installments.installment_count} installments created)`;
+          }
+
+          setResult(successMessage);
           setInput("");
         }
       } catch (error) {
