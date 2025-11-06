@@ -17,6 +17,9 @@ export const routes = {
           delete: () => `/api/v1/events/installments/delete`,
         },
       },
+      calendar: {
+        get: () => `/api/v1/calendar`,
+      },
     },
   },
 };
