@@ -128,6 +128,7 @@ export async function POST(
       recurrence_end_date: parseResult.recurrence_end_date
         ? new Date(parseResult.recurrence_end_date)
         : null,
+      original_text: body.text,
     });
 
     // Prepare response data
@@ -143,6 +144,7 @@ export async function POST(
       parent_event_id: event.parent_event_id,
       recurrence_rule: event.recurrence_rule,
       recurrence_end_date: event.recurrence_end_date?.toISOString() || null,
+      original_text: event.original_text || null,
       created_at: event.created_at.toISOString(),
       updated_at: event.updated_at.toISOString(),
     };
@@ -216,6 +218,7 @@ export async function POST(
             recurrence_rule: updatedParent.recurrence_rule || "",
             recurrence_end_date:
               updatedParent.recurrence_end_date?.toISOString() || null,
+            original_text: updatedParent.original_text || null,
             created_at: updatedParent.created_at.toISOString(),
             updated_at: updatedParent.updated_at.toISOString(),
           },

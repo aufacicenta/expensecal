@@ -25,6 +25,7 @@ export type CreatedEventData = {
   parent_event_id: string | null;
   recurrence_rule: string | null;
   recurrence_end_date: string | null;
+  original_text: string | null;
   created_at: string;
   updated_at: string;
 };
