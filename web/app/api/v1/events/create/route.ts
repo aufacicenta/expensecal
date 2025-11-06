@@ -1,3 +1,11 @@
+import {
+  createValidationErrorResponse,
+  validateEnum,
+  validateISO8601Date,
+  validatePositiveNumber,
+  validateRequiredString,
+  validateUUID,
+} from "@/lib/validators";
 import { stackServerApp } from "@/stack/server";
 import db from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
@@ -30,95 +38,53 @@ export async function POST(
 
     const body: CreateEventRequestBody = await request.json();
 
-    // Validate required fields
-    if (!body.type || !["EXPENSE", "INCOME"].includes(body.type)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid event type",
-          details: "Type must be either 'EXPENSE' or 'INCOME'",
-        },
-        { status: 400 },
-      );
+    // Validate event type
+    const typeError = validateEnum(body.type, "type", ["EXPENSE", "INCOME"]);
+    if (typeError) {
+      return createValidationErrorResponse(typeError);
     }
 
-    if (
-      !body.amount ||
-      isNaN(Number(body.amount)) ||
-      Number(body.amount) <= 0
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid amount",
-          details: "Amount must be a positive number",
-        },
-        { status: 400 },
-      );
+    // Validate amount
+    const amountResult = validatePositiveNumber(body.amount, "amount");
+    if (amountResult.error) {
+      return createValidationErrorResponse(amountResult.error);
     }
 
-    if (!body.currency_id || typeof body.currency_id !== "string") {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid currency_id",
-          details: "currency_id is required and must be a valid UUID",
-        },
-        { status: 400 },
-      );
+    // Validate currency_id
+    const currencyIdError = validateUUID(body.currency_id, "currency_id", true);
+    if (currencyIdError) {
+      return createValidationErrorResponse(currencyIdError);
     }
 
-    if (
-      !body.description ||
-      typeof body.description !== "string" ||
-      body.description.trim().length === 0
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid description",
-          details: "Description is required and must be a non-empty string",
-        },
-        { status: 400 },
-      );
+    // Validate description
+    const descriptionError = validateRequiredString(
+      body.description,
+      "description",
+    );
+    if (descriptionError) {
+      return createValidationErrorResponse(descriptionError);
     }
 
-    if (!body.event_date || typeof body.event_date !== "string") {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid event_date",
-          details: "event_date is required and must be an ISO 8601 date string",
-        },
-        { status: 400 },
-      );
+    // Validate event_date
+    const eventDateResult = validateISO8601Date(
+      body.event_date,
+      "event_date",
+      true,
+    );
+    if (eventDateResult.error) {
+      return createValidationErrorResponse(eventDateResult.error);
     }
-
-    // Validate event_date format
-    const eventDate = new Date(body.event_date);
-    if (isNaN(eventDate.getTime())) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid event_date format",
-          details: "event_date must be a valid ISO 8601 date string",
-        },
-        { status: 400 },
-      );
-    }
+    const eventDate = eventDateResult.date!;
 
     // Validate quantity if provided
-    const quantity = body.quantity !== undefined ? Number(body.quantity) : 1;
-    if (isNaN(quantity) || quantity < 1) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid quantity",
-          details: "Quantity must be a positive integer",
-        },
-        { status: 400 },
-      );
+    const quantityResult = validatePositiveNumber(body.quantity, "quantity", {
+      minValue: 0,
+      isRequired: false,
+    });
+    if (quantityResult.error) {
+      return createValidationErrorResponse(quantityResult.error);
     }
+    const quantity = quantityResult.value ?? 1;
 
     // Initialize database models
     initModels(db);
@@ -137,20 +103,15 @@ export async function POST(
     }
 
     // Validate recurrence_end_date if provided
-    let recurrenceEndDate: Date | null = null;
-    if (body.recurrence_end_date) {
-      recurrenceEndDate = new Date(body.recurrence_end_date);
-      if (isNaN(recurrenceEndDate.getTime())) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Invalid recurrence_end_date format",
-            details: "recurrence_end_date must be a valid ISO 8601 date string",
-          },
-          { status: 400 },
-        );
-      }
+    const recurrenceEndDateResult = validateISO8601Date(
+      body.recurrence_end_date,
+      "recurrence_end_date",
+      false,
+    );
+    if (recurrenceEndDateResult.error) {
+      return createValidationErrorResponse(recurrenceEndDateResult.error);
     }
+    const recurrenceEndDate = recurrenceEndDateResult.date;
 
     // Create the event
     const event = await Event.create({

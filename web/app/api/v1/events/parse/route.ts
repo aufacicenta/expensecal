@@ -1,4 +1,9 @@
 import { getLocalLMStudioParser } from "@/lib/parser/localLMStudioParser";
+import {
+  createValidationErrorResponse,
+  validateISO8601Date,
+  validateRequiredString,
+} from "@/lib/validators";
 import db from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
 import { Currency } from "@expensecal/database/models/Currency";
@@ -16,37 +21,22 @@ export async function POST(
   try {
     const body: ParseRequestBody = await request.json();
 
-    // Validate request body
-    if (
-      !body.text ||
-      typeof body.text !== "string" ||
-      body.text.trim().length === 0
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid request body",
-          details: "Field 'text' is required and must be a non-empty string",
-        },
-        { status: 400 },
-      );
+    // Validate text
+    const textError = validateRequiredString(body.text, "text");
+    if (textError) {
+      return createValidationErrorResponse(textError);
     }
 
-    // Parse current_date if provided
-    let currentDate: Date | undefined;
-    if (body.current_date) {
-      currentDate = new Date(body.current_date);
-      if (isNaN(currentDate.getTime())) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Invalid current_date",
-            details: "current_date must be a valid ISO 8601 date string",
-          },
-          { status: 400 },
-        );
-      }
+    // Validate current_date if provided
+    const currentDateResult = validateISO8601Date(
+      body.current_date,
+      "current_date",
+      false,
+    );
+    if (currentDateResult.error) {
+      return createValidationErrorResponse(currentDateResult.error);
     }
+    const currentDate = currentDateResult.date ?? undefined;
 
     const parser = getLocalLMStudioParser();
 

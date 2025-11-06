@@ -1,3 +1,4 @@
+import { createValidationErrorResponse, validateUUID } from "@/lib/validators";
 import { stackServerApp } from "@/stack/server";
 import db from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
@@ -51,17 +52,14 @@ export async function POST(
 
     const body: DeleteInstallmentsRequestBody = await request.json();
 
-    // Validate required fields
-    if (!body.parent_event_id || typeof body.parent_event_id !== "string") {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid parent_event_id",
-          details:
-            "parent_event_id is required and must be a valid UUID string",
-        },
-        { status: 400 },
-      );
+    // Validate parent_event_id
+    const parentEventIdError = validateUUID(
+      body.parent_event_id,
+      "parent_event_id",
+      true,
+    );
+    if (parentEventIdError) {
+      return createValidationErrorResponse(parentEventIdError);
     }
 
     // Initialize models

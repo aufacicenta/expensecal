@@ -1,4 +1,9 @@
 import { createInstallments } from "@/lib/events/createInstallments";
+import {
+  createValidationErrorResponse,
+  validateISO8601Date,
+  validateUUID,
+} from "@/lib/validators";
 import { stackServerApp } from "@/stack/server";
 import db from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
@@ -54,34 +59,22 @@ export async function POST(
 
     const body: CreateInstallmentsRequestBody = await request.json();
 
-    // Validate required fields
-    if (!body.parent_event_id || typeof body.parent_event_id !== "string") {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid parent_event_id",
-          details:
-            "parent_event_id is required and must be a valid UUID string",
-        },
-        { status: 400 },
-      );
+    // Validate parent_event_id
+    const parentEventIdError = validateUUID(
+      body.parent_event_id,
+      "parent_event_id",
+      true,
+    );
+    if (parentEventIdError) {
+      return createValidationErrorResponse(parentEventIdError);
     }
 
-    // Validate end_date format if provided
-    let endDate: Date | undefined;
-    if (body.end_date) {
-      endDate = new Date(body.end_date);
-      if (isNaN(endDate.getTime())) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Invalid end_date format",
-            details: "end_date must be a valid ISO 8601 date string",
-          },
-          { status: 400 },
-        );
-      }
+    // Validate end_date if provided
+    const endDateResult = validateISO8601Date(body.end_date, "end_date", false);
+    if (endDateResult.error) {
+      return createValidationErrorResponse(endDateResult.error);
     }
+    const endDate = endDateResult.date ?? undefined;
 
     // Initialize models
     initModels(db);

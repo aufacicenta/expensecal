@@ -1,3 +1,7 @@
+import {
+  createValidationErrorResponse,
+  validateQueryParam,
+} from "@/lib/validators";
 import { stackServerApp } from "@/stack/server";
 import db from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
@@ -50,20 +54,17 @@ export async function GET(
       );
     }
 
-    // Get parent_event_id from query parameters
+    // Validate parent_event_id query parameter
     const { searchParams } = new URL(request.url);
-    const parentEventId = searchParams.get("parent_event_id");
-
-    if (!parentEventId) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Missing parent_event_id",
-          details: "parent_event_id query parameter is required",
-        },
-        { status: 400 },
-      );
+    const parentEventIdResult = validateQueryParam(
+      searchParams,
+      "parent_event_id",
+      true,
+    );
+    if (parentEventIdResult.error) {
+      return createValidationErrorResponse(parentEventIdResult.error);
     }
+    const parentEventId = parentEventIdResult.value!;
 
     // Initialize models
     initModels(db);
