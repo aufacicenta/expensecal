@@ -3,7 +3,7 @@ import { Op } from "@expensecal/database";
 import db from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
 import { Currency } from "@expensecal/database/models/Currency";
-import { Event } from "@expensecal/database/models/Event";
+import { Event, EventType } from "@expensecal/database/models/Event";
 import { Decimal } from "decimal.js";
 import { NextRequest, NextResponse } from "next/server";
 import {
@@ -294,17 +294,17 @@ function calculateDayFinancialSummary(events: Event[]): {
   net: string;
   eventCount: number;
 } {
-  const totalIncome = new Decimal(0);
-  const totalExpenses = new Decimal(0);
+  let totalIncome = new Decimal(0);
+  let totalExpenses = new Decimal(0);
 
-  events.forEach((event) => {
+  for (const event of events) {
     const amount = new Decimal(event.amount);
-    if (event.type === "INCOME") {
-      totalIncome.plus(amount);
-    } else if (event.type === "EXPENSE") {
-      totalExpenses.plus(amount);
+    if (event.type === EventType.INCOME) {
+      totalIncome = totalIncome.plus(amount);
+    } else if (event.type === EventType.EXPENSE) {
+      totalExpenses = totalExpenses.plus(amount);
     }
-  });
+  }
 
   const net = totalIncome.minus(totalExpenses);
 

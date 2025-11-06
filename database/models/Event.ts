@@ -19,6 +19,7 @@ export interface EventAttributes {
   recurrence_rule?: string | null;
   recurrence_end_date?: Date | null;
   original_text?: string | null;
+  currency?: Currency;
   created_at?: Date;
   updated_at?: Date;
   deleted_at?: Date | null;

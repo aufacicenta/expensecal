@@ -8,6 +8,7 @@ import {
   CalendarMonth,
 } from "@/app/api/v1/calendar/types";
 import { CalendarProps } from "./Calendar.types";
+import { CalendarEventCell } from "./calendar-event-cell/CalendarEventCell";
 
 export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
   const calendarContext = useContext(CalendarContext);
@@ -63,20 +64,22 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
-    <div className={clsx("max-h-screen w-full", className)}>
+    <div className={clsx("w-full p-4", className)}>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-medium">
           {month.month}/{month.year}
         </h2>
       </div>
 
-      <div className="space-y-1">
+      <div>
         {/* Week day headers */}
         <div className="grid grid-cols-7 gap-1">
           {weekDays.map((day) => (
             <div
               key={day}
-              className="py-2 text-center text-xs font-medium text-gray-500"
+              className={clsx(
+                "py-2 text-center text-xs font-medium text-gray-500",
+              )}
             >
               {day}
             </div>
@@ -89,10 +92,10 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
             <div
               key={index}
               className={clsx(
-                "aspect-video p-1 text-xs",
+                "relative aspect-video p-1 text-xs",
                 day.isCurrentMonth
                   ? "text-gray-300"
-                  : "bg-content1 text-gray-300",
+                  : "bg-content1 rounded text-gray-300",
                 day.isToday && "",
                 day.financialSummary.eventCount > 0 && day.isCurrentMonth
                   ? ""
@@ -100,15 +103,50 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
               )}
             >
               {day.dayOfMonth > 0 && (
-                <div className="space-y-0.5">
-                  <div className="font-medium">{day.dayOfMonth}</div>
-                  {day.financialSummary.eventCount > 0 && (
-                    <div className="text-gray-600">
-                      {day.financialSummary.eventCount} event
-                      {day.financialSummary.eventCount !== 1 ? "s" : ""}
+                <>
+                  <div className="space-y-0.5">
+                    <div
+                      className={clsx(
+                        !day.isToday && "font-medium",
+                        day.isToday && "text-focus text-sm font-bold",
+                      )}
+                    >
+                      {day.dayOfMonth}
+                    </div>
+                    {day.events.map((event) => (
+                      <CalendarEventCell event={event} />
+                    ))}
+                  </div>
+
+                  {!!day.events.length && day.events.length > 0 && (
+                    <div className="text-xxs border-b-content3 absolute right-0 bottom-0 left-0 flex w-full justify-between border-b">
+                      <div className="p-1">
+                        <span className="text-success">
+                          +{Number(day.financialSummary.totalIncome).toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="p-1">
+                        <span className="text-danger">
+                          -
+                          {Number(day.financialSummary.totalExpenses).toFixed(
+                            2,
+                          )}
+                        </span>
+                      </div>
+                      <div className="p-1">
+                        <span
+                          className={clsx(
+                            Number(day.financialSummary.net) > 0
+                              ? "text-success"
+                              : "text-danger",
+                          )}
+                        >
+                          {Number(day.financialSummary.net).toFixed(2)}
+                        </span>
+                      </div>
                     </div>
                   )}
-                </div>
+                </>
               )}
             </div>
           ))}
