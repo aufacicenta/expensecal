@@ -101,7 +101,8 @@ export async function GET(
       include: [
         {
           model: Currency,
-          attributes: ["id", "symbol", "code"],
+          as: "currency",
+          attributes: ["id", "symbol", "name"],
         },
       ],
       order: [["event_date", "ASC"]],
