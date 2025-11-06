@@ -18,6 +18,7 @@ export interface EventAttributes {
   parent_event_id?: string | null;
   recurrence_rule?: string | null;
   recurrence_end_date?: Date | null;
+  original_text?: string | null;
   created_at?: Date;
   updated_at?: Date;
   deleted_at?: Date | null;
@@ -35,6 +36,7 @@ export class Event extends Model<EventAttributes> implements EventAttributes {
   declare parent_event_id: ForeignKey<Event["id"]> | null;
   declare recurrence_rule: string | null;
   declare recurrence_end_date: Date | null;
+  declare original_text: string | null;
 
   declare readonly created_at: Date;
   declare readonly updated_at: Date;
@@ -108,6 +110,11 @@ export class Event extends Model<EventAttributes> implements EventAttributes {
           type: DataTypes.DATE,
           allowNull: true,
           comment: "Stored in UTC",
+        },
+        original_text: {
+          type: DataTypes.TEXT,
+          allowNull: true,
+          comment: "Original text input from which this event was parsed",
         },
         deleted_at: {
           type: DataTypes.DATE,
