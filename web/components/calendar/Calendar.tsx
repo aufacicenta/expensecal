@@ -9,12 +9,13 @@ import {
 } from "@/app/api/v1/calendar/types";
 import { CalendarProps } from "./Calendar.types";
 import { CalendarEventCell } from "./calendar-event-cell/CalendarEventCell";
+import { Divider } from "@heroui/divider";
 
 export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
   const calendarContext = useContext(CalendarContext);
-  const [calendarData, setCalendarData] = useState<CalendarMonth[] | null>(
-    null,
-  );
+  const [calendarData, setCalendarData] = useState<
+    GetCalendarSuccessResponse["data"] | null
+  >(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const currentMonth = new Date().toISOString().split("T")[0].slice(0, 7);
@@ -33,7 +34,7 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
         const response = await calendarContext.fetchCalendar(currentMonth, 0);
         if (response.success) {
           const successResponse = response as GetCalendarSuccessResponse;
-          setCalendarData(successResponse.data.months);
+          setCalendarData(successResponse.data);
         } else {
           setError(response.error || "Failed to load calendar");
         }
@@ -55,11 +56,11 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
     return <div className={className}>Error: {error}</div>;
   }
 
-  if (!calendarData || calendarData.length === 0) {
+  if (!calendarData) {
     return <div className={className}>No calendar data</div>;
   }
 
-  const month = calendarData[0];
+  const month = calendarData.months[0];
 
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -119,7 +120,7 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
                   </div>
 
                   {!!day.events.length && day.events.length > 0 && (
-                    <div className="text-xxs border-b-content3 absolute right-0 bottom-0 left-0 flex w-full justify-between border-b">
+                    <div className="text-xxs absolute right-0 bottom-0 left-0 flex w-full justify-between">
                       <div className="p-1">
                         <span className="text-success">
                           +{Number(day.financialSummary.totalIncome).toFixed(2)}
@@ -150,6 +151,92 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
               )}
             </div>
           ))}
+        </div>
+
+        {/* Calendar Bottom Stats Bar */}
+        <div className="text-xxs mt-4 flex items-center gap-8">
+          <div className="flex [&>div]:p-2">
+            <div>
+              <div className="text-gray-500">Total Income</div>
+              <div className="text-success font-medium">
+                +{calendarData.monthlyFinancialSummary.baseCurrency.symbol}{" "}
+                {Number(
+                  calendarData.monthlyFinancialSummary.baseCurrency.totalIncome,
+                ).toFixed(2)}
+              </div>
+            </div>
+            <div>
+              <div className="text-gray-500">Total Expenses</div>
+              <div className="text-danger font-medium">
+                -{calendarData.monthlyFinancialSummary.baseCurrency.symbol}{" "}
+                {Number(
+                  calendarData.monthlyFinancialSummary.baseCurrency
+                    .totalExpenses,
+                ).toFixed(2)}
+              </div>
+            </div>
+            <div>
+              <div className="text-gray-500">Net</div>
+              <div
+                className={clsx(
+                  "font-medium",
+                  Number(
+                    calendarData.monthlyFinancialSummary.baseCurrency.net,
+                  ) > 0
+                    ? "text-success"
+                    : "text-danger",
+                )}
+              >
+                {calendarData.monthlyFinancialSummary.baseCurrency.symbol}{" "}
+                {Number(
+                  calendarData.monthlyFinancialSummary.baseCurrency.net,
+                ).toFixed(2)}
+              </div>
+            </div>
+          </div>
+          <div className="h-5">
+            <Divider orientation="vertical" />
+          </div>
+          {Object.entries(calendarData.monthlyFinancialSummary.byCurrency).map(
+            ([currencyId, currency]) => (
+              <>
+                <div key={currencyId} className="flex [&>div]:p-2">
+                  <div>
+                    <div className="text-gray-500">
+                      {currency.symbol} Income
+                    </div>
+                    <div className="text-success font-medium">
+                      +{Number(currency.totalIncome).toFixed(2)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500">
+                      {currency.symbol} Expenses
+                    </div>
+                    <div className="text-danger font-medium">
+                      -{Number(currency.totalExpenses).toFixed(2)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-gray-500">{currency.symbol} Net</div>
+                    <div
+                      className={clsx(
+                        "font-medium",
+                        Number(currency.net) > 0
+                          ? "text-success"
+                          : "text-danger",
+                      )}
+                    >
+                      {Number(currency.net).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+                <div className="h-5">
+                  <Divider orientation="vertical" />
+                </div>
+              </>
+            ),
+          )}
         </div>
       </div>
     </div>

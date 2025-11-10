@@ -32,6 +32,19 @@ export type CalendarMonth = {
 
 export type CalendarEventData = EventAttributes;
 
+export type CurrencyFinancialSummary = {
+  symbol: string; // Currency symbol (e.g., USD, EUR)
+  totalIncome: string; // Decimal as string
+  totalExpenses: string; // Decimal as string
+  net: string; // income - expenses
+  eventCount: number; // Number of events for this currency
+};
+
+export type MonthlyFinancialSummary = {
+  byCurrency: Record<string, CurrencyFinancialSummary>; // Keyed by currency ID
+  baseCurrency: CurrencyFinancialSummary;
+};
+
 export type GetCalendarRequestQuery = {
   month?: string; // ISO format: "2025-11" (defaults to current month)
   range?: number; // Months before and after to fetch (default 6, so 13 months total)
@@ -40,6 +53,7 @@ export type GetCalendarRequestQuery = {
 export type GetCalendarSuccessResponse = {
   data: {
     months: CalendarMonth[];
+    monthlyFinancialSummary: MonthlyFinancialSummary; // Financial summary for the requested month
     metadata: {
       requestedMonth: string; // The month user requested
       monthsRequested: number; // Range size (default 6)

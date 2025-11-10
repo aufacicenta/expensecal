@@ -11,6 +11,7 @@ import {
   CalendarEventData,
   CalendarMonth,
   GetCalendarResponse,
+  MonthlyFinancialSummary,
 } from "./types";
 
 /**
@@ -139,11 +140,31 @@ export async function GET(
       requestedMonth.getMonth() + 1,
     ).padStart(2, "0")}`;
 
+    // Calculate monthly financial summary for the requested month
+    const requestedMonthStart = new Date(requestedMonth);
+    requestedMonthStart.setDate(1);
+    requestedMonthStart.setHours(0, 0, 0, 0);
+
+    const requestedMonthEnd = new Date(requestedMonth);
+    requestedMonthEnd.setMonth(requestedMonthEnd.getMonth() + 1);
+    requestedMonthEnd.setDate(0);
+    requestedMonthEnd.setHours(23, 59, 59, 999);
+
+    const requestedMonthEvents = events.filter(
+      (event) =>
+        event.event_date >= requestedMonthStart &&
+        event.event_date <= requestedMonthEnd,
+    );
+
+    const monthlyFinancialSummary =
+      calculateMonthlyFinancialSummary(requestedMonthEvents);
+
     return NextResponse.json(
       {
         success: true,
         data: {
           months,
+          monthlyFinancialSummary,
           metadata: {
             requestedMonth: monthStr,
             monthsRequested: monthsRange,
@@ -327,4 +348,94 @@ function getWeekNumber(date: Date): number {
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+}
+
+/**
+ * Calculate monthly financial summary for all events in a given month
+ * Returns totals grouped by currency and converted to base currency
+ *
+ * TODO: Future enhancements to this function:
+ * - Add category-wise breakdown (e.g., Food, Transport, Utilities)
+ * - Include expense/income distribution percentages
+ * - Add trend analysis (comparison with previous months)
+ * - Add average daily spending/income
+ * - Include recurring vs one-time event totals
+ * - Add most frequent categories and top transactions
+ * - Implement user preference for base currency (currently assumes USD)
+ * - Add exchange rate conversion for multi-currency support
+ */
+function calculateMonthlyFinancialSummary(
+  events: Event[],
+): MonthlyFinancialSummary {
+  const currencySummaries = new Map<
+    string,
+    {
+      symbol: string;
+      totalIncome: Decimal;
+      totalExpenses: Decimal;
+      eventCount: number;
+    }
+  >();
+
+  for (const event of events) {
+    const currencyId = event.currency_id;
+    const amount = new Decimal(event.amount);
+
+    if (!currencySummaries.has(currencyId)) {
+      currencySummaries.set(currencyId, {
+        symbol: event.currency?.symbol || "UNKNOWN",
+        totalIncome: new Decimal(0),
+        totalExpenses: new Decimal(0),
+        eventCount: 0,
+      });
+    }
+
+    const summary = currencySummaries.get(currencyId)!;
+    summary.eventCount++;
+
+    if (event.type === EventType.INCOME) {
+      summary.totalIncome = summary.totalIncome.plus(amount);
+    } else if (event.type === EventType.EXPENSE) {
+      summary.totalExpenses = summary.totalExpenses.plus(amount);
+    }
+  }
+
+  // Build response grouped by currency
+  const byCurrency: MonthlyFinancialSummary["byCurrency"] = {};
+
+  let totalIncome = new Decimal(0);
+  let totalExpenses = new Decimal(0);
+  let eventCount = 0;
+
+  currencySummaries.forEach((summary, currencyId) => {
+    const net = summary.totalIncome.minus(summary.totalExpenses);
+    byCurrency[currencyId] = {
+      symbol: summary.symbol,
+      totalIncome: summary.totalIncome.toString(),
+      totalExpenses: summary.totalExpenses.toString(),
+      net: net.toString(),
+      eventCount: summary.eventCount,
+    };
+
+    // TODO: Implement currency conversion to base currency based on user settings
+    // For now, we only aggregate amounts if they're already in the base currency
+    if (summary.symbol === "USD") {
+      totalIncome = totalIncome.plus(summary.totalIncome);
+      totalExpenses = totalExpenses.plus(summary.totalExpenses);
+      eventCount++;
+    }
+  });
+
+  const net = totalIncome.minus(totalExpenses);
+
+  return {
+    byCurrency,
+    baseCurrency: {
+      totalIncome: totalIncome.toString(),
+      totalExpenses: totalExpenses.toString(),
+      net: net.toString(),
+      symbol: "USD",
+      eventCount,
+    },
+  };
 }

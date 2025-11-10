@@ -52,7 +52,7 @@ Expected parsing: 25 CHF recurring expense, weekly pattern, description: "gym me
 Paid 750 JPY for dinner with 2 friends but I only paid for 1
 Expected parsing: 750 JPY expense, description: "dinner with 2 friends", quantity detection
 
-50 AUD quarterly insurance next month
+50 USD quarterly insurance next month for 3 years
 Expected parsing: 50 AUD recurring expense, quarterly pattern, description: "insurance"
 
 ## Feature Plan
