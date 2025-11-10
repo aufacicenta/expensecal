@@ -19,6 +19,7 @@ export type CalendarDay = {
     totalExpenses: string; // Decimal as string
     net: string; // income - expenses
     eventCount: number;
+    baseCurrencySymbol: string;
   };
 };
 

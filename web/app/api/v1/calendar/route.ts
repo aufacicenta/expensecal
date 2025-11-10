@@ -1,3 +1,7 @@
+import {
+  convertCurrency,
+  getLatestRatesFromCurrency,
+} from "@/lib/exchange-rates";
 import { stackServerApp } from "@/stack/server";
 import { Op } from "@expensecal/database";
 import db from "@expensecal/database/db";
@@ -109,6 +113,10 @@ export async function GET(
       order: [["event_date", "ASC"]],
     });
 
+    // Fetch latest exchange rates for currency conversion
+    const baseCurrencySymbol = "USD"; // TODO: Pull from user.base_currency once implemented
+    const exchangeRates = await getLatestRatesFromCurrency(baseCurrencySymbol);
+
     // Group events by date for quick lookup
     const eventsByDate = new Map<string, Event[]>();
     events.forEach((event) => {
@@ -127,7 +135,13 @@ export async function GET(
       const monthDate = new Date(currentMonthDate);
       monthDate.setMonth(monthDate.getMonth() + i);
 
-      const month = buildCalendarMonth(monthDate, eventsByDate, user.id);
+      const month = buildCalendarMonth(
+        monthDate,
+        eventsByDate,
+        user.id,
+        baseCurrencySymbol,
+        exchangeRates,
+      );
       months.push(month);
     }
 
@@ -156,8 +170,11 @@ export async function GET(
         event.event_date <= requestedMonthEnd,
     );
 
-    const monthlyFinancialSummary =
-      calculateMonthlyFinancialSummary(requestedMonthEvents);
+    const monthlyFinancialSummary = calculateMonthlyFinancialSummary(
+      requestedMonthEvents,
+      baseCurrencySymbol,
+      exchangeRates,
+    );
 
     return NextResponse.json(
       {
@@ -232,6 +249,8 @@ function buildCalendarMonth(
   monthDate: Date,
   eventsByDate: Map<string, Event[]>,
   userId: string,
+  baseCurrencySymbol: string,
+  exchangeRates: Map<string, string>,
 ): CalendarMonth {
   const year = monthDate.getFullYear();
   const month = monthDate.getMonth();
@@ -279,8 +298,12 @@ function buildCalendarMonth(
     // Get events for this day
     const dayEvents = eventsByDate.get(dateKey) || [];
 
-    // Calculate financial summary for the day
-    const financialSummary = calculateDayFinancialSummary(dayEvents);
+    // Calculate financial summary for the day (with currency conversion)
+    const financialSummary = calculateDayFinancialSummary(
+      dayEvents,
+      baseCurrencySymbol,
+      exchangeRates,
+    );
 
     // Build CalendarEventData for each event
     const calendarEvents: CalendarEventData[] = dayEvents.map((event) => event);
@@ -308,22 +331,41 @@ function buildCalendarMonth(
 
 /**
  * Calculate financial summary for a day
+ * Converts all events to the base currency using exchange rates
  */
-function calculateDayFinancialSummary(events: Event[]): {
-  totalIncome: string;
-  totalExpenses: string;
-  net: string;
-  eventCount: number;
-} {
+function calculateDayFinancialSummary(
+  events: Event[],
+  baseCurrencySymbol: string,
+  exchangeRates: Map<string, string>,
+): CalendarDay["financialSummary"] {
   let totalIncome = new Decimal(0);
   let totalExpenses = new Decimal(0);
 
   for (const event of events) {
     const amount = new Decimal(event.amount);
+    const currencySymbol = event.currency?.symbol || "UNKNOWN";
+
+    // Convert amount to base currency if needed
+    let convertedAmount = amount;
+    if (currencySymbol !== baseCurrencySymbol && currencySymbol !== "UNKNOWN") {
+      const rate = exchangeRates.get(currencySymbol);
+      if (rate) {
+        // Convert using hub-and-spoke model: (amount / rate) * 1
+        convertedAmount = new Decimal(
+          convertCurrency(amount.toString(), rate, "1"),
+        );
+      } else {
+        // Rate not found, log warning and use unconverted amount
+        console.warn(
+          `Exchange rate not found for ${currencySymbol}, using unconverted amount`,
+        );
+      }
+    }
+
     if (event.type === EventType.INCOME) {
-      totalIncome = totalIncome.plus(amount);
+      totalIncome = totalIncome.plus(convertedAmount);
     } else if (event.type === EventType.EXPENSE) {
-      totalExpenses = totalExpenses.plus(amount);
+      totalExpenses = totalExpenses.plus(convertedAmount);
     }
   }
 
@@ -334,6 +376,7 @@ function calculateDayFinancialSummary(events: Event[]): {
     totalExpenses: totalExpenses.toString(),
     net: net.toString(),
     eventCount: events.length,
+    baseCurrencySymbol,
   };
 }
 
@@ -354,6 +397,8 @@ function getWeekNumber(date: Date): number {
  * Calculate monthly financial summary for all events in a given month
  * Returns totals grouped by currency and converted to base currency
  *
+ * Uses hub-and-spoke exchange rate model where all rates are relative to USD.
+ *
  * TODO: Future enhancements to this function:
  * - Add category-wise breakdown (e.g., Food, Transport, Utilities)
  * - Include expense/income distribution percentages
@@ -361,11 +406,12 @@ function getWeekNumber(date: Date): number {
  * - Add average daily spending/income
  * - Include recurring vs one-time event totals
  * - Add most frequent categories and top transactions
- * - Implement user preference for base currency (currently assumes USD)
- * - Add exchange rate conversion for multi-currency support
+ * - Support user preference for base currency (currently assumes USD)
  */
 function calculateMonthlyFinancialSummary(
   events: Event[],
+  baseCurrencySymbol: string,
+  exchangeRates: Map<string, string>,
 ): MonthlyFinancialSummary {
   const currencySummaries = new Map<
     string,
@@ -417,13 +463,38 @@ function calculateMonthlyFinancialSummary(
       eventCount: summary.eventCount,
     };
 
-    // TODO: Implement currency conversion to base currency based on user settings
-    // For now, we only aggregate amounts if they're already in the base currency
-    if (summary.symbol === "USD") {
+    // Convert amounts to base currency if not already
+    const currencySymbol = summary.symbol;
+    if (currencySymbol === baseCurrencySymbol) {
+      // Direct sum, no conversion needed
       totalIncome = totalIncome.plus(summary.totalIncome);
       totalExpenses = totalExpenses.plus(summary.totalExpenses);
-      eventCount++;
+    } else if (currencySymbol !== "UNKNOWN") {
+      // Get exchange rate for this currency
+      const rate = exchangeRates.get(currencySymbol);
+      if (rate) {
+        // Convert using hub-and-spoke model: (amount / rate) * 1
+        // Since we're converting to USD (base 1.0), we divide by the rate
+        const convertedIncome = new Decimal(
+          convertCurrency(
+            summary.totalIncome.toString(),
+            rate,
+            "1", // Base currency rate is always 1
+          ),
+        );
+        const convertedExpenses = new Decimal(
+          convertCurrency(summary.totalExpenses.toString(), rate, "1"),
+        );
+        totalIncome = totalIncome.plus(convertedIncome);
+        totalExpenses = totalExpenses.plus(convertedExpenses);
+      } else {
+        // Rate not found, log warning but continue
+        console.warn(
+          `Exchange rate not found for ${currencySymbol}, skipping conversion`,
+        );
+      }
     }
+    eventCount++;
   });
 
   const net = totalIncome.minus(totalExpenses);
@@ -434,7 +505,7 @@ function calculateMonthlyFinancialSummary(
       totalIncome: totalIncome.toString(),
       totalExpenses: totalExpenses.toString(),
       net: net.toString(),
-      symbol: "USD",
+      symbol: baseCurrencySymbol,
       eventCount,
     },
   };

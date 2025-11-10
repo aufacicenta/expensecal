@@ -1,15 +1,12 @@
 "use client";
 
-import { useContext, useEffect, useState } from "react";
-import clsx from "clsx";
+import { GetCalendarSuccessResponse } from "@/app/api/v1/calendar/types";
 import { CalendarContext } from "@/context/Calendar/CalendarContext";
-import {
-  GetCalendarSuccessResponse,
-  CalendarMonth,
-} from "@/app/api/v1/calendar/types";
+import { Divider } from "@heroui/divider";
+import clsx from "clsx";
+import { useContext, useEffect, useState } from "react";
 import { CalendarProps } from "./Calendar.types";
 import { CalendarEventCell } from "./calendar-event-cell/CalendarEventCell";
-import { Divider } from "@heroui/divider";
 
 export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
   const calendarContext = useContext(CalendarContext);
@@ -123,12 +120,13 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
                     <div className="text-xxs absolute right-0 bottom-0 left-0 flex w-full justify-between">
                       <div className="p-1">
                         <span className="text-success">
-                          +{Number(day.financialSummary.totalIncome).toFixed(2)}
+                          +{day.financialSummary.baseCurrencySymbol}{" "}
+                          {Number(day.financialSummary.totalIncome).toFixed(2)}
                         </span>
                       </div>
                       <div className="p-1">
                         <span className="text-danger">
-                          -
+                          -{day.financialSummary.baseCurrencySymbol}{" "}
                           {Number(day.financialSummary.totalExpenses).toFixed(
                             2,
                           )}
@@ -142,6 +140,7 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
                               : "text-danger",
                           )}
                         >
+                          {day.financialSummary.baseCurrencySymbol}{" "}
                           {Number(day.financialSummary.net).toFixed(2)}
                         </span>
                       </div>
