@@ -1,49 +1,27 @@
 "use client";
 
-import { GetCalendarSuccessResponse } from "@/app/api/v1/calendar/types";
 import { CalendarContext } from "@/context/Calendar/CalendarContext";
 import { Divider } from "@heroui/divider";
 import clsx from "clsx";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect } from "react";
 import { CalendarProps } from "./Calendar.types";
 import { CalendarEventCell } from "./calendar-event-cell/CalendarEventCell";
 
 export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
   const calendarContext = useContext(CalendarContext);
-  const [calendarData, setCalendarData] = useState<
-    GetCalendarSuccessResponse["data"] | null
-  >(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const currentMonth = new Date().toISOString().split("T")[0].slice(0, 7);
 
   useEffect(() => {
-    const loadCalendar = async () => {
-      if (!calendarContext) {
-        setError("Calendar context not available");
-        setLoading(false);
-        return;
-      }
+    if (calendarContext) {
+      calendarContext.loadCalendar(currentMonth);
+    }
+  }, []);
 
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await calendarContext.fetchCalendar(currentMonth, 0);
-        if (response.success) {
-          const successResponse = response as GetCalendarSuccessResponse;
-          setCalendarData(successResponse.data);
-        } else {
-          setError(response.error || "Failed to load calendar");
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // loadCalendar();
-  }, [calendarContext, currentMonth]);
+  const { calendarData, loading, error } = calendarContext || {
+    calendarData: null,
+    loading: true,
+    error: null,
+  };
 
   if (loading) {
     return <div className={className}>Loading calendar...</div>;
@@ -105,7 +83,7 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
                   <div className="space-y-0.5">
                     <div
                       className={clsx(
-                        !day.isToday && "font-medium",
+                        !day.isToday && "text-content3 font-medium",
                         day.isToday && "text-focus text-sm font-bold",
                       )}
                     >

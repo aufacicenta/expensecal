@@ -47,7 +47,9 @@ export default function RootLayout({
               themeProps={{ attribute: "class", defaultTheme: "dark" }}
             >
               <div className="relative flex h-screen flex-col">
-                <main className="mx-auto w-screen flex-grow">{children}</main>
+                <main className="relative mx-auto w-screen flex-grow">
+                  {children}
+                </main>
               </div>
             </Providers>
           </StackTheme>

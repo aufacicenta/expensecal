@@ -1,6 +1,8 @@
 "use client";
 
+import { GetCalendarSuccessResponse } from "@/app/api/v1/calendar/types";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
+import { useState } from "react";
 
 import { CalendarContext } from "./CalendarContext";
 import {
@@ -12,6 +14,11 @@ export const CalendarContextController = ({
   children,
 }: CalendarContextControllerProps) => {
   const routes = useRoutes();
+  const [calendarData, setCalendarData] = useState<
+    GetCalendarSuccessResponse["data"] | null
+  >(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchCalendar = async (month?: string, range?: number) => {
     try {
@@ -47,8 +54,34 @@ export const CalendarContextController = ({
     }
   };
 
+  const loadCalendar = async (month?: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetchCalendar(month, 0);
+      if (response.success) {
+        const successResponse = response as GetCalendarSuccessResponse;
+        setCalendarData(successResponse.data);
+      } else {
+        const errorMsg = response.error || "Failed to load calendar";
+        setError(errorMsg);
+        console.error("Failed to load calendar:", errorMsg);
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Unknown error";
+      setError(errorMsg);
+      console.error("Error loading calendar:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const props: CalendarContextType = {
     fetchCalendar,
+    loadCalendar,
+    calendarData,
+    loading,
+    error,
   };
 
   return (

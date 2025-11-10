@@ -29,11 +29,11 @@ export function Providers({ children, themeProps }: ProvidersProps) {
   return (
     <HeroUIProvider navigate={router.push}>
       <NextThemesProvider {...themeProps}>
-        <EventsContextController>
-          <CalendarContextController>
+        <CalendarContextController>
+          <EventsContextController>
             <ExampleContextController>{children}</ExampleContextController>
-          </CalendarContextController>
-        </EventsContextController>
+          </EventsContextController>
+        </CalendarContextController>
       </NextThemesProvider>
     </HeroUIProvider>
   );

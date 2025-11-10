@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useContext } from "react";
 
 import { CreateEventRequestBody } from "@/app/api/v1/events/create/types";
 import {
@@ -8,6 +8,7 @@ import {
   DeleteInstallmentsRequestBody,
 } from "@/app/api/v1/events/installments/types";
 import { ParseRequestBody } from "@/app/api/v1/events/parse/types";
+import { CalendarContext } from "@/context/Calendar/CalendarContext";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 import { EventsContext } from "./EventsContext";
 import {
@@ -18,9 +19,15 @@ import {
 export const EventsContextController = ({
   children,
 }: EventsContextControllerProps) => {
-  const [state, setState] = useState(undefined);
-
   const routes = useRoutes();
+  const calendarContext = useContext(CalendarContext);
+
+  const reloadCalendar = async () => {
+    if (calendarContext) {
+      const currentMonth = new Date().toISOString().split("T")[0].slice(0, 7);
+      await calendarContext.loadCalendar(currentMonth);
+    }
+  };
 
   const createEventFromText = async (
     body: ParseRequestBody & { create_installments?: boolean },
@@ -43,6 +50,7 @@ export const EventsContextController = ({
       }
 
       const data = await response.json();
+      await reloadCalendar();
       return data;
     } catch (error) {
       console.error("Error creating event from text:", error);
@@ -87,6 +95,7 @@ export const EventsContextController = ({
       }
 
       const data = await response.json();
+      await reloadCalendar();
       return data;
     } catch (error) {
       console.error("Error creating event:", error);
@@ -109,6 +118,7 @@ export const EventsContextController = ({
       }
 
       const data = await response.json();
+      await reloadCalendar();
       return data;
     } catch (error) {
       console.error("Error creating installments:", error);
@@ -155,6 +165,7 @@ export const EventsContextController = ({
       }
 
       const data = await response.json();
+      await reloadCalendar();
       return data;
     } catch (error) {
       console.error("Error deleting installments:", error);

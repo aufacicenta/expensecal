@@ -89,6 +89,14 @@ module.exports = {
         created_at: now,
         updated_at: now,
       },
+      {
+        id: uuidv4(),
+        symbol: "GTQ",
+        name: "Guatemalan Quetzal",
+        decimal_units: 2,
+        created_at: now,
+        updated_at: now,
+      },
     ]);
   },
 
