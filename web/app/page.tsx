@@ -1,7 +1,9 @@
 "use client";
 
 import { Calendar } from "@/components/calendar/Calendar";
+import { DayModalsRenderer } from "@/components/calendar/day-modal/DayModalsRenderer";
 import { EventTextInput } from "@/components/event-text-input/EventTextInput";
+import { DayModalContextController } from "@/context/DayModal/DayModalContext";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import { useState } from "react";
 
@@ -20,14 +22,20 @@ export default function Home() {
         y: prev.y + delta.y,
       }));
     }
+
+    // Day modal dragging is handled by the DayModal component itself
+    // via the useDraggable hook
   };
 
   return (
-    <section>
-      <DndContext onDragEnd={handleDragEnd}>
-        <EventTextInput position={eventTextInputPosition} />
-        <Calendar />
-      </DndContext>
-    </section>
+    <DayModalContextController>
+      <section>
+        <DndContext onDragEnd={handleDragEnd}>
+          <EventTextInput position={eventTextInputPosition} />
+          <DayModalsRenderer />
+          <Calendar />
+        </DndContext>
+      </section>
+    </DayModalContextController>
   );
 }

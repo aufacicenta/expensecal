@@ -1,6 +1,8 @@
 "use client";
 
 import { CalendarContext } from "@/context/Calendar/CalendarContext";
+import { useDayModalContext } from "@/context/DayModal/useDayModalContext";
+import { calculateModalPosition } from "@/lib/calendar/modalPosition";
 import { Divider } from "@heroui/divider";
 import clsx from "clsx";
 import { useContext, useEffect } from "react";
@@ -9,6 +11,7 @@ import { CalendarEventCell } from "./calendar-event-cell/CalendarEventCell";
 
 export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
   const calendarContext = useContext(CalendarContext);
+  const dayModalContext = useDayModalContext();
   const currentMonth = new Date().toISOString().split("T")[0].slice(0, 7);
 
   useEffect(() => {
@@ -67,8 +70,16 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
           {month.days.map((day, index) => (
             <div
               key={index}
+              onClick={(e) => {
+                const rect = (
+                  e.currentTarget as HTMLElement
+                ).getBoundingClientRect();
+
+                const position = calculateModalPosition(rect);
+                dayModalContext.openModal(day, position);
+              }}
               className={clsx(
-                "relative aspect-video p-1 text-xs",
+                "hover:bg-content2 relative aspect-video cursor-pointer rounded p-1 text-xs transition-colors",
                 day.isCurrentMonth
                   ? "text-gray-300"
                   : "bg-content1 rounded text-gray-300",
