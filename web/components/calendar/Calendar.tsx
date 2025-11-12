@@ -112,35 +112,41 @@ export const Calendar: React.FC<CalendarProps> = ({ className }) => {
 
   return (
     <div className={clsx("w-full p-4", className)}>
-      <div className="mb-4 flex items-center justify-center gap-4">
-        <button
-          onClick={handleGoToPreviousMonth}
-          disabled={loading}
-          className="cursor-pointer p-1 transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-50"
-          aria-label="Previous month"
-        >
-          <ChevronLeft size={20} />
-        </button>
-        <div className="w-48">
-          <DatePicker
-            value={selectedDate}
-            onChange={handleDateChange}
-            label="Select date"
-            showMonthAndYearPickers
-            classNames={{
-              base: "w-full",
-              inputWrapper: "justify-center",
-            }}
-          />
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="flex flex-col">
+          <span>ExpenseCal</span>
         </div>
-        <button
-          onClick={handleGoToNextMonth}
-          disabled={loading}
-          className="cursor-pointer p-1 transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-50"
-          aria-label="Next month"
-        >
-          <ChevronRight size={20} />
-        </button>
+        <div className="flex items-center justify-center gap-4">
+          <button
+            onClick={handleGoToPreviousMonth}
+            disabled={loading}
+            className="cursor-pointer p-1 transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Previous month"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div className="w-48">
+            <DatePicker
+              value={selectedDate}
+              onChange={handleDateChange}
+              label="Select date"
+              showMonthAndYearPickers
+              classNames={{
+                base: "w-full",
+                inputWrapper: "justify-center",
+              }}
+            />
+          </div>
+          <button
+            onClick={handleGoToNextMonth}
+            disabled={loading}
+            className="cursor-pointer p-1 transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Next month"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+        <div id="category-selection-dropdown"></div>
       </div>
 
       <div>

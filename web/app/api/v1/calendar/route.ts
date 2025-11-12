@@ -342,7 +342,7 @@ function calculateDayFinancialSummary(
   let totalExpenses = new Decimal(0);
 
   for (const event of events) {
-    const amount = new Decimal(event.amount);
+    const amount = new Decimal(event.amount).times(event.quantity || 1);
     const currencySymbol = event.currency?.symbol || "UNKNOWN";
 
     // Convert amount to base currency if needed
@@ -425,7 +425,7 @@ function calculateMonthlyFinancialSummary(
 
   for (const event of events) {
     const currencyId = event.currency_id;
-    const amount = new Decimal(event.amount);
+    const amount = new Decimal(event.amount).times(event.quantity || 1);
 
     if (!currencySummaries.has(currencyId)) {
       currencySummaries.set(currencyId, {

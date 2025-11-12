@@ -257,7 +257,6 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                       {Number(event.amount).toFixed(
                         currentCurrency?.decimal_units || 2,
                       )}
-                      {event.quantity > 1 && ` × ${event.quantity}`}
                     </div>
                   </button>
                 )}
