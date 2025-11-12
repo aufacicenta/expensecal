@@ -4,6 +4,7 @@ import type { ThemeProviderProps } from "next-themes";
 
 import { CalendarContextController } from "@/context/Calendar/CalendarContextController";
 import { CurrencyContextController } from "@/context/Currency/CurrencyContextController";
+import { EventCategoriesContextController } from "@/context/EventCategories/EventCategoriesContextController";
 import { EventEditModalContextController } from "@/context/EventEditModal/EventEditModalContext";
 import { EventsContextController } from "@/context/Events/EventsContextController";
 import { HeroUIProvider } from "@heroui/system";
@@ -35,7 +36,11 @@ export function Providers({ children, themeProps }: ProvidersProps) {
         <CalendarContextController>
           <EventEditModalContextController>
             <EventsContextController>
-              <CurrencyContextController>{children}</CurrencyContextController>
+              <CurrencyContextController>
+                <EventCategoriesContextController>
+                  {children}
+                </EventCategoriesContextController>
+              </CurrencyContextController>
             </EventsContextController>
           </EventEditModalContextController>
         </CalendarContextController>

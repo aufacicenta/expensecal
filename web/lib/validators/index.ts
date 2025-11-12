@@ -287,3 +287,32 @@ export function createValidationErrorsResponse(
     { status: statusCode },
   );
 }
+
+/**
+ * Validates that a value is a valid hex color string
+ * @param value - The value to validate
+ * @param fieldName - The name of the field being validated
+ * @returns ValidationError if invalid, null if valid
+ */
+export function validateHexColor(
+  value: unknown,
+  fieldName: string,
+): ValidationError | null {
+  if (!value || typeof value !== "string") {
+    return {
+      message: `Invalid ${fieldName}`,
+      details: `Field '${fieldName}' must be a string`,
+    };
+  }
+
+  // Validate hex color format (e.g., #FF5733)
+  const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
+  if (!hexColorRegex.test(value)) {
+    return {
+      message: `Invalid ${fieldName} format`,
+      details: `Field '${fieldName}' must be a valid hex color (e.g., #FF5733)`,
+    };
+  }
+
+  return null;
+}

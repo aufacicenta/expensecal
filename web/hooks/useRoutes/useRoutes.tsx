@@ -27,6 +27,10 @@ export const routes = {
       currencies: {
         get: () => `/api/v1/currencies`,
       },
+      categories: {
+        get: () => `/api/v1/categories`,
+        create: () => `/api/v1/categories/create`,
+      },
     },
   },
 };

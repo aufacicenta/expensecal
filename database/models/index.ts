@@ -1,11 +1,13 @@
 import type { Sequelize } from "sequelize";
+import Category from "./Category";
 import Currency from "./Currency";
 import Event from "./Event";
+import EventCategories from "./EventCategories";
 import EventInstallment from "./EventInstallment";
 import ExampleModel from "./ExampleModel";
 import ExchangeRate from "./ExchangeRate";
 
-export { Currency, Event, EventInstallment, ExampleModel, ExchangeRate };
+export { Category, Currency, Event, EventCategories, EventInstallment, ExampleModel, ExchangeRate };
 
 export function initModels(sequelize: Sequelize) {
   ExampleModel.initModel(sequelize);
@@ -13,12 +15,16 @@ export function initModels(sequelize: Sequelize) {
   Event.initModel(sequelize);
   EventInstallment.initModel(sequelize);
   ExchangeRate.initModel(sequelize);
+  Category.initModel(sequelize);
+  EventCategories.initModel(sequelize);
 
   ExampleModel.associate();
   Currency.associate();
   Event.associate();
   EventInstallment.associate();
   ExchangeRate.associate();
+  Category.associate();
+  EventCategories.associate();
 
   return {
     ExampleModel,
@@ -26,5 +32,7 @@ export function initModels(sequelize: Sequelize) {
     Event,
     EventInstallment,
     ExchangeRate,
+    Category,
+    EventCategories,
   };
 }

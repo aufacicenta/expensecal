@@ -12,6 +12,7 @@ import { ChevronLeft, ChevronRight, Maximize } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
 import { CalendarProps } from "./Calendar.types";
 import { CalendarEventCell } from "./calendar-event-cell/CalendarEventCell";
+import { EventCategories } from "./event-categories/EventCategories";
 
 export const Calendar: React.FC<CalendarProps> = ({ className }) => {
   const calendarContext = useContext(CalendarContext);
@@ -146,7 +147,9 @@ export const Calendar: React.FC<CalendarProps> = ({ className }) => {
             <ChevronRight size={20} />
           </button>
         </div>
-        <div id="category-selection-dropdown"></div>
+        <div id="category-selection-dropdown">
+          <EventCategories />
+        </div>
       </div>
 
       <div>

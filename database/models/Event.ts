@@ -1,5 +1,7 @@
 import { CreationOptional, DataTypes, ForeignKey, Model, NonAttribute, Sequelize } from "sequelize";
+import Category from "./Category";
 import { Currency } from "./Currency";
+import EventCategories from "./EventCategories";
 
 export enum EventType {
   EXPENSE = "EXPENSE",
@@ -47,6 +49,7 @@ export class Event extends Model<EventAttributes> implements EventAttributes {
   declare currency?: NonAttribute<Currency>;
   declare parentEvent?: NonAttribute<Event>;
   declare childEvents?: NonAttribute<Event[]>;
+  declare categories?: NonAttribute<any[]>; // Categories through EventCategories junction
 
   static initModel(sequelize: Sequelize): typeof Event {
     Event.init(
@@ -180,6 +183,14 @@ export class Event extends Model<EventAttributes> implements EventAttributes {
     Event.hasMany(Event, {
       foreignKey: "parent_event_id",
       as: "childEvents",
+    });
+
+    // Many-to-many association with Category through EventCategories
+    Event.belongsToMany(Category, {
+      through: EventCategories,
+      foreignKey: "event_id",
+      otherKey: "category_id",
+      as: "categories",
     });
   }
 
