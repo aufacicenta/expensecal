@@ -18,14 +18,20 @@ import { EventCategoriesProps } from "./EventCategories.types";
 
 export const EventCategories: React.FC<EventCategoriesProps> = ({
   className,
+  selectedIds,
+  onSelectionChange,
 }) => {
   const {
     categories,
-    selectedCategoryIds,
-    setSelectedCategoryIds,
+    selectedCategoryIds: contextSelectedIds,
+    setSelectedCategoryIds: contextSetSelectedIds,
     createCategory,
     loading,
   } = useEventCategoriesContext();
+
+  // Use provided props if available, otherwise fall back to context
+  const selectedCategoryIds = selectedIds ?? contextSelectedIds;
+  const setSelectedCategoryIds = onSelectionChange ?? contextSetSelectedIds;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -90,6 +96,25 @@ export const EventCategories: React.FC<EventCategoriesProps> = ({
         classNames={{
           trigger: "min-h-10",
         }}
+        renderValue={(items) => (
+          <div className="bg-content2 flex flex-wrap rounded p-1">
+            {items.map((item) => {
+              const category = categories.find((cat) => cat.id === item.key);
+              return (
+                <div
+                  key={item.key}
+                  className="text-xxs mr-1 flex h-3 items-center gap-1"
+                >
+                  <div
+                    className="h-1 w-1 rounded"
+                    style={{ backgroundColor: category?.color }}
+                  />
+                  <span>{category?.name}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       >
         {categories.map((category) => (
           <SelectItem key={category.id}>

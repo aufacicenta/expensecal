@@ -14,6 +14,7 @@ export type UpdateEventRequestBody = {
   description?: EventAttributes["description"];
   event_date?: EventAttributes["event_date"]; // ISO 8601 format
   recurrence_end_date?: EventAttributes["recurrence_end_date"]; // ISO 8601 format
+  categoryIds?: string[]; // Array of category IDs to assign to the event
 };
 
 export type UpdatedEventData = EventAttributes;

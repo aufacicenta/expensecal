@@ -24,4 +24,5 @@ export type EditableEventField =
   | "quantity"
   | "currency"
   | "description"
-  | "date";
+  | "date"
+  | "categories";

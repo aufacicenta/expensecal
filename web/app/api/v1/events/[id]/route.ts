@@ -10,8 +10,10 @@ import { stackServerApp } from "@/stack/server";
 import { Op } from "@expensecal/database";
 import db from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
+import { Category } from "@expensecal/database/models/Category";
 import { Currency } from "@expensecal/database/models/Currency";
 import { Event } from "@expensecal/database/models/Event";
+import { EventCategories } from "@expensecal/database/models/EventCategories";
 import { NextRequest, NextResponse } from "next/server";
 import { UpdateEventRequestBody, UpdateEventResponse } from "./types";
 
@@ -157,6 +159,40 @@ export async function PUT(
       }
     }
 
+    if (body.categoryIds !== undefined) {
+      // Validate each category ID is a valid UUID
+      if (!Array.isArray(body.categoryIds)) {
+        return createValidationErrorResponse(
+          new Error("categoryIds must be an array"),
+        );
+      }
+
+      for (const categoryId of body.categoryIds) {
+        const categoryIdError = validateUUID(categoryId, "categoryId", true);
+        if (categoryIdError) {
+          return createValidationErrorResponse(categoryIdError);
+        }
+
+        // Verify category exists and belongs to the user
+        const category = await Category.findOne({
+          where: {
+            id: categoryId,
+            user_id: user.id,
+          },
+        });
+        if (!category) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Category not found",
+              details: `No category found with id: ${categoryId}`,
+            },
+            { status: 404 },
+          );
+        }
+      }
+    }
+
     // Update event with provided fields
     const updateData: Partial<UpdateEventRequestBody> = {};
 
@@ -175,6 +211,25 @@ export async function PUT(
         : null;
 
     await event.update(updateData);
+
+    // Handle category assignments if provided
+    if (body.categoryIds !== undefined) {
+      // Delete existing category associations
+      await EventCategories.destroy({
+        where: {
+          event_id: event.id,
+        },
+      });
+
+      // Create new category associations
+      if (body.categoryIds.length > 0) {
+        const eventCategoriesData = body.categoryIds.map((categoryId) => ({
+          event_id: event.id,
+          category_id: categoryId,
+        }));
+        await EventCategories.bulkCreate(eventCategoriesData);
+      }
+    }
 
     // Return updated event
     return NextResponse.json(

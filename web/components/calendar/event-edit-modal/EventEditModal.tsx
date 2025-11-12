@@ -24,6 +24,7 @@ import { Select, SelectItem } from "@heroui/select";
 import clsx from "clsx";
 import { AlertCircle, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { EventCategories } from "../event-categories/EventCategories";
 import {
   EditableEventField,
   EventEditModalProps,
@@ -58,15 +59,16 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
     currency_id: event.currency_id,
     description: event.description,
     event_date: formatDateToString(event.event_date), // YYYY-MM-DD format
+    categoryIds: [] as string[],
   });
   const [childEvents, setChildEvents] = useState<CalendarEventData[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch child events if this is a recurring event
+  // Fetch child events and event categories if this is a recurring event
   useEffect(() => {
-    const loadChildEvents = async () => {
+    const loadEventData = async () => {
       if (event.parent_event_id || event.recurrence_rule) {
         try {
           const data = await fetchChildEvents(event.id!);
@@ -79,7 +81,7 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
       }
     };
 
-    loadChildEvents();
+    loadEventData();
   }, [event, fetchChildEvents]);
 
   const handleFieldChange = (field: keyof typeof formData, value: any) => {
@@ -108,6 +110,7 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
         currency_id: formData.currency_id,
         description: formData.description,
         event_date: new Date(`${formData.event_date}T00:00:00Z`),
+        categoryIds: formData.categoryIds,
       };
 
       await updateEvent(event.id!, updatePayload);
@@ -127,6 +130,7 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
       currency_id: event.currency_id,
       description: event.description,
       event_date: formatDateToString(event.event_date),
+      categoryIds: [],
     });
     setHasChanges(false);
     setEditingField(null);
@@ -306,6 +310,33 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                   >
                     <div className="text-content4 text-xs">Date</div>
                     <div className="font-medium">{displayDate}</div>
+                  </button>
+                )}
+
+                {/* Categories */}
+                {editingField === "categories" ? (
+                  <div className="space-y-2">
+                    <div className="text-content4 text-xs">Categories</div>
+                    <EventCategories
+                      selectedIds={formData.categoryIds}
+                      onSelectionChange={(ids) =>
+                        handleFieldChange("categoryIds", ids)
+                      }
+                      className="w-full"
+                    />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setEditingField("categories")}
+                    disabled={loading}
+                    className="hover:bg-content2 block w-full rounded p-2 text-left disabled:opacity-50"
+                  >
+                    <div className="text-content4 text-xs">Categories</div>
+                    <div className="font-medium">
+                      {formData.categoryIds.length > 0
+                        ? `${formData.categoryIds.length} selected`
+                        : "No categories"}
+                    </div>
                   </button>
                 )}
               </div>
