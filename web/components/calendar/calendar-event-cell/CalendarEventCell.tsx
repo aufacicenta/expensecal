@@ -1,22 +1,35 @@
-import clsx from "clsx";
-import { CalendarEventCellProps } from "./CalendarEventCell.types";
+"use client";
+
+import { useEventEditModalContext } from "@/context/EventEditModal/EventEditModalContext";
 import { Chip } from "@heroui/chip";
-import { divider } from "@heroui/theme";
+import { CalendarEventCellProps } from "./CalendarEventCell.types";
 
 export const CalendarEventCell: React.FC<CalendarEventCellProps> = ({
   className,
   event,
 }) => {
+  const { openModal } = useEventEditModalContext();
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    openModal(event);
+  };
+
   return (
     <div>
-      <Chip
-        variant="dot"
-        color={event.type === "EXPENSE" ? "danger" : "success"}
-        size="sm"
+      <button
+        onClick={handleClick}
+        className="w-full cursor-pointer text-left transition-opacity hover:opacity-80"
       >
-        {event.currency?.symbol} {Number(event.amount).toFixed(2)}{" "}
-        {event.description}
-      </Chip>
+        <Chip
+          variant="dot"
+          color={event.type === "EXPENSE" ? "danger" : "success"}
+          size="sm"
+        >
+          {event.quantity}x {event.currency?.symbol}{" "}
+          {Number(event.amount).toFixed(2)} {event.description}
+        </Chip>
+      </button>
     </div>
   );
 };

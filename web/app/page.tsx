@@ -2,6 +2,7 @@
 
 import { Calendar } from "@/components/calendar/Calendar";
 import { DayModalsRenderer } from "@/components/calendar/day-modal/DayModalsRenderer";
+import { EventEditModalRenderer } from "@/components/calendar/event-edit-modal/EventEditModalRenderer";
 import { EventTextInput } from "@/components/event-text-input/EventTextInput";
 import { DayModalContextController } from "@/context/DayModal/DayModalContext";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
@@ -33,6 +34,7 @@ export default function Home() {
         <DndContext onDragEnd={handleDragEnd}>
           <EventTextInput position={eventTextInputPosition} />
           <DayModalsRenderer />
+          <EventEditModalRenderer />
           <Calendar />
         </DndContext>
       </section>

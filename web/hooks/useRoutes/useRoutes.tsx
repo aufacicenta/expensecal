@@ -11,6 +11,10 @@ export const routes = {
         parse: () => `/api/v1/events/parse`,
         create: () => `/api/v1/events/create`,
         createFromText: () => `/api/v1/events/create-from-text`,
+        detail: (eventId: string) =>
+          `/api/v1/events/${encodeURIComponent(eventId)}`,
+        children: (eventId: string) =>
+          `/api/v1/events/${encodeURIComponent(eventId)}/children`,
         installments: {
           create: () => `/api/v1/events/installments/create`,
           list: () => `/api/v1/events/installments/list`,
@@ -19,6 +23,9 @@ export const routes = {
       },
       calendar: {
         get: () => `/api/v1/calendar`,
+      },
+      currencies: {
+        get: () => `/api/v1/currencies`,
       },
     },
   },

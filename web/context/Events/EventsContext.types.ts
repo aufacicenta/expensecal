@@ -1,3 +1,8 @@
+import { GetChildEventsResponse } from "@/app/api/v1/events/[id]/children/types";
+import {
+  UpdateEventRequestBody,
+  UpdateEventResponse,
+} from "@/app/api/v1/events/[id]/types";
 import {
   CreateFromTextRequestBody,
   CreateFromTextResponse,
@@ -38,4 +43,13 @@ export type EventsContextType = {
   deleteInstallments: (
     body: DeleteInstallmentsRequestBody,
   ) => Promise<DeleteInstallmentsResponse>;
+  updateEvent: (
+    eventId: string,
+    body: UpdateEventRequestBody,
+  ) => Promise<UpdateEventResponse>;
+  deleteEvent: (
+    eventId: string,
+    deleteMode?: "single" | "all-future",
+  ) => Promise<UpdateEventResponse>;
+  fetchChildEvents: (eventId: string) => Promise<GetChildEventsResponse>;
 };

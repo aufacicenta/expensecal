@@ -2,6 +2,8 @@
 
 import { useContext } from "react";
 
+import { GetChildEventsResponse } from "@/app/api/v1/events/[id]/children/types";
+import { UpdateEventRequestBody } from "@/app/api/v1/events/[id]/types";
 import { CreateFromTextSuccessResponse } from "@/app/api/v1/events/create-from-text/types";
 import { CreateEventRequestBody } from "@/app/api/v1/events/create/types";
 import {
@@ -256,6 +258,83 @@ export const EventsContextController = ({
     }
   };
 
+  const updateEvent = async (eventId: string, body: UpdateEventRequestBody) => {
+    try {
+      const response = await fetch(routes.api.v1.events.detail(eventId), {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Update only the affected cell instead of reloading entire calendar
+      if (data.data?.event_date) {
+        await updateCalendarCell(new Date(data.data.event_date));
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error updating event:", error);
+      throw error;
+    }
+  };
+
+  const deleteEvent = async (
+    eventId: string,
+    deleteMode: "single" | "all-future" = "single",
+  ) => {
+    try {
+      const params = new URLSearchParams();
+      params.append("deleteMode", deleteMode);
+
+      const response = await fetch(
+        `${routes.api.v1.events.detail(eventId)}?${params.toString()}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Update only the affected cell instead of reloading entire calendar
+      if (data.data?.event_date) {
+        await updateCalendarCell(new Date(data.data.event_date));
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      throw error;
+    }
+  };
+
+  const fetchChildEvents = async (
+    eventId: string,
+  ): Promise<GetChildEventsResponse> => {
+    try {
+      const response = await fetch(routes.api.v1.events.children(eventId));
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Failed to fetch child events:", error);
+      throw error;
+    }
+  };
+
   const props: EventsContextType = {
     createEventFromText,
     parseEventText,
@@ -263,6 +342,9 @@ export const EventsContextController = ({
     createInstallments,
     listInstallments,
     deleteInstallments,
+    updateEvent,
+    deleteEvent,
+    fetchChildEvents,
   };
 
   return (
