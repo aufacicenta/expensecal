@@ -65,7 +65,7 @@ export const EventTextInput: React.FC<EventTextInputProps> = ({
       ref={setNodeRef}
       style={style}
       className={clsx(
-        "bg-background border-content3 fixed z-50 rounded border p-2 transition-transform duration-75",
+        "bg-background border-primary fixed z-50 rounded border p-2 transition-transform duration-75",
         className,
       )}
     >

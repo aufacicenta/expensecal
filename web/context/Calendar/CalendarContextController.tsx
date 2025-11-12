@@ -27,6 +27,7 @@ export const CalendarContextController = ({
   const [cellLoadingStates, setCellLoadingStatesState] = useState<
     Map<string, boolean>
   >(new Map());
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
   const fetchCalendar = async (month?: string, range?: number) => {
     try {
@@ -70,6 +71,15 @@ export const CalendarContextController = ({
       if (response.success) {
         const successResponse = response as GetCalendarSuccessResponse;
         setCalendarData(successResponse.data);
+        // Update currentMonth from the response if available
+        if (month) {
+          const parts = month.split("-");
+          if (parts.length === 2) {
+            const year = parseInt(parts[0]);
+            const monthNum = parseInt(parts[1]) - 1;
+            setCurrentMonth(new Date(year, monthNum, 1));
+          }
+        }
       } else {
         const errorMsg = response.error || "Failed to load calendar";
         setError(errorMsg);
@@ -82,6 +92,26 @@ export const CalendarContextController = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const goToPreviousMonth = async () => {
+    const prevMonth = new Date(currentMonth);
+    prevMonth.setMonth(prevMonth.getMonth() - 1);
+    const monthStr = `${prevMonth.getFullYear()}-${String(
+      prevMonth.getMonth() + 1,
+    ).padStart(2, "0")}`;
+    setCurrentMonth(prevMonth);
+    await loadCalendar(monthStr);
+  };
+
+  const goToNextMonth = async () => {
+    const nextMonth = new Date(currentMonth);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    const monthStr = `${nextMonth.getFullYear()}-${String(
+      nextMonth.getMonth() + 1,
+    ).padStart(2, "0")}`;
+    setCurrentMonth(nextMonth);
+    await loadCalendar(monthStr);
   };
 
   const setCellLoading = (date: string, loading: boolean) => {
@@ -247,10 +277,13 @@ export const CalendarContextController = ({
     updateCellEvents,
     setCellLoading,
     optimisticAddEvent,
+    goToPreviousMonth,
+    goToNextMonth,
     calendarData,
     loading,
     error,
     cellLoadingStates,
+    currentMonth,
   };
 
   return (

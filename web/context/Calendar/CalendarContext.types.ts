@@ -39,9 +39,20 @@ export type CalendarContextType = {
    */
   optimisticAddEvent: (event: CalendarEventData) => void;
 
+  /**
+   * Navigate to the previous month
+   */
+  goToPreviousMonth: () => Promise<void>;
+
+  /**
+   * Navigate to the next month
+   */
+  goToNextMonth: () => Promise<void>;
+
   // State properties
   calendarData: GetCalendarSuccessResponse["data"] | null;
   loading: boolean; // Initial/full calendar load state
   error: string | null;
   cellLoadingStates: Map<string, boolean>; // Individual cell loading states (date -> loading)
+  currentMonth: Date; // Currently displayed month
 };

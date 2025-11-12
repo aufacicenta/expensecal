@@ -3,16 +3,21 @@
 import { CalendarContext } from "@/context/Calendar/CalendarContext";
 import { useDayModalContext } from "@/context/DayModal/useDayModalContext";
 import { calculateModalPosition } from "@/lib/calendar/modalPosition";
+import { Chip } from "@heroui/chip";
+import { DatePicker } from "@heroui/date-picker";
 import { Divider } from "@heroui/divider";
+import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date";
 import clsx from "clsx";
-import { useContext, useEffect } from "react";
+import { ChevronLeft, ChevronRight, Maximize } from "lucide-react";
+import { useContext, useEffect, useState } from "react";
 import { CalendarProps } from "./Calendar.types";
 import { CalendarEventCell } from "./calendar-event-cell/CalendarEventCell";
 
-export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
+export const Calendar: React.FC<CalendarProps> = ({ className }) => {
   const calendarContext = useContext(CalendarContext);
   const dayModalContext = useDayModalContext();
   const currentMonth = new Date().toISOString().split("T")[0].slice(0, 7);
+  const [selectedDate, setSelectedDate] = useState(today(getLocalTimeZone()));
 
   useEffect(() => {
     if (calendarContext) {
@@ -20,12 +25,52 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
     }
   }, []);
 
+  const handleDateChange = (date: any) => {
+    if (date) {
+      setSelectedDate(date);
+      // Format date to YYYY-MM for API call
+      const dateObj = new Date(date.year, date.month - 1, 1);
+      const monthStr = dateObj.toISOString().split("T")[0].slice(0, 7);
+      if (calendarContext) {
+        calendarContext.loadCalendar(monthStr);
+      }
+    }
+  };
+
+  const handleGoToPreviousMonth = async () => {
+    if (calendarContext) {
+      // Calculate previous month correctly
+      const prevMonth = new Date(calendarContext.currentMonth);
+      prevMonth.setMonth(prevMonth.getMonth() - 1);
+      setSelectedDate(
+        new CalendarDate(prevMonth.getFullYear(), prevMonth.getMonth() + 1, 1),
+      );
+
+      await calendarContext.goToPreviousMonth();
+    }
+  };
+
+  const handleGoToNextMonth = async () => {
+    if (calendarContext) {
+      // Calculate next month correctly
+      const nextMonth = new Date(calendarContext.currentMonth);
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      setSelectedDate(
+        new CalendarDate(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 1),
+      );
+
+      await calendarContext.goToNextMonth();
+    }
+  };
+
   const { calendarData, loading, error, cellLoadingStates } =
     calendarContext || {
       calendarData: null,
       loading: true,
       error: null,
       cellLoadingStates: new Map(),
+      goToPreviousMonth: async () => {},
+      goToNextMonth: async () => {},
     };
 
   // Show loading state only on first load
@@ -67,10 +112,35 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
 
   return (
     <div className={clsx("w-full p-4", className)}>
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-medium">
-          {month.month}/{month.year}
-        </h2>
+      <div className="mb-4 flex items-center justify-center gap-4">
+        <button
+          onClick={handleGoToPreviousMonth}
+          disabled={loading}
+          className="cursor-pointer p-1 transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-50"
+          aria-label="Previous month"
+        >
+          <ChevronLeft size={20} />
+        </button>
+        <div className="w-48">
+          <DatePicker
+            value={selectedDate}
+            onChange={handleDateChange}
+            label="Select date"
+            showMonthAndYearPickers
+            classNames={{
+              base: "w-full",
+              inputWrapper: "justify-center",
+            }}
+          />
+        </div>
+        <button
+          onClick={handleGoToNextMonth}
+          disabled={loading}
+          className="cursor-pointer p-1 transition-opacity hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-50"
+          aria-label="Next month"
+        >
+          <ChevronRight size={20} />
+        </button>
       </div>
 
       <div>
@@ -96,18 +166,9 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
             return (
               <div
                 key={index}
-                onClick={(e) => {
-                  if (!isCellLoading) {
-                    const rect = (
-                      e.currentTarget as HTMLElement
-                    ).getBoundingClientRect();
-
-                    const position = calculateModalPosition(rect);
-                    dayModalContext.openModal(day, position);
-                  }
-                }}
+                data-calendar-cell
                 className={clsx(
-                  "hover:bg-content2 relative aspect-video cursor-pointer rounded p-1 text-xs transition-all",
+                  "group hover:bg-content2 relative aspect-video rounded p-1 text-xs transition-all",
                   day.isCurrentMonth
                     ? "text-gray-300"
                     : "bg-content1 rounded text-gray-300",
@@ -136,43 +197,57 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
                       >
                         {day.dayOfMonth}
                       </div>
-                      {day.events.map((event) => (
+                      {day.events.slice(0, 3).map((event) => (
                         <CalendarEventCell key={event.id} event={event} />
                       ))}
+                      {day.events.length > 3 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isCellLoading) {
+                              const rect = (
+                                e.currentTarget.closest(
+                                  "[data-calendar-cell]",
+                                ) as HTMLElement
+                              ).getBoundingClientRect();
+
+                              const position = calculateModalPosition(rect);
+                              dayModalContext.openModal(day, position);
+                            }
+                          }}
+                          className="cursor-pointer transition-opacity hover:opacity-80"
+                        >
+                          <Chip variant="dot" color="default" size="sm">
+                            +{day.events.length - 3} more
+                          </Chip>
+                        </button>
+                      )}
                     </div>
 
-                    {!!day.events.length && day.events.length > 0 && (
-                      <div className="text-xxs absolute right-0 bottom-0 left-0 flex w-full justify-between">
-                        <div className="p-1">
-                          <span className="text-success">
-                            +{day.financialSummary.baseCurrencySymbol}{" "}
-                            {Number(day.financialSummary.totalIncome).toFixed(
-                              2,
-                            )}
-                          </span>
-                        </div>
-                        <div className="p-1">
-                          <span className="text-danger">
-                            -{day.financialSummary.baseCurrencySymbol}{" "}
-                            {Number(day.financialSummary.totalExpenses).toFixed(
-                              2,
-                            )}
-                          </span>
-                        </div>
-                        <div className="p-1">
-                          <span
-                            className={clsx(
-                              Number(day.financialSummary.net) > 0
-                                ? "text-success"
-                                : "text-danger",
-                            )}
-                          >
-                            {day.financialSummary.baseCurrencySymbol}{" "}
-                            {Number(day.financialSummary.net).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                    {/* Calendar Day Cell Actions On Hover */}
+                    <div className="text-xxs absolute right-0 bottom-0 left-0 flex w-full justify-end opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!isCellLoading) {
+                            const rect = (
+                              e.currentTarget.closest(
+                                "[data-calendar-cell]",
+                              ) as HTMLElement
+                            ).getBoundingClientRect();
+
+                            const position = calculateModalPosition(rect);
+                            dayModalContext.openModal(day, position);
+                          }
+                        }}
+                        className="p-1 transition-opacity hover:opacity-80"
+                      >
+                        <Maximize
+                          size={14}
+                          className="fill-content3 cursor-pointer"
+                        />
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
@@ -226,8 +301,8 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
           </div>
           {Object.entries(calendarData.monthlyFinancialSummary.byCurrency).map(
             ([currencyId, currency]) => (
-              <>
-                <div key={currencyId} className="flex [&>div]:p-2">
+              <div key={currencyId} className="flex">
+                <div className="flex [&>div]:p-2">
                   <div>
                     <div className="text-gray-500">
                       {currency.symbol} Income
@@ -261,7 +336,7 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
                 <div className="h-5">
                   <Divider orientation="vertical" />
                 </div>
-              </>
+              </div>
             ),
           )}
         </div>
