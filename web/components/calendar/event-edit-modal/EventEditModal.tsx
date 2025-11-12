@@ -109,7 +109,10 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
         categoryIds: formData.categoryIds,
       };
 
-      await updateEvent(event.id!, updatePayload);
+      // Pass the original event date to help the context refresh both old and new cells
+      // This avoids the need for an extra GET request in the context
+      const originalEventDate = new Date(event.event_date);
+      await updateEvent(event.id!, updatePayload, originalEventDate);
       setHasChanges(false);
       setEditingField(null);
     } catch (err) {
