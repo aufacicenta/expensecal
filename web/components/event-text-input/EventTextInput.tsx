@@ -1,6 +1,7 @@
 import { useEventsContext } from "@/context/Events/useEventsContext";
 import { useDraggable } from "@dnd-kit/core";
 import { Textarea } from "@heroui/input";
+import { addToast } from "@heroui/toast";
 import clsx from "clsx";
 import { Grip } from "lucide-react";
 import { useState } from "react";
@@ -13,7 +14,6 @@ export const EventTextInput: React.FC<EventTextInputProps> = ({
   const eventsController = useEventsContext();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<string>("");
 
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: "event-text-input-draggable",
@@ -23,33 +23,42 @@ export const EventTextInput: React.FC<EventTextInputProps> = ({
     if (e.key === "Enter" && !e.shiftKey && input.trim()) {
       e.preventDefault();
       setLoading(true);
-      setResult("");
 
       try {
         // Single call: Parse text, create event, and optionally create installments
         const response = await eventsController.createEventFromText({
           text: input,
-          create_installments: true, // Automatically create installments if recurrence rule detected
+          create_installments: false, // @TODO let the user choose or maybe the LLM?
         });
 
         if ("error" in response) {
-          setResult(`Error: ${response.error}`);
+          addToast({
+            title: "Error",
+            description: response.error,
+            color: "danger",
+          });
         } else {
           const eventData = response.data;
-          let successMessage = `Success! Created event: ${eventData.event.description}`;
+          let description = `Created event: ${eventData.event.description}`;
 
           // Add installment info if installments were created
           if (eventData.installments) {
-            successMessage += ` (${eventData.installments.installment_count} installments created)`;
+            description += ` (${eventData.installments.installment_count} installments created)`;
           }
 
-          setResult(successMessage);
+          addToast({
+            title: "Success",
+            description,
+            color: "success",
+          });
           setInput("");
         }
       } catch (error) {
-        setResult(
-          `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-        );
+        addToast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "Unknown error",
+          color: "danger",
+        });
       } finally {
         setLoading(false);
       }
@@ -89,17 +98,6 @@ export const EventTextInput: React.FC<EventTextInputProps> = ({
           className="w-full"
         />
       </div>
-      {result && (
-        <div
-          className={`w-full rounded-lg p-4 ${
-            result.startsWith("Success")
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
-          }`}
-        >
-          {result}
-        </div>
-      )}
     </div>
   );
 };

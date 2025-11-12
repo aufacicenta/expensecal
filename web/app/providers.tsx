@@ -6,6 +6,7 @@ import { CalendarContextController } from "@/context/Calendar/CalendarContextCon
 import { EventsContextController } from "@/context/Events/EventsContextController";
 import { ExampleContextController } from "@/context/Example/ExampleContextController";
 import { HeroUIProvider } from "@heroui/system";
+import { ToastProvider } from "@heroui/toast";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { useRouter } from "next/navigation";
 import * as React from "react";
@@ -28,6 +29,7 @@ export function Providers({ children, themeProps }: ProvidersProps) {
 
   return (
     <HeroUIProvider navigate={router.push}>
+      <ToastProvider />
       <NextThemesProvider {...themeProps}>
         <CalendarContextController>
           <EventsContextController>
