@@ -20,18 +20,41 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
     }
   }, []);
 
-  const { calendarData, loading, error } = calendarContext || {
-    calendarData: null,
-    loading: true,
-    error: null,
-  };
+  const { calendarData, loading, error, cellLoadingStates } =
+    calendarContext || {
+      calendarData: null,
+      loading: true,
+      error: null,
+      cellLoadingStates: new Map(),
+    };
 
-  if (loading) {
-    return <div className={className}>Loading calendar...</div>;
+  // Show loading state only on first load
+  if (loading && !calendarData) {
+    return (
+      <div className={clsx("w-full p-4", className)}>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-medium">Loading calendar...</h2>
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {Array(49)
+            .fill(null)
+            .map((_, i) => (
+              <div
+                key={i}
+                className="hover:bg-content2 bg-content1 relative aspect-video animate-pulse cursor-pointer rounded p-1"
+              />
+            ))}
+        </div>
+      </div>
+    );
   }
 
-  if (error) {
-    return <div className={className}>Error: {error}</div>;
+  if (error && !calendarData) {
+    return (
+      <div className={className}>
+        <div className="text-danger">Error: {error}</div>
+      </div>
+    );
   }
 
   if (!calendarData) {
@@ -67,78 +90,94 @@ export const Calendar: React.FC<CalendarProps> = ({ children, className }) => {
 
         {/* Calendar grid */}
         <div className="grid grid-cols-7 gap-1">
-          {month.days.map((day, index) => (
-            <div
-              key={index}
-              onClick={(e) => {
-                const rect = (
-                  e.currentTarget as HTMLElement
-                ).getBoundingClientRect();
+          {month.days.map((day, index) => {
+            const isCellLoading = cellLoadingStates?.get(day.date) || false;
 
-                const position = calculateModalPosition(rect);
-                dayModalContext.openModal(day, position);
-              }}
-              className={clsx(
-                "hover:bg-content2 relative aspect-video cursor-pointer rounded p-1 text-xs transition-colors",
-                day.isCurrentMonth
-                  ? "text-gray-300"
-                  : "bg-content1 rounded text-gray-300",
-                day.isToday && "",
-                day.financialSummary.eventCount > 0 && day.isCurrentMonth
-                  ? ""
-                  : "",
-              )}
-            >
-              {day.dayOfMonth > 0 && (
-                <>
-                  <div className="space-y-0.5">
-                    <div
-                      className={clsx(
-                        !day.isToday && "text-content3 font-medium",
-                        day.isToday && "text-focus text-sm font-bold",
-                      )}
-                    >
-                      {day.dayOfMonth}
-                    </div>
-                    {day.events.map((event) => (
-                      <CalendarEventCell event={event} />
-                    ))}
+            return (
+              <div
+                key={index}
+                onClick={(e) => {
+                  if (!isCellLoading) {
+                    const rect = (
+                      e.currentTarget as HTMLElement
+                    ).getBoundingClientRect();
+
+                    const position = calculateModalPosition(rect);
+                    dayModalContext.openModal(day, position);
+                  }
+                }}
+                className={clsx(
+                  "hover:bg-content2 relative aspect-video cursor-pointer rounded p-1 text-xs transition-all",
+                  day.isCurrentMonth
+                    ? "text-gray-300"
+                    : "bg-content1 rounded text-gray-300",
+                  day.isToday && "",
+                  day.financialSummary.eventCount > 0 && day.isCurrentMonth
+                    ? ""
+                    : "",
+                  isCellLoading && "opacity-60",
+                )}
+              >
+                {/* Loading overlay */}
+                {isCellLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded bg-white/5 backdrop-blur-sm">
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
                   </div>
+                )}
 
-                  {!!day.events.length && day.events.length > 0 && (
-                    <div className="text-xxs absolute right-0 bottom-0 left-0 flex w-full justify-between">
-                      <div className="p-1">
-                        <span className="text-success">
-                          +{day.financialSummary.baseCurrencySymbol}{" "}
-                          {Number(day.financialSummary.totalIncome).toFixed(2)}
-                        </span>
+                {day.dayOfMonth > 0 && (
+                  <>
+                    <div className="space-y-0.5">
+                      <div
+                        className={clsx(
+                          !day.isToday && "text-content3 font-medium",
+                          day.isToday && "text-focus text-sm font-bold",
+                        )}
+                      >
+                        {day.dayOfMonth}
                       </div>
-                      <div className="p-1">
-                        <span className="text-danger">
-                          -{day.financialSummary.baseCurrencySymbol}{" "}
-                          {Number(day.financialSummary.totalExpenses).toFixed(
-                            2,
-                          )}
-                        </span>
-                      </div>
-                      <div className="p-1">
-                        <span
-                          className={clsx(
-                            Number(day.financialSummary.net) > 0
-                              ? "text-success"
-                              : "text-danger",
-                          )}
-                        >
-                          {day.financialSummary.baseCurrencySymbol}{" "}
-                          {Number(day.financialSummary.net).toFixed(2)}
-                        </span>
-                      </div>
+                      {day.events.map((event) => (
+                        <CalendarEventCell key={event.id} event={event} />
+                      ))}
                     </div>
-                  )}
-                </>
-              )}
-            </div>
-          ))}
+
+                    {!!day.events.length && day.events.length > 0 && (
+                      <div className="text-xxs absolute right-0 bottom-0 left-0 flex w-full justify-between">
+                        <div className="p-1">
+                          <span className="text-success">
+                            +{day.financialSummary.baseCurrencySymbol}{" "}
+                            {Number(day.financialSummary.totalIncome).toFixed(
+                              2,
+                            )}
+                          </span>
+                        </div>
+                        <div className="p-1">
+                          <span className="text-danger">
+                            -{day.financialSummary.baseCurrencySymbol}{" "}
+                            {Number(day.financialSummary.totalExpenses).toFixed(
+                              2,
+                            )}
+                          </span>
+                        </div>
+                        <div className="p-1">
+                          <span
+                            className={clsx(
+                              Number(day.financialSummary.net) > 0
+                                ? "text-success"
+                                : "text-danger",
+                            )}
+                          >
+                            {day.financialSummary.baseCurrencySymbol}{" "}
+                            {Number(day.financialSummary.net).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Calendar Bottom Stats Bar */}
