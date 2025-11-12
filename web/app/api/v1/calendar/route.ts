@@ -1,4 +1,13 @@
 import {
+  addMonths,
+  endOfMonth,
+  getWeekNumber,
+  parseMonthString,
+  startOfMonth,
+  toDateString,
+  toMonthString,
+} from "@/lib/date";
+import {
   convertCurrency,
   getLatestRatesFromCurrency,
 } from "@/lib/exchange-rates";
@@ -52,10 +61,10 @@ export async function GET(
     const rangeParam = searchParams.get("range");
 
     // Validate and parse month parameter
-    const requestedMonth = monthParam
-      ? parseMonthParam(monthParam)
-      : new Date();
-    if (!requestedMonth) {
+    let requestedMonth: Date;
+    try {
+      requestedMonth = monthParam ? parseMonthString(monthParam) : new Date();
+    } catch (err) {
       return NextResponse.json(
         {
           success: false,
@@ -85,15 +94,8 @@ export async function GET(
     initModels(db);
 
     // Calculate date range for fetching events
-    const rangeStart = new Date(requestedMonth);
-    rangeStart.setMonth(rangeStart.getMonth() - monthsRange);
-    rangeStart.setDate(1);
-    rangeStart.setHours(0, 0, 0, 0);
-
-    const rangeEnd = new Date(requestedMonth);
-    rangeEnd.setMonth(rangeEnd.getMonth() + monthsRange + 1);
-    rangeEnd.setDate(0);
-    rangeEnd.setHours(23, 59, 59, 999);
+    const rangeStart = startOfMonth(addMonths(requestedMonth, -monthsRange));
+    const rangeEnd = endOfMonth(addMonths(requestedMonth, monthsRange));
 
     // Fetch all events for the date range
     const events = await Event.findAll({
@@ -120,7 +122,7 @@ export async function GET(
     // Group events by date for quick lookup
     const eventsByDate = new Map<string, Event[]>();
     events.forEach((event) => {
-      const dateKey = event.event_date.toISOString().split("T")[0];
+      const dateKey = toDateString(event.event_date);
       if (!eventsByDate.has(dateKey)) {
         eventsByDate.set(dateKey, []);
       }
@@ -133,12 +135,11 @@ export async function GET(
 
     for (let i = -monthsRange; i <= monthsRange; i++) {
       const monthDate = new Date(currentMonthDate);
-      monthDate.setMonth(monthDate.getMonth() + i);
+      monthDate.setUTCMonth(monthDate.getUTCMonth() + i);
 
       const month = buildCalendarMonth(
         monthDate,
         eventsByDate,
-        user.id,
         baseCurrencySymbol,
         exchangeRates,
       );
@@ -146,23 +147,17 @@ export async function GET(
     }
 
     // Determine if more months exist in past/future
-    const hasMorePast = rangeStart > new Date(rangeStart.getFullYear(), 0, 1);
-    const hasMoreFuture = rangeEnd < new Date(rangeEnd.getFullYear(), 11, 31);
+    const hasMorePast =
+      rangeStart > new Date(Date.UTC(rangeStart.getUTCFullYear(), 0, 1));
+    const hasMoreFuture =
+      rangeEnd < new Date(Date.UTC(rangeEnd.getUTCFullYear(), 11, 31));
 
     // Format month string for response
-    const monthStr = `${requestedMonth.getFullYear()}-${String(
-      requestedMonth.getMonth() + 1,
-    ).padStart(2, "0")}`;
+    const monthStr = toMonthString(requestedMonth);
 
     // Calculate monthly financial summary for the requested month
-    const requestedMonthStart = new Date(requestedMonth);
-    requestedMonthStart.setDate(1);
-    requestedMonthStart.setHours(0, 0, 0, 0);
-
-    const requestedMonthEnd = new Date(requestedMonth);
-    requestedMonthEnd.setMonth(requestedMonthEnd.getMonth() + 1);
-    requestedMonthEnd.setDate(0);
-    requestedMonthEnd.setHours(23, 59, 59, 999);
+    const requestedMonthStart = startOfMonth(requestedMonth);
+    const requestedMonthEnd = endOfMonth(requestedMonth);
 
     const requestedMonthEvents = events.filter(
       (event) =>
@@ -187,8 +182,8 @@ export async function GET(
             monthsRequested: monthsRange,
             totalMonths: 2 * monthsRange + 1,
             dateRange: {
-              start: rangeStart.toISOString().split("T")[0],
-              end: rangeEnd.toISOString().split("T")[0],
+              start: toDateString(rangeStart),
+              end: toDateString(rangeEnd),
             },
             hasMore: {
               past: hasMorePast,
@@ -214,48 +209,18 @@ export async function GET(
 }
 
 /**
- * Parse month parameter from query string
- * Accepts: "2025-11" or "202511"
- */
-function parseMonthParam(monthStr: string): Date | null {
-  // Try format: "2025-11"
-  if (monthStr.includes("-")) {
-    const parts = monthStr.split("-");
-    if (parts.length === 2) {
-      const year = parseInt(parts[0]);
-      const month = parseInt(parts[1]) - 1;
-      if (!isNaN(year) && !isNaN(month) && month >= 0 && month <= 11) {
-        return new Date(year, month, 1);
-      }
-    }
-  }
-
-  // Try format: "202511"
-  if (monthStr.length === 6) {
-    const year = parseInt(monthStr.substring(0, 4));
-    const month = parseInt(monthStr.substring(4, 6)) - 1;
-    if (!isNaN(year) && !isNaN(month) && month >= 0 && month <= 11) {
-      return new Date(year, month, 1);
-    }
-  }
-
-  return null;
-}
-
-/**
  * Build calendar month structure with all days and events
  */
 function buildCalendarMonth(
   monthDate: Date,
   eventsByDate: Map<string, Event[]>,
-  userId: string,
   baseCurrencySymbol: string,
   exchangeRates: Map<string, string>,
 ): CalendarMonth {
-  const year = monthDate.getFullYear();
-  const month = monthDate.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDayOfWeek = new Date(year, month, 1).getDay();
+  const year = monthDate.getUTCFullYear();
+  const month = monthDate.getUTCMonth();
+  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const firstDayOfWeek = new Date(Date.UTC(year, month, 1)).getUTCDay();
 
   const days: CalendarDay[] = [];
   const today = new Date();
@@ -271,29 +236,25 @@ function buildCalendarMonth(
 
     let cellDate: Date;
     if (isCurrentMonth) {
-      cellDate = new Date(year, month, dayOfMonth);
+      cellDate = new Date(Date.UTC(year, month, dayOfMonth));
     } else if (i < firstDayOfWeek) {
       // Previous month
-      const prevMonth = new Date(year, month, 0);
-      const prevMonthDays = prevMonth.getDate();
+      const prevMonth = new Date(Date.UTC(year, month, 0));
+      const prevMonthDays = prevMonth.getUTCDate();
       cellDate = new Date(
-        year,
-        month - 1,
-        prevMonthDays - (firstDayOfWeek - i - 1),
+        Date.UTC(year, month - 1, prevMonthDays - (firstDayOfWeek - i - 1)),
       );
     } else {
       // Next month
       cellDate = new Date(
-        year,
-        month + 1,
-        i - firstDayOfWeek - daysInMonth + 1,
+        Date.UTC(year, month + 1, i - firstDayOfWeek - daysInMonth + 1),
       );
     }
 
-    const dateKey = cellDate.toISOString().split("T")[0];
+    const dateKey = toDateString(cellDate);
     const isToday = cellDate.getTime() === today.getTime();
     const weekOfYear = getWeekNumber(cellDate);
-    const dayOfWeek = cellDate.getDay();
+    const dayOfWeek = cellDate.getUTCDay();
 
     // Get events for this day
     const dayEvents = eventsByDate.get(dateKey) || [];
@@ -378,19 +339,6 @@ function calculateDayFinancialSummary(
     eventCount: events.length,
     baseCurrencySymbol,
   };
-}
-
-/**
- * Get ISO week number for a date
- */
-function getWeekNumber(date: Date): number {
-  const d = new Date(
-    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
-  );
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
 /**

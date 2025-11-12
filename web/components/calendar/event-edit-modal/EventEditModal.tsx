@@ -4,6 +4,11 @@ import { CalendarEventData } from "@/app/api/v1/calendar/types";
 import { useCurrencyContext } from "@/context/Currency/useCurrencyContext";
 import { useEventEditModalContext } from "@/context/EventEditModal/EventEditModalContext";
 import { useEventsContext } from "@/context/Events/useEventsContext";
+import {
+  formatDateForDisplay,
+  formatDateShort,
+  toDateString,
+} from "@/lib/date";
 import { Button } from "@heroui/button";
 import { Divider } from "@heroui/divider";
 import {
@@ -44,21 +49,12 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
     null,
   );
 
-  // Helper function to convert Date to YYYY-MM-DD format
-  const formatDateToString = (date: Date): string => {
-    const d = new Date(date);
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    const year = d.getFullYear();
-    return `${year}-${month}-${day}`;
-  };
-
   const [formData, setFormData] = useState({
     amount: event.amount,
     quantity: event.quantity,
     currency_id: event.currency_id,
     description: event.description,
-    event_date: formatDateToString(event.event_date), // YYYY-MM-DD format
+    event_date: toDateString(event.event_date), // YYYY-MM-DD format
     categoryIds: [] as string[],
   });
   const [childEvents, setChildEvents] = useState<CalendarEventData[]>([]);
@@ -129,7 +125,7 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
       quantity: event.quantity,
       currency_id: event.currency_id,
       description: event.description,
-      event_date: formatDateToString(event.event_date),
+      event_date: toDateString(event.event_date),
       categoryIds: [],
     });
     setHasChanges(false);
@@ -165,12 +161,8 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
     openModal(childEvent, modalId);
   };
 
-  // Format date for display
-  const displayDate = new Date(event.event_date).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  // Format date for display (using UTC)
+  const displayDate = formatDateForDisplay(event.event_date);
 
   return (
     <Modal isOpen={isOpen} onOpenChange={onClose} size="lg">
@@ -359,12 +351,7 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                         >
                           <div className="flex items-center justify-between">
                             <span className="font-medium">
-                              {new Date(
-                                childEvent.event_date,
-                              ).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                              })}
+                              {formatDateShort(childEvent.event_date)}
                             </span>
                             <span
                               className={clsx(
