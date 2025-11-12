@@ -48,6 +48,7 @@ export class LocalLMStudioParser {
   "event_date": "ISO 8601 datetime string",
   "recurrence_rule": null | "RRULE string",
   "recurrence_end_date": null | "ISO 8601 date string",
+  "split_installments": boolean,
   "confidence": number from 0.0 to 1.0
 }
 
@@ -105,6 +106,7 @@ Do NOT include any text before or after the JSON. Respond with ONLY the JSON obj
         event_date: String(eventData.event_date),
         recurrence_rule: eventData.recurrence_rule || null,
         recurrence_end_date: eventData.recurrence_end_date || null,
+        split_installments: Boolean(eventData.split_installments) || false,
         confidence: Math.max(
           0,
           Math.min(1, Number(eventData.confidence) || 0.5),
@@ -146,8 +148,12 @@ Rules:
    - "last week" = subtract 7 days
    - "next month" = add 1 month
 6. Determine TYPE: "EXPENSE" or "INCOME"
-7. Calculate CONFIDENCE (0.0 to 1.0) based on clarity of input
-8. Set recurrence_rule and recurrence_end_date to null unless recurring pattern is specified
+7. Determine SPLIT_INSTALLMENTS (boolean):
+   - true if the total amount should be divided across multiple dates (phrases like "split", "divide", "X over Y months", "X installments", "pay X total over Y months")
+   - false if it's a recurring amount that repeats at the same rate (phrases like "monthly rent", "weekly pay", "biweekly", "every X days/weeks/months")
+   - default to false for recurring events
+8. Calculate CONFIDENCE (0.0 to 1.0) based on clarity of input
+9. Set recurrence_rule and recurrence_end_date to null unless recurring pattern is specified
    - If recurring, use RFC 5545 RRULE format with valid frequencies: YEARLY, MONTHLY, WEEKLY, DAILY, HOURLY, MINUTELY, SECONDLY
    - Convert common patterns to INTERVAL syntax:
      * "quarterly" → "FREQ=MONTHLY;INTERVAL=3"
@@ -161,16 +167,22 @@ Rules:
 
 Examples:
 Input: "100 USD for yesterday's dinner with friends"
-Output: {"type": "EXPENSE", "amount": "100.00", "currency": "USD", "quantity": 1, "description": "dinner with friends", "event_date": "2025-10-14T00:00:00.000Z", "recurrence_rule": null, "recurrence_end_date": null, "confidence": 0.95}
+Output: {"type": "EXPENSE", "amount": "100.00", "currency": "USD", "quantity": 1, "description": "dinner with friends", "event_date": "2025-10-14T00:00:00.000Z", "recurrence_rule": null, "recurrence_end_date": null, "split_installments": false, "confidence": 0.95}
 
 Input: "5 coffees at 3 EUR each this morning"
-Output: {"type": "EXPENSE", "amount": "3.00", "currency": "EUR", "quantity": 5, "description": "coffees", "event_date": "2025-10-15T00:00:00.000Z", "recurrence_rule": null, "recurrence_end_date": null, "confidence": 0.90}
+Output: {"type": "EXPENSE", "amount": "3.00", "currency": "EUR", "quantity": 5, "description": "coffees", "event_date": "2025-10-15T00:00:00.000Z", "recurrence_rule": null, "recurrence_end_date": null, "split_installments": false, "confidence": 0.90}
 
 Input: "Monthly rent of 1500 USD starting today"
-Output: {"type": "EXPENSE", "amount": "1500.00", "currency": "USD", "quantity": 1, "description": "rent", "event_date": "2025-10-15T00:00:00.000Z", "recurrence_rule": "FREQ=MONTHLY;INTERVAL=1", "recurrence_end_date": null, "confidence": 0.95}
+Output: {"type": "EXPENSE", "amount": "1500.00", "currency": "USD", "quantity": 1, "description": "rent", "event_date": "2025-10-15T00:00:00.000Z", "recurrence_rule": "FREQ=MONTHLY;INTERVAL=1", "recurrence_end_date": null, "split_installments": false, "confidence": 0.95}
+
+Input: "1200 USD house rent 1st of each month"
+Output: {"type": "EXPENSE", "amount": "1200.00", "currency": "USD", "quantity": 1, "description": "house rent", "event_date": "2025-11-01T00:00:00.000Z", "recurrence_rule": "FREQ=MONTHLY;INTERVAL=1;BYMONTHDAY=1", "recurrence_end_date": null, "split_installments": false, "confidence": 0.95}
+
+Input: "1200 USD split equally over 12 months starting next month"
+Output: {"type": "EXPENSE", "amount": "1200.00", "currency": "USD", "quantity": 1, "description": "payment", "event_date": "2025-11-01T00:00:00.000Z", "recurrence_rule": "FREQ=MONTHLY;INTERVAL=1;COUNT=12", "recurrence_end_date": null, "split_installments": true, "confidence": 0.95}
 
 Input: "50 USD quarterly insurance next month"
-Output: {"type": "EXPENSE", "amount": "50.00", "currency": "USD", "quantity": 1, "description": "insurance", "event_date": "2025-11-15T00:00:00.000Z", "recurrence_rule": "FREQ=MONTHLY;INTERVAL=3", "recurrence_end_date": null, "confidence": 0.92}`;
+Output: {"type": "EXPENSE", "amount": "50.00", "currency": "USD", "quantity": 1, "description": "insurance", "event_date": "2025-11-15T00:00:00.000Z", "recurrence_rule": "FREQ=MONTHLY;INTERVAL=3", "recurrence_end_date": null, "split_installments": false, "confidence": 0.92}`;
   }
 
   async checkHealth(): Promise<{

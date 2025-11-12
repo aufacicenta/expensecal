@@ -1,3 +1,4 @@
+import { useCalendarContext } from "@/context/Calendar/useCalendarContext";
 import { useEventsContext } from "@/context/Events/useEventsContext";
 import { useDraggable } from "@dnd-kit/core";
 import { Textarea } from "@heroui/input";
@@ -12,6 +13,7 @@ export const EventTextInput: React.FC<EventTextInputProps> = ({
   position = { x: 0, y: 0 },
 }) => {
   const eventsController = useEventsContext();
+  const calendarContext = useCalendarContext();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -26,9 +28,11 @@ export const EventTextInput: React.FC<EventTextInputProps> = ({
 
       try {
         // Single call: Parse text, create event, and optionally create installments
+        // The LLM determines if split_installments should be applied
         const response = await eventsController.createEventFromText({
+          current_date: calendarContext.currentMonth.toISOString(),
           text: input,
-          create_installments: false, // @TODO let the user choose or maybe the LLM?
+          create_installments: false, // @TODO: Set to true to enable installments for recurring events; the LLM will determine if amounts should be split
         });
 
         if ("error" in response) {

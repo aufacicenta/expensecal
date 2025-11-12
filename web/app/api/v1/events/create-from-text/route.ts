@@ -155,14 +155,11 @@ export async function POST(
     };
 
     // Create installments if requested and event has recurrence rule
-    if (
-      body.create_installments &&
-      event.recurrence_rule &&
-      parseResult.recurrence_rule
-    ) {
+    if (event.recurrence_rule && parseResult.recurrence_rule) {
       try {
         const installmentsResult = await createInstallments({
           parentEventId: event.id,
+          splitAmount: parseResult.split_installments || false,
         });
 
         if (!installmentsResult.success) {

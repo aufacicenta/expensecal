@@ -19,6 +19,13 @@ export interface CreateInstallmentsOptions {
    * If not provided, uses UNTIL or COUNT from RRULE
    */
   endDate?: Date;
+
+  /**
+   * Whether to divide the parent amount across installments
+   * If false, each installment will have the same amount as the parent
+   * If true, the parent amount will be divided equally among installments
+   */
+  splitAmount?: boolean;
 }
 
 /**
@@ -58,7 +65,7 @@ export interface CreateInstallmentsResult {
 export async function createInstallments(
   options: CreateInstallmentsOptions,
 ): Promise<CreateInstallmentsResult> {
-  const { parentEventId, endDate } = options;
+  const { parentEventId, endDate, splitAmount = false } = options;
 
   try {
     // Initialize models
@@ -91,12 +98,12 @@ export async function createInstallments(
       );
     }
 
-    // Calculate the amount per installment (equal distribution)
+    // Calculate the amount per installment
     const parentAmount = new Decimal(parentEvent.amount);
     const installmentCount = instances.length;
-    const amountPerInstallment = parentAmount
-      .dividedBy(installmentCount)
-      .toDecimalPlaces(8); // 8 decimals for crypto support
+    const amountPerInstallment = splitAmount
+      ? parentAmount.dividedBy(installmentCount).toDecimalPlaces(8) // 8 decimals for crypto support
+      : parentAmount; // Use the original amount if not splitting
 
     // Create installment events and links
     const installmentIds: string[] = [];
@@ -109,7 +116,7 @@ export async function createInstallments(
         amount: amountPerInstallment.toString(),
         currency_id: parentEvent.currency_id,
         quantity: 1,
-        description: `${parentEvent.description} - Installment`,
+        description: `${parentEvent.description}${splitAmount ? " - Installment" : ""}`,
         event_date: instance.date,
         parent_event_id: parentEventId,
         // Installments themselves don't have recurrence
@@ -232,6 +239,7 @@ export async function deleteInstallmentsForParent(
  *
  * @param parentEventId The parent event ID
  * @param newEndDate Optional new end date
+ * @param splitAmount Whether to divide the parent amount across installments
  * @returns Result with new installment IDs
  *
  * @example
@@ -240,6 +248,7 @@ export async function deleteInstallmentsForParent(
 export async function recreateInstallments(
   parentEventId: string,
   newEndDate?: Date,
+  splitAmount?: boolean,
 ): Promise<CreateInstallmentsResult> {
   try {
     // Delete existing installments
@@ -249,6 +258,7 @@ export async function recreateInstallments(
     return await createInstallments({
       parentEventId,
       endDate: newEndDate,
+      splitAmount,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);

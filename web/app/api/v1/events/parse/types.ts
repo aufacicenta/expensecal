@@ -24,6 +24,7 @@ export type ParsedEventData = {
   original_text?: string; // Original input text
   recurrence_rule?: string | null; // RFC 5545 RRULE format, optional
   recurrence_end_date?: string | null; // ISO 8601 date string, optional
+  split_installments?: boolean; // Whether to split the amount across installments (default: false)
 };
 
 export type ParseSuccessResponse = {
