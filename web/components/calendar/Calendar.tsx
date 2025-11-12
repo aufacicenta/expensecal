@@ -2,6 +2,8 @@
 
 import { CalendarContext } from "@/context/Calendar/CalendarContext";
 import { useDayModalContext } from "@/context/DayModal/useDayModalContext";
+import { useFilteringContext } from "@/context/Filtering/useFilteringContext";
+import { filterEventsByCategories } from "@/lib/calendar/filterEvents";
 import { calculateModalPosition } from "@/lib/calendar/modalPosition";
 import { Chip } from "@heroui/chip";
 import { DatePicker } from "@heroui/date-picker";
@@ -17,6 +19,7 @@ import { EventCategories } from "./event-categories/EventCategories";
 export const Calendar: React.FC<CalendarProps> = ({ className }) => {
   const calendarContext = useContext(CalendarContext);
   const dayModalContext = useDayModalContext();
+  const filteringContext = useFilteringContext();
   const currentMonth = new Date().toISOString().split("T")[0].slice(0, 7);
   const [selectedDate, setSelectedDate] = useState(today(getLocalTimeZone()));
 
@@ -206,31 +209,50 @@ export const Calendar: React.FC<CalendarProps> = ({ className }) => {
                       >
                         {day.dayOfMonth}
                       </div>
-                      {day.events.slice(0, 3).map((event) => (
-                        <CalendarEventCell key={event.id} event={event} />
-                      ))}
-                      {day.events.length > 3 && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!isCellLoading) {
-                              const rect = (
-                                e.currentTarget.closest(
-                                  "[data-calendar-cell]",
-                                ) as HTMLElement
-                              ).getBoundingClientRect();
+                      {(() => {
+                        const filteredEvents = filterEventsByCategories(
+                          day.events,
+                          filteringContext.selectedCategoryIds,
+                        );
+                        return (
+                          <>
+                            {filteredEvents.slice(0, 3).map((event) => (
+                              <CalendarEventCell key={event.id} event={event} />
+                            ))}
+                            {filteredEvents.length > 3 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!isCellLoading) {
+                                    const rect = (
+                                      e.currentTarget.closest(
+                                        "[data-calendar-cell]",
+                                      ) as HTMLElement
+                                    ).getBoundingClientRect();
 
-                              const position = calculateModalPosition(rect);
-                              dayModalContext.openModal(day, position);
-                            }
-                          }}
-                          className="cursor-pointer transition-opacity hover:opacity-80"
-                        >
-                          <Chip variant="dot" color="default" size="sm">
-                            +{day.events.length - 3} more
-                          </Chip>
-                        </button>
-                      )}
+                                    const position =
+                                      calculateModalPosition(rect);
+                                    // Pass filtered day to modal
+                                    const filteredDay = {
+                                      ...day,
+                                      events: filteredEvents,
+                                    };
+                                    dayModalContext.openModal(
+                                      filteredDay,
+                                      position,
+                                    );
+                                  }
+                                }}
+                                className="cursor-pointer transition-opacity hover:opacity-80"
+                              >
+                                <Chip variant="dot" color="default" size="sm">
+                                  +{filteredEvents.length - 3} more
+                                </Chip>
+                              </button>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
 
                     {/* Calendar Day Cell Actions On Hover */}
@@ -246,7 +268,16 @@ export const Calendar: React.FC<CalendarProps> = ({ className }) => {
                             ).getBoundingClientRect();
 
                             const position = calculateModalPosition(rect);
-                            dayModalContext.openModal(day, position);
+                            // Pass filtered day to modal
+                            const filteredEvents = filterEventsByCategories(
+                              day.events,
+                              filteringContext.selectedCategoryIds,
+                            );
+                            const filteredDay = {
+                              ...day,
+                              events: filteredEvents,
+                            };
+                            dayModalContext.openModal(filteredDay, position);
                           }
                         }}
                         className="p-1 transition-opacity hover:opacity-80"

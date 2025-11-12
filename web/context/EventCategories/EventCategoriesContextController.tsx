@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { CreatedCategoryData } from "@/app/api/v1/categories/create/types";
 import { CategoryData } from "@/app/api/v1/categories/types";
+import { useFilteringContext } from "@/context/Filtering/useFilteringContext";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 import { EventCategoriesContext } from "./EventCategoriesContext";
 import {
@@ -15,8 +16,8 @@ export const EventCategoriesContextController = ({
   children,
 }: EventCategoriesContextControllerProps) => {
   const routes = useRoutes();
+  const filteringContext = useFilteringContext();
   const [categories, setCategories] = useState<CategoryData[]>([]);
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchCategories = async () => {
@@ -77,12 +78,20 @@ export const EventCategoriesContextController = ({
     fetchCategories();
   }, []);
 
+  /**
+   * Wrapper around FilteringContext's setSelectedCategoryIds
+   * to sync EventCategoriesContext with filtering state
+   */
+  const handleSetSelectedCategoryIds = (ids: string[]) => {
+    filteringContext.setSelectedCategoryIds(ids);
+  };
+
   const props: EventCategoriesContextType = {
     categories,
-    selectedCategoryIds,
+    selectedCategoryIds: filteringContext.selectedCategoryIds,
     loading,
     fetchCategories,
-    setSelectedCategoryIds,
+    setSelectedCategoryIds: handleSetSelectedCategoryIds,
     createCategory,
   };
 

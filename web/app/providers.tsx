@@ -7,6 +7,7 @@ import { CurrencyContextController } from "@/context/Currency/CurrencyContextCon
 import { EventCategoriesContextController } from "@/context/EventCategories/EventCategoriesContextController";
 import { EventEditModalContextController } from "@/context/EventEditModal/EventEditModalContext";
 import { EventsContextController } from "@/context/Events/EventsContextController";
+import { FilteringContextController } from "@/context/Filtering/FilteringContextController";
 import { HeroUIProvider } from "@heroui/system";
 import { ToastProvider } from "@heroui/toast";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
@@ -37,9 +38,11 @@ export function Providers({ children, themeProps }: ProvidersProps) {
           <EventEditModalContextController>
             <EventsContextController>
               <CurrencyContextController>
-                <EventCategoriesContextController>
-                  {children}
-                </EventCategoriesContextController>
+                <FilteringContextController>
+                  <EventCategoriesContextController>
+                    {children}
+                  </EventCategoriesContextController>
+                </FilteringContextController>
               </CurrencyContextController>
             </EventsContextController>
           </EventEditModalContextController>

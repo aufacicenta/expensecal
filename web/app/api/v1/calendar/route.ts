@@ -14,7 +14,7 @@ import {
 import { stackServerApp } from "@/stack/server";
 import { Op } from "@expensecal/database";
 import db from "@expensecal/database/db";
-import { initModels } from "@expensecal/database/models";
+import { Category, initModels } from "@expensecal/database/models";
 import { Currency } from "@expensecal/database/models/Currency";
 import { Event, EventType } from "@expensecal/database/models/Event";
 import { Decimal } from "decimal.js";
@@ -110,6 +110,13 @@ export async function GET(
           model: Currency,
           as: "currency",
           attributes: ["id", "symbol", "name"],
+        },
+        {
+          model: Category,
+          as: "categories",
+          through: {
+            as: "event_categories",
+          },
         },
       ],
       order: [["event_date", "ASC"]],

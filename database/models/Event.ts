@@ -22,6 +22,7 @@ export interface EventAttributes {
   recurrence_end_date?: Date | null;
   original_text?: string | null;
   currency?: Currency;
+  categories?: Category[]; // Categories associated with this event
   created_at?: Date;
   updated_at?: Date;
   deleted_at?: Date | null;
@@ -49,7 +50,7 @@ export class Event extends Model<EventAttributes> implements EventAttributes {
   declare currency?: NonAttribute<Currency>;
   declare parentEvent?: NonAttribute<Event>;
   declare childEvents?: NonAttribute<Event[]>;
-  declare categories?: NonAttribute<any[]>; // Categories through EventCategories junction
+  declare categories?: NonAttribute<Category[]>; // Categories through EventCategories junction
 
   static initModel(sequelize: Sequelize): typeof Event {
     Event.init(
