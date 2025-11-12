@@ -2,13 +2,13 @@
 
 ROOT=`pwd`
 
-source .env
+source .env.local
 
 rm -rf dist
 
-yarn
+pnpm
 
-yarn build
+pnpm build
 
 cp package.json dist
 
