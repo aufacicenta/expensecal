@@ -95,13 +95,20 @@ export function generateRecurrenceInstances(
       dates = rruleSet.between(
         startDate,
         maxDate,
-        true, // Include start and end dates
+        false, // Exclude boundaries; let RRULE determine occurrences
       );
     } else {
       // If still no maxDate, use COUNT from RRULE
       const countMatch = rruleInput.match(/COUNT=(\d+)/);
       const count = countMatch ? parseInt(countMatch[1], 10) : 12; // Default to 12
-      dates = rruleSet.all((date, i) => i < count);
+      // Get count+1 instances to account for the start date being included
+      dates = rruleSet.all((date, i) => i < count + 1);
+      // Remove duplicate if first date matches start date exactly
+      if (dates.length > 0 && dates[0].getTime() === startDate.getTime()) {
+        dates = dates.slice(1);
+      }
+      // Ensure we don't exceed the requested count
+      dates = dates.slice(0, count);
     }
 
     // Convert to RecurrenceInstance format
