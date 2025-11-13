@@ -13,7 +13,7 @@ export class LocalLMStudioParser {
   private model: string;
 
   constructor(
-    apiBase: string = "http://127.0.0.1:1234",
+    apiBase: string = process.env.LLM_API_BASE || "http://127.0.0.1:1234",
     model: string = "microsoft/phi-4",
   ) {
     this.apiBase = apiBase;
