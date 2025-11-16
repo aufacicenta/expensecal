@@ -3,6 +3,7 @@ import {
   GetCalendarResponse,
   GetCalendarSuccessResponse,
 } from "@/app/api/v1/calendar/types";
+import { CalendarData } from "@/app/api/v2/calendar/types";
 import { ReactNode } from "react";
 
 export type CalendarContextControllerProps = {
@@ -16,6 +17,12 @@ export type CalendarContextType = {
     range?: number,
   ) => Promise<GetCalendarResponse>;
   loadCalendar: (month?: string) => Promise<void>;
+
+  /**
+   * Load all calendar events from v2 endpoint
+   * Returns events grouped by year/month/day
+   */
+  loadCalendarV2: () => Promise<void>;
 
   // New cell-level update methods
   /**
@@ -51,6 +58,10 @@ export type CalendarContextType = {
 
   // State properties
   calendarData: GetCalendarSuccessResponse["data"] | null;
+  /**
+   * V2 calendar data structure: year -> month -> day -> events[]
+   */
+  calendarV2Data: CalendarData | null;
   loading: boolean; // Initial/full calendar load state
   error: string | null;
   cellLoadingStates: Map<string, boolean>; // Individual cell loading states (date -> loading)

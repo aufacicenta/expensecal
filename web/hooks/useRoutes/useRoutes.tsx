@@ -32,6 +32,11 @@ export const routes = {
         create: () => `/api/v1/categories/create`,
       },
     },
+    v2: {
+      calendar: {
+        get: () => `/api/v2/calendar`,
+      },
+    },
   },
 };
 

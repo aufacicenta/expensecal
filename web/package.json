@@ -57,6 +57,7 @@
     "@react-aria/ssr": "3.9.10",
     "@react-aria/visually-hidden": "3.8.28",
     "@stackframe/stack": "^2.8.41",
+    "animejs": "^4.2.2",
     "clsx": "2.1.1",
     "decimal.js": "^10.6.0",
     "framer-motion": "11.18.2",

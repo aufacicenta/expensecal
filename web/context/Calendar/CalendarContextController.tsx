@@ -6,6 +6,10 @@ import {
   CalendarMonth,
   GetCalendarSuccessResponse,
 } from "@/app/api/v1/calendar/types";
+import {
+  CalendarData,
+  GetCalendarSuccessResponse as GetCalendarV2SuccessResponse,
+} from "@/app/api/v2/calendar/types";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 import { useState } from "react";
 
@@ -22,6 +26,9 @@ export const CalendarContextController = ({
   const [calendarData, setCalendarData] = useState<
     GetCalendarSuccessResponse["data"] | null
   >(null);
+  const [calendarV2Data, setCalendarV2Data] = useState<CalendarData | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cellLoadingStates, setCellLoadingStatesState] = useState<
@@ -82,6 +89,40 @@ export const CalendarContextController = ({
         }
       } else {
         const errorMsg = response.error || "Failed to load calendar";
+        setError(errorMsg);
+        console.error("Failed to load calendar:", errorMsg);
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Unknown error";
+      setError(errorMsg);
+      console.error("Error loading calendar:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadCalendarV2 = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const url = routes.api.v2.calendar.get();
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        const successResponse = data as GetCalendarV2SuccessResponse;
+        setCalendarV2Data(successResponse.data);
+      } else {
+        const errorMsg = data.error || "Failed to load calendar";
         setError(errorMsg);
         console.error("Failed to load calendar:", errorMsg);
       }
@@ -274,12 +315,14 @@ export const CalendarContextController = ({
   const props: CalendarContextType = {
     fetchCalendar,
     loadCalendar,
+    loadCalendarV2,
     updateCellEvents,
     setCellLoading,
     optimisticAddEvent,
     goToPreviousMonth,
     goToNextMonth,
     calendarData,
+    calendarV2Data,
     loading,
     error,
     cellLoadingStates,
