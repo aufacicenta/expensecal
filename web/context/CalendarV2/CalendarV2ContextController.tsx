@@ -74,6 +74,12 @@ export const CalendarV2ContextController = ({
     });
   };
 
+  const goToMonth = (date: Date) => {
+    const newMonth = new Date(date);
+    newMonth.setDate(1);
+    setCurrentMonth(newMonth);
+  };
+
   const props: CalendarV2ContextType = {
     calendarV2Data,
     currentMonth,
@@ -82,6 +88,7 @@ export const CalendarV2ContextController = ({
     loadCalendarV2,
     goToPreviousMonth,
     goToNextMonth,
+    goToMonth,
   };
 
   return (

@@ -41,4 +41,9 @@ export type CalendarV2ContextType = {
    * Navigate to the next month
    */
   goToNextMonth: () => void;
+
+  /**
+   * Navigate to a specific month
+   */
+  goToMonth: (date: Date) => void;
 };

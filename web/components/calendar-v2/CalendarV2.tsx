@@ -1,61 +1,63 @@
 "use client";
 
 import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
-import { toDateString } from "@/lib/date/formatters";
-import { EventAttributes } from "@expensecal/database/models/Event";
+import {
+  extractAvailableMonths,
+  findMonthIndex,
+} from "@/lib/calendar/monthExtractor";
 import { animate, createScope, Scope } from "animejs";
 import clsx from "clsx";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { CalendarV2Props } from "./CalendarV2.types";
-
-interface CalendarDay {
-  date: string;
-  dayNumber: number;
-  isCurrentMonth: boolean;
-  events: EventAttributes[];
-}
+import { MonthGrid } from "./month-grid/MonthGrid";
 
 export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
   const {
     calendarV2Data,
     currentMonth,
-    loadCalendarV2,
     loading,
     goToPreviousMonth,
     goToNextMonth,
+    goToMonth,
+    loadCalendarV2,
   } = useCalendarV2Context();
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
   const scopeRef = useRef<Scope | null>(null);
-  const previousMonthRef = useRef<Date | null>(null);
+
+  // Extract all available months and find current month index
+  const availableMonths = useMemo(
+    () => extractAvailableMonths(calendarV2Data),
+    [calendarV2Data],
+  );
+
+  const currentMonthIndex = useMemo(
+    () => findMonthIndex(currentMonth, availableMonths),
+    [currentMonth, availableMonths],
+  );
 
   useEffect(() => {
     // Load calendar data on mount
-    // loadCalendarV2();
+    loadCalendarV2();
   }, []);
 
   useEffect(() => {
-    if (!containerRef.current || !gridRef.current) return;
+    if (!containerRef.current || !carouselRef.current) return;
 
-    // Initialize anime scope for animations
+    // Initialize anime scope for carousel animations
     scopeRef.current = createScope({ root: containerRef.current }).add(
       (self) => {
-        self?.add("animateGridTransition", (direction: number) => {
-          if (!gridRef.current) return;
+        self?.add("animateCarousel", (monthIndex: number) => {
+          if (!carouselRef.current) return;
 
-          // Set initial state
-          animate(gridRef.current, {
-            opacity: 0,
-            translateX: direction * 100,
-          });
+          // Calculate translateX in vw units: each month is 100vw wide
+          const targetTranslateX = -monthIndex * 100;
 
-          // Animate to final state
-          animate(gridRef.current, {
-            opacity: 1,
-            translateX: 0,
-            duration: 10000,
+          animate(carouselRef.current, {
+            translateX: `${targetTranslateX}vw`,
+            duration: 400,
             easing: "easeInOutCubic",
           });
         });
@@ -67,38 +69,35 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
     };
   }, []);
 
-  // Animate grid when month changes
+  // Animate carousel when month changes
   useEffect(() => {
-    if (previousMonthRef.current === null) {
-      previousMonthRef.current = new Date(currentMonth);
-      return;
-    }
+    if (currentMonthIndex === -1 || !scopeRef.current) return;
 
-    // Determine direction: 1 = next month (right to left), -1 = prev month (left to right)
-    const isNextMonth = currentMonth > previousMonthRef.current;
-    const direction = isNextMonth ? 1 : -1;
-
-    // Trigger the animation
-    if (scopeRef.current) {
-      scopeRef.current.methods.animateGridTransition(direction);
-    }
-
-    previousMonthRef.current = new Date(currentMonth);
-  }, [currentMonth]);
+    // Trigger animation with the current month index
+    scopeRef.current.methods.animateCarousel(currentMonthIndex);
+  }, [currentMonthIndex]);
 
   // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (loading) return;
+      if (loading || currentMonthIndex === -1) return;
 
-      switch (event.key) {
-        case "ArrowLeft":
+      switch (event.key.toLowerCase()) {
+        case "arrowleft":
           event.preventDefault();
-          goToPreviousMonth();
+          if (currentMonthIndex > 0) {
+            goToPreviousMonth();
+          }
           break;
-        case "ArrowRight":
+        case "arrowright":
           event.preventDefault();
-          goToNextMonth();
+          if (currentMonthIndex < availableMonths.length - 1) {
+            goToNextMonth();
+          }
+          break;
+        case "t":
+          event.preventDefault();
+          goToMonth(new Date());
           break;
       }
     };
@@ -107,78 +106,14 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [loading, goToPreviousMonth, goToNextMonth]);
-
-  const calendarGrid = useMemo(() => {
-    const days: CalendarDay[] = [];
-    const year = currentMonth.getUTCFullYear();
-    const month = currentMonth.getUTCMonth();
-
-    // Get first day of the month (0 = Sunday, 1 = Monday, etc.)
-    const firstDay = new Date(Date.UTC(year, month, 1)).getUTCDay();
-
-    // Get number of days in the current month
-    const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-
-    // Get number of days in the previous month
-    const daysInPrevMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-
-    // Add padding days from previous month
-    for (let i = firstDay - 1; i >= 0; i--) {
-      const dayNumber = daysInPrevMonth - i;
-      const prevMonth = month === 0 ? 11 : month - 1;
-      const prevYear = month === 0 ? year - 1 : year;
-      const date = new Date(Date.UTC(prevYear, prevMonth, dayNumber));
-      const dateStr = toDateString(date);
-
-      days.push({
-        date: dateStr,
-        dayNumber,
-        isCurrentMonth: false,
-        events: [],
-      });
-    }
-
-    // Add days of the current month
-    for (let dayNumber = 1; dayNumber <= daysInMonth; dayNumber++) {
-      const date = new Date(Date.UTC(year, month, dayNumber));
-      const dateStr = toDateString(date);
-
-      // Get events from v2 data structure: calendarV2Data[year][month][day]
-      // Data keys format: year (YYYY), month (MM padded), day (DD padded)
-      const monthKey = String(month + 1).padStart(2, "0");
-      const dayKey = String(dayNumber).padStart(2, "0");
-      const dayEvents =
-        (calendarV2Data?.[year.toString()]?.[monthKey]?.[dayKey] as
-          | EventAttributes[]
-          | undefined) || [];
-
-      days.push({
-        date: dateStr,
-        dayNumber,
-        isCurrentMonth: true,
-        events: dayEvents,
-      });
-    }
-
-    // Add padding days from next month
-    const remainingSlots = 42 - days.length;
-    for (let dayNumber = 1; dayNumber <= remainingSlots; dayNumber++) {
-      const nextMonth = month === 11 ? 0 : month + 1;
-      const nextYear = month === 11 ? year + 1 : year;
-      const date = new Date(Date.UTC(nextYear, nextMonth, dayNumber));
-      const dateStr = toDateString(date);
-
-      days.push({
-        date: dateStr,
-        dayNumber,
-        isCurrentMonth: false,
-        events: [],
-      });
-    }
-
-    return days;
-  }, [currentMonth, calendarV2Data]);
+  }, [
+    loading,
+    currentMonthIndex,
+    availableMonths.length,
+    goToPreviousMonth,
+    goToNextMonth,
+    goToMonth,
+  ]);
 
   return (
     <div
@@ -189,7 +124,7 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
       <div className="flex items-center justify-between border-b border-gray-300 bg-white px-4 py-3">
         <button
           onClick={goToPreviousMonth}
-          disabled={loading}
+          disabled={loading || currentMonthIndex <= 0}
           className="rounded-md p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="Previous month"
         >
@@ -197,15 +132,14 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
         </button>
 
         <h2 className="text-lg font-semibold text-gray-800">
-          {currentMonth.toLocaleDateString("en-US", {
-            month: "long",
-            year: "numeric",
-          })}
+          {currentMonthIndex !== -1 && availableMonths[currentMonthIndex]
+            ? availableMonths[currentMonthIndex].label
+            : "Loading..."}
         </h2>
 
         <button
           onClick={goToNextMonth}
-          disabled={loading}
+          disabled={loading || currentMonthIndex >= availableMonths.length - 1}
           className="rounded-md p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="Next month"
         >
@@ -213,22 +147,28 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
         </button>
       </div>
 
-      {/* Calendar Grid */}
-      <div ref={gridRef} className="grid flex-1 grid-cols-7 gap-0">
-        {calendarGrid.map((day) => (
-          <div
-            key={day.date}
-            className={clsx(
-              "border border-gray-300 p-2 transition-colors hover:bg-gray-100",
-              !day.isCurrentMonth && "bg-gray-50 text-gray-400",
-            )}
-          >
-            <div className="text-sm font-semibold">{day.dayNumber}</div>
-            <div className="mt-1 text-xs text-gray-600">
-              {day.events.length > 0 && <div>{day.events.length} event(s)</div>}
-            </div>
-          </div>
-        ))}
+      {/* Carousel Container - overflow-x hidden to clip grids */}
+      <div className="relative flex-1 overflow-hidden">
+        <div
+          ref={carouselRef}
+          className="flex"
+          style={{
+            width: `${availableMonths.length * 100}vw`,
+          }}
+        >
+          {/* Render all available months as grids */}
+          {availableMonths.map((month) => {
+            const yearMonthData = calendarV2Data?.[month.year]?.[month.month];
+            return (
+              <MonthGrid
+                key={`${month.year}-${month.month}`}
+                year={parseInt(month.year, 10)}
+                month={parseInt(month.month, 10) - 1} // MonthGrid expects 0-indexed month
+                calendarData={yearMonthData}
+              />
+            );
+          })}
+        </div>
       </div>
     </div>
   );
