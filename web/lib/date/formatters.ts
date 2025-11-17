@@ -300,3 +300,18 @@ export const formatMonthShort = (monthStr: string): string => {
     timeZone: "UTC",
   });
 };
+
+/**
+ * Format a date to short day of week name (e.g., "Mon", "Tue", "Wed")
+ * @param date - Date or date string (day number will be converted to date in current month context)
+ * @returns Formatted day of week string (e.g., "Mon")
+ * @example formatDayShort(new Date("2026-01-06T00:00:00Z")) => "Tue"
+ * @example formatDayShort("2026-01-06") => "Tue"
+ */
+export const formatDayShort = (date: Date | string): string => {
+  const d = new Date(date);
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    timeZone: "UTC",
+  });
+};
