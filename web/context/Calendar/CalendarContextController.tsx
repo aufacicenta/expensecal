@@ -8,7 +8,7 @@ import {
 } from "@/app/api/v1/calendar/types";
 import {
   CalendarData,
-  GetCalendarSuccessResponse as GetCalendarV2SuccessResponse,
+  GetCalendarV2SuccessResponse,
 } from "@/app/api/v2/calendar/types";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 import { useState } from "react";

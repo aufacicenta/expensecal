@@ -1,15 +1,37 @@
 import { EventAttributes } from "@expensecal/database/models/Event";
 import { BaseErrorResponse, BaseSuccessResponse } from "../../v1/types";
 
-type CalendarEvent = EventAttributes;
+export type FinancialSummary = {
+  totalIncome: string;
+  totalExpenses: string;
+  net: string;
+};
+export type CalendarEvent = EventAttributes & { exchangeRate: string };
 
 type Day = Array<CalendarEvent>;
 type Month = Record<string, Day>;
 type Year = Record<string, Month>;
 export type CalendarData = Record<string, Year>;
 
-export type GetCalendarSuccessResponse = {
-  data: CalendarData;
+type DayStats = FinancialSummary;
+
+export type MonthStats = {
+  stats: FinancialSummary;
+  [day: string]: DayStats | FinancialSummary;
+};
+
+type YearStats = {
+  stats: FinancialSummary;
+  [month: string]: MonthStats | FinancialSummary;
+};
+
+export type CalendarStatsData = Record<string, YearStats>;
+
+export type GetCalendarV2SuccessResponse = {
+  data: {
+    calendar: CalendarData;
+    stats: CalendarStatsData;
+  };
 } & BaseSuccessResponse;
 
 export type GetCalendarErrorResponse = {
@@ -18,5 +40,5 @@ export type GetCalendarErrorResponse = {
 } & BaseErrorResponse;
 
 export type GetCalendarResponse =
-  | GetCalendarSuccessResponse
+  | GetCalendarV2SuccessResponse
   | GetCalendarErrorResponse;

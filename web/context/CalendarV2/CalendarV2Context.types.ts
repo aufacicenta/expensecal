@@ -1,4 +1,4 @@
-import { CalendarData } from "@/app/api/v2/calendar/types";
+import { GetCalendarV2SuccessResponse } from "@/app/api/v2/calendar/types";
 import { ReactNode } from "react";
 
 export type CalendarV2ContextControllerProps = {
@@ -9,7 +9,7 @@ export type CalendarV2ContextType = {
   /**
    * V2 calendar data structure: year -> month -> day -> events[]
    */
-  calendarV2Data: CalendarData | null;
+  calendarV2Data: GetCalendarV2SuccessResponse["data"] | undefined;
 
   /**
    * Currently displayed month

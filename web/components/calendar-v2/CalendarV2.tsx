@@ -43,7 +43,7 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
 
   useEffect(() => {
     // Load calendar data on mount
-    loadCalendarV2();
+    // loadCalendarV2();
   }, []);
 
   useEffect(() => {
@@ -140,7 +140,8 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
         >
           {/* Render all available months as grids */}
           {availableMonths.map((month) => {
-            const yearMonthData = calendarV2Data?.[month.year]?.[month.month];
+            const yearMonthData =
+              calendarV2Data?.calendar?.[month.year]?.[month.month];
             return (
               <MonthGrid
                 key={`${month.year}-${month.month}`}

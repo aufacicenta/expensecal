@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  CalendarData,
-  GetCalendarSuccessResponse as GetCalendarV2SuccessResponse,
-} from "@/app/api/v2/calendar/types";
+import { GetCalendarV2SuccessResponse } from "@/app/api/v2/calendar/types";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 import { useState } from "react";
 
@@ -17,9 +14,9 @@ export const CalendarV2ContextController = ({
   children,
 }: CalendarV2ContextControllerProps) => {
   const routes = useRoutes();
-  const [calendarV2Data, setCalendarV2Data] = useState<CalendarData | null>(
-    null,
-  );
+  const [calendarV2Data, setCalendarV2Data] = useState<
+    GetCalendarV2SuccessResponse["data"] | undefined
+  >(undefined);
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

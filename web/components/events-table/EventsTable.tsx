@@ -1,10 +1,11 @@
 import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
 import { EventsTableProps } from "./EventsTable.types";
 
+import { MonthStats } from "@/app/api/v2/calendar/types";
 import { formatCurrency } from "@/lib/currency/formatter";
 import { formatDayShort, formatMonthShort } from "@/lib/date/formatters";
 import clsx from "clsx";
-import { ArrowLeftRight, ListFilter, Trash } from "lucide-react";
+import { ArrowLeftRight, Diff, ListFilter, Trash } from "lucide-react";
 import { useEffect } from "react";
 
 export const EventsTable: React.FC<EventsTableProps> = ({}) => {
@@ -64,100 +65,174 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
           <span>Actions</span>
         </div>
       </nav>
-      {Object.entries(calendarV2Data || {}).map(([year, yearObj]) => (
-        <div className="border-content4 flex border-b" key={year}>
-          <div className="border-content2 flex w-[120px] flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0">
-            {year}
-          </div>
-          <div className="flex flex-col">
-            {Object.entries(yearObj)
-              .sort(([monthA], [monthB]) => Number(monthA) - Number(monthB))
-              .map(([month, monthObj]) => (
-                <div
-                  className="border-content4 flex border-b-[0.5px] [&:not(:last-child)]:border-b"
-                  key={`${year}-${month}`}
-                >
-                  <div className="border-content2 flex w-[120px] flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0">
-                    {formatMonthShort(`${year}-${month}`)}
-                  </div>
-                  <div className="flex flex-col">
-                    {Object.entries(monthObj)
-                      .sort(([dayA], [dayB]) => Number(dayA) - Number(dayB))
-                      .map(([day, events]) => (
-                        <div
-                          className="group flex"
-                          key={`${year}-${month}-${day}`}
-                        >
-                          <div className="border-content2 group-hover:bg-content2 flex w-[120px] flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0 p-1">
-                            <span className="text-xs">
-                              {formatDayShort(`${year}-${month}-${day}`)}
-                            </span>
-                            <span>{day}</span>
-                          </div>
-                          <div className="">
-                            {events.map((eventObj) => (
-                              <div
-                                className={clsx(
-                                  "hover:bg-content2 flex flex-1 [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:border-[0.5px] [&>div]:border-b-0 [&>div]:p-1",
-                                  events.length === 1 && "h-full",
-                                )}
-                                key={eventObj.id}
-                              >
-                                <div className="border-content2 w-[120px] text-right">
-                                  {eventObj.quantity}
-                                </div>
-                                <div className="border-content2 w-[120px] text-right">
-                                  {formatCurrency(eventObj.amount)}
-                                </div>
-                                <div
-                                  className={clsx(
-                                    "border-content2 w-[120px] text-right",
-                                    eventObj.type === "EXPENSE" &&
-                                      "text-danger",
-                                    eventObj.type === "INCOME" &&
-                                      "text-success",
-                                  )}
-                                >
-                                  {formatCurrency(
-                                    Number(eventObj.amount) *
-                                      Number(eventObj.quantity),
-                                  )}
-                                </div>
-                                <div className="border-content2 w-[90px]">
-                                  {eventObj.currency?.symbol}
-                                </div>
-                                <div className="border-content2 w-[120px] text-right">
-                                  $0.00
-                                </div>
-                                <div className="border-content2 w-[180px]">
-                                  {eventObj.categories?.map((category) => (
-                                    <span className="text-xs">
-                                      {category.name},{" "}
-                                    </span>
-                                  ))}
-                                </div>
-                                <div className="border-content2 w-[180px] text-xs">
-                                  <span>{eventObj.description}</span>
-                                </div>
-                                <div className="border-content2 w-[210px] overflow-x-auto text-xs">
-                                  <span className="block w-max">
-                                    {eventObj.original_text}
-                                  </span>
-                                </div>
-                                <div className="border-content2 w-[210px] items-end text-right">
-                                  <Trash
-                                    className="stroke-content3 hover:stroke-danger cursor-pointer"
-                                    size={12}
-                                  />
-                                </div>
+      {Object.entries(calendarV2Data.calendar || {}).map(([year, yearObj]) => (
+        <div className="border-content4 border-b" key={year}>
+          <div className="flex">
+            <div className="border-content2 flex w-[120px] flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0">
+              {year}
+            </div>
+            <div className="flex flex-col">
+              {Object.entries(yearObj)
+                .sort(([monthA], [monthB]) => Number(monthA) - Number(monthB))
+                .map(([month, monthObj]) => (
+                  <div
+                    className="border-content4 border-b-[0.5px] [&:not(:last-child)]:border-b"
+                    key={`${year}-${month}`}
+                  >
+                    <div className="flex">
+                      <div className="border-content2 flex w-[120px] flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0">
+                        {formatMonthShort(`${year}-${month}`)}
+                      </div>
+                      <div className="flex flex-col">
+                        {Object.entries(monthObj)
+                          .sort(([dayA], [dayB]) => Number(dayA) - Number(dayB))
+                          .map(([day, events]) => (
+                            <div
+                              className="group border-b-content2 flex last-of-type:border-b"
+                              key={`${year}-${month}-${day}`}
+                            >
+                              <div className="border-content2 group-hover:bg-content2 flex w-[120px] flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0 p-1">
+                                <span className="text-xs">
+                                  {formatDayShort(`${year}-${month}-${day}`)}
+                                </span>
+                                <span>{day}</span>
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
+                              <div className="">
+                                {events.map((eventObj) => (
+                                  <div
+                                    className={clsx(
+                                      "hover:bg-content2 flex flex-1 [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:border-[0.5px] [&>div]:border-b-0 [&>div]:p-1",
+                                      events.length === 1 && "h-full",
+                                    )}
+                                    key={eventObj.id}
+                                  >
+                                    <div className="border-content2 w-[120px] text-right">
+                                      {eventObj.quantity}
+                                    </div>
+                                    <div className="border-content2 w-[120px] text-right">
+                                      {formatCurrency(eventObj.amount)}
+                                    </div>
+                                    <div
+                                      className={clsx(
+                                        "border-content2 w-[120px] text-right",
+                                      )}
+                                    >
+                                      {formatCurrency(
+                                        Number(eventObj.amount) *
+                                          Number(eventObj.quantity),
+                                      )}
+                                    </div>
+                                    <div className="border-content2 w-[90px]">
+                                      {eventObj.currency?.symbol}
+                                    </div>
+                                    <div
+                                      className={clsx(
+                                        "border-content2 w-[120px] text-right",
+                                        eventObj.type === "EXPENSE" &&
+                                          "text-danger",
+                                        eventObj.type === "INCOME" &&
+                                          "text-success",
+                                      )}
+                                    >
+                                      {formatCurrency(eventObj.exchangeRate)}
+                                    </div>
+                                    <div className="border-content2 w-[180px]">
+                                      {eventObj.categories?.map((category) => (
+                                        <span className="text-xs">
+                                          {category.name},{" "}
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <div className="border-content2 w-[180px] text-xs">
+                                      <span>{eventObj.description}</span>
+                                    </div>
+                                    <div className="border-content2 w-[210px] overflow-x-auto text-xs">
+                                      <span className="block w-max">
+                                        {eventObj.original_text}
+                                      </span>
+                                    </div>
+                                    <div className="border-content2 w-[210px] items-end text-right">
+                                      <Trash
+                                        className="stroke-content3 hover:stroke-danger cursor-pointer"
+                                        size={12}
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Month Stats */}
+                    <div className="border-content2 [&>div]:border-b-content2 w-[120px] border-r-[0.5px] border-l-[0.5px] text-right text-xs [&>div]:px-1 [&>div]:not-[:last-child]:border-b-[0.5px]">
+                      <div className="text-success">
+                        <span>
+                          {formatCurrency(
+                            (calendarV2Data.stats[year][month] as MonthStats)
+                              .stats.totalIncome,
+                          )}
+                        </span>
+                      </div>
+                      <div className="text-danger">
+                        <span>
+                          {formatCurrency(
+                            (calendarV2Data.stats[year][month] as MonthStats)
+                              .stats.totalExpenses,
+                          )}
+                        </span>
+                      </div>
+                      <div
+                        className={clsx(
+                          "flex items-center justify-end",
+                          Number(
+                            (calendarV2Data.stats[year][month] as MonthStats)
+                              .stats.net,
+                          ) > 0
+                            ? "text-success"
+                            : "text-danger",
+                        )}
+                      >
+                        <Diff size={9} />
+                        <span>
+                          {formatCurrency(
+                            (calendarV2Data.stats[year][month] as MonthStats)
+                              .stats.net,
+                          )}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+            </div>
+          </div>
+
+          {/* Year Stats */}
+          <div className="border-content2 [&>div]:border-b-content2 w-[120px] border-r-[0.5px] border-l-[0.5px] text-right text-xs [&>div]:px-1 [&>div]:not-[:last-child]:border-b-[0.5px]">
+            <div className="text-success">
+              <span>
+                {formatCurrency(calendarV2Data.stats[year].stats.totalIncome)}
+              </span>
+            </div>
+            <div className="text-danger">
+              <span>
+                {formatCurrency(calendarV2Data.stats[year].stats.totalExpenses)}
+              </span>
+            </div>
+            <div
+              className={clsx(
+                "flex items-center justify-end",
+                Number(calendarV2Data.stats[year].stats.net) > 0
+                  ? "text-success"
+                  : "text-danger",
+              )}
+            >
+              <Diff size={9} />
+              <span>
+                {formatCurrency(calendarV2Data.stats[year].stats.net)}
+              </span>
+            </div>
           </div>
         </div>
       ))}
