@@ -286,3 +286,17 @@ export const getDaysInMonth = (date: Date | string): number => {
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0),
   ).getUTCDate();
 };
+
+/**
+ * Format a month string (YYYY-MM) to short month name (UTC timezone)
+ * @param monthStr - Month string in YYYY-MM format
+ * @returns Short month name (e.g., "Jan")
+ * @example formatMonthShort("2026-01") => "Jan"
+ */
+export const formatMonthShort = (monthStr: string): string => {
+  const date = parseMonthString(monthStr);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    timeZone: "UTC",
+  });
+};
