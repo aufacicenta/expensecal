@@ -84,7 +84,7 @@ export const EventCategories: React.FC<EventCategoriesProps> = ({
     <div className={clsx("flex items-center gap-2", className)}>
       {/* Categories Select */}
       <Select
-        label="Categories"
+        // label="Categories"
         placeholder="Select categories"
         selectedKeys={selectedCategoryIds}
         onSelectionChange={(keys) =>

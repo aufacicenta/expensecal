@@ -1,16 +1,17 @@
 "use client";
 
 import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
+import { useFilteringContext } from "@/context/Filtering/useFilteringContext";
 import {
   extractAvailableMonths,
   findMonthIndex,
 } from "@/lib/calendar/monthExtractor";
 import { animate, createScope, Scope } from "animejs";
 import clsx from "clsx";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { CalendarV2Props } from "./CalendarV2.types";
 import { MonthGrid } from "./month-grid/MonthGrid";
+import { NavbarTop } from "./navbar-top/NavbarTop";
 
 export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
   const {
@@ -22,6 +23,8 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
     goToMonth,
     loadCalendarV2,
   } = useCalendarV2Context();
+
+  const filteringContext = useFilteringContext();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -121,31 +124,10 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
       className={clsx("flex h-screen w-screen flex-col", className)}
     >
       {/* Navbar */}
-      <div className="flex items-center justify-between border-b border-gray-300 bg-white px-4 py-3">
-        <button
-          onClick={goToPreviousMonth}
-          disabled={loading || currentMonthIndex <= 0}
-          className="rounded-md p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-          aria-label="Previous month"
-        >
-          <ChevronLeft className="h-5 w-5 text-gray-700" />
-        </button>
-
-        <h2 className="text-lg font-semibold text-gray-800">
-          {currentMonthIndex !== -1 && availableMonths[currentMonthIndex]
-            ? availableMonths[currentMonthIndex].label
-            : "Loading..."}
-        </h2>
-
-        <button
-          onClick={goToNextMonth}
-          disabled={loading || currentMonthIndex >= availableMonths.length - 1}
-          className="rounded-md p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-          aria-label="Next month"
-        >
-          <ChevronRight className="h-5 w-5 text-gray-700" />
-        </button>
-      </div>
+      <NavbarTop
+        currentMonthIndex={currentMonthIndex}
+        availableMonths={availableMonths}
+      />
 
       {/* Carousel Container - overflow-x hidden to clip grids */}
       <div className="relative flex-1 overflow-hidden">
@@ -165,6 +147,7 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
                 year={parseInt(month.year, 10)}
                 month={parseInt(month.month, 10) - 1} // MonthGrid expects 0-indexed month
                 calendarData={yearMonthData}
+                selectedCategoryIds={filteringContext.selectedCategoryIds}
               />
             );
           })}

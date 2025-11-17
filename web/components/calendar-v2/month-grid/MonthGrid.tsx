@@ -1,7 +1,9 @@
-import { toDateString } from "@/lib/date/formatters";
+import { filterEventsByCategories } from "@/lib/calendar/filterEvents";
+import { isSameDay, toDateString } from "@/lib/date/formatters";
 import { EventAttributes } from "@expensecal/database/models/Event";
 import clsx from "clsx";
 import { useMemo } from "react";
+import { CalendarEventCell } from "../../calendar/calendar-event-cell/CalendarEventCell";
 import { CalendarDay, MonthGridProps } from "./MonthGrid.types";
 
 /**
@@ -12,10 +14,12 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
   year,
   month,
   calendarData,
+  selectedCategoryIds = [],
   className,
 }) => {
   const calendarGrid = useMemo(() => {
     const days: CalendarDay[] = [];
+    const today = new Date();
 
     // Get first day of the month (0 = Sunday, 1 = Monday, etc.)
     const firstDay = new Date(Date.UTC(year, month, 1)).getUTCDay();
@@ -38,6 +42,7 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
         date: dateStr,
         dayNumber,
         isCurrentMonth: false,
+        isCurrentDay: isSameDay(date, today),
         events: [],
       });
     }
@@ -56,6 +61,7 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
         date: dateStr,
         dayNumber,
         isCurrentMonth: true,
+        isCurrentDay: isSameDay(date, today),
         events: dayEvents,
       });
     }
@@ -72,6 +78,7 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
         date: dateStr,
         dayNumber,
         isCurrentMonth: false,
+        isCurrentDay: isSameDay(date, today),
         events: [],
       });
     }
@@ -86,23 +93,50 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
         className,
       )}
       style={{
-        height: "calc(100vh - 61px)", // 100vh minus navbar height
+        height: "calc(100vh - 64px)", // 100vh minus navbar height
       }}
     >
-      {calendarGrid.map((day) => (
-        <div
-          key={day.date}
-          className={clsx(
-            "border border-gray-300 p-2 transition-colors hover:bg-gray-100",
-            !day.isCurrentMonth && "bg-gray-50 text-gray-400",
-          )}
-        >
-          <div className="text-sm font-semibold">{day.dayNumber}</div>
-          <div className="mt-1 text-xs text-gray-600">
-            {day.events.length > 0 && <div>{day.events.length} event(s)</div>}
+      {calendarGrid.map((day) => {
+        const filteredEvents = filterEventsByCategories(
+          day.events,
+          selectedCategoryIds,
+        );
+
+        return (
+          <div
+            key={day.date}
+            className={clsx(
+              "border-content1 border p-1 transition-colors",
+              !day.isCurrentMonth && "bg-content2",
+            )}
+          >
+            <div className="hover:bg-content2 h-full rounded p-2">
+              <div
+                className={clsx(
+                  !day.isCurrentDay && "text-xs",
+                  day.isCurrentDay && "text-focus text-lg font-bold",
+                )}
+              >
+                {day.dayNumber}
+              </div>
+              <div className="mt-1 space-y-1 text-xs">
+                {filteredEvents.length > 0 && (
+                  <>
+                    {filteredEvents.slice(0, 3).map((event) => (
+                      <CalendarEventCell key={event.id} event={event} />
+                    ))}
+                    {filteredEvents.length > 3 && (
+                      <div className="text-gray-500">
+                        +{filteredEvents.length - 3} more
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
