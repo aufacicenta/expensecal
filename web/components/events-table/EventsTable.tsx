@@ -15,10 +15,11 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export const EventsTable: React.FC<EventsTableProps> = ({}) => {
   const { calendarV2Data, loading, loadCalendarV2 } = useCalendarV2Context();
+  const [showOriginalText, setShowOriginalText] = useState(false);
 
   useEffect(() => {
     if (!!calendarV2Data) return;
@@ -31,6 +32,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
 
   return (
     <section className="relative w-fit overflow-x-auto pt-[33px]">
+      {/* Fixed Table Nav */}
       <nav className="[&>div]:border-content3 text-content4 bg-background fixed top-0 left-0 flex w-fit items-center text-xs font-semibold [&>div]:flex [&>div]:items-center [&>div]:gap-1 [&>div]:border-[0.5px] [&>div]:p-1">
         <div className="hover:text-content4-foreground w-[180px] cursor-pointer justify-center">
           <span>Year</span>
@@ -59,18 +61,18 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
         <div className="w-[120px] justify-end">
           <span>Ex. Rate (USD)</span>
         </div>
+        <div
+          className="hover:text-content4-foreground w-[210px] cursor-pointer"
+          onClick={() => setShowOriginalText(!showOriginalText)}
+        >
+          <span>{showOriginalText ? "Original Text" : "Description"}</span>
+          <ArrowLeftRight size={12} />
+        </div>
         <div className="hover:text-content4-foreground w-[180px] cursor-pointer">
           <span>Categories</span>
           <ListFilter size={12} />
         </div>
-        <div className="hover:text-content4-foreground w-[180px] cursor-pointer">
-          <span>Description</span>
-          <ArrowLeftRight size={12} />
-        </div>
-        <div className="w-[210px]">
-          <span>Original Text</span>
-        </div>
-        <div className="w-[210px] justify-end">
+        <div className="w-[70px] justify-end">
           <span>Actions</span>
         </div>
       </nav>
@@ -146,6 +148,14 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                       >
                                         {formatCurrency(eventObj.exchangeRate)}
                                       </div>
+                                      <div className="border-content2 w-[210px] text-xs">
+                                        <span>
+                                          {showOriginalText &&
+                                          eventObj.original_text
+                                            ? eventObj.original_text
+                                            : eventObj.description}
+                                        </span>
+                                      </div>
                                       <div className="border-content2 w-[180px]">
                                         {eventObj.categories?.map(
                                           (category) => (
@@ -155,15 +165,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                           ),
                                         )}
                                       </div>
-                                      <div className="border-content2 w-[180px] text-xs">
-                                        <span>{eventObj.description}</span>
-                                      </div>
-                                      <div className="border-content2 w-[210px] overflow-x-auto text-xs">
-                                        <span className="block w-max">
-                                          {eventObj.original_text}
-                                        </span>
-                                      </div>
-                                      <div className="border-content2 w-[210px] items-end text-right">
+                                      <div className="border-content2 w-[70px] items-end text-right">
                                         <Trash
                                           className="stroke-content3 hover:stroke-danger cursor-pointer"
                                           size={12}
@@ -306,7 +308,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                 {calendarV2Data.stats[year].stats?.totalIncomePercentChange}%
               </div>
               <Divider orientation="vertical" className="h-3" />
-              <span className="w-7/12">
+              <span className="w-6/12">
                 {formatCurrency(calendarV2Data.stats[year].stats.totalIncome)}
               </span>
             </div>
@@ -322,7 +324,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                 {calendarV2Data.stats[year].stats?.totalExpensesPercentChange}%
               </div>
               <Divider orientation="vertical" className="h-3" />
-              <span className="w-7/12">
+              <span className="w-6/12">
                 {formatCurrency(calendarV2Data.stats[year].stats.totalExpenses)}
               </span>
             </div>
@@ -344,7 +346,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                 {calendarV2Data.stats[year].stats?.netPercentChange}%
               </div>
               <Divider orientation="vertical" className="h-3" />
-              <div className="flex w-7/12 items-center justify-end">
+              <div className="flex w-6/12 items-center justify-end">
                 <Diff size={9} />
                 <span>
                   {(() => {
