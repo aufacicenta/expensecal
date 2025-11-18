@@ -2,7 +2,6 @@
 
 import type { ThemeProviderProps } from "next-themes";
 
-import { CalendarContextController } from "@/context/Calendar/CalendarContextController";
 import { CalendarV2ContextController } from "@/context/CalendarV2/CalendarV2ContextController";
 import { CurrencyContextController } from "@/context/Currency/CurrencyContextController";
 import { EventCategoriesContextController } from "@/context/EventCategories/EventCategoriesContextController";
@@ -35,21 +34,19 @@ export function Providers({ children, themeProps }: ProvidersProps) {
     <HeroUIProvider navigate={router.push}>
       <ToastProvider />
       <NextThemesProvider {...themeProps}>
-        <CalendarContextController>
-          <CalendarV2ContextController>
-            <EventEditModalContextController>
-              <EventsContextController>
-                <CurrencyContextController>
-                  <FilteringContextController>
-                    <EventCategoriesContextController>
-                      {children}
-                    </EventCategoriesContextController>
-                  </FilteringContextController>
-                </CurrencyContextController>
-              </EventsContextController>
-            </EventEditModalContextController>
-          </CalendarV2ContextController>
-        </CalendarContextController>
+        <CalendarV2ContextController>
+          <EventEditModalContextController>
+            <EventsContextController>
+              <CurrencyContextController>
+                <FilteringContextController>
+                  <EventCategoriesContextController>
+                    {children}
+                  </EventCategoriesContextController>
+                </FilteringContextController>
+              </CurrencyContextController>
+            </EventsContextController>
+          </EventEditModalContextController>
+        </CalendarV2ContextController>
       </NextThemesProvider>
     </HeroUIProvider>
   );

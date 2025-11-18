@@ -1,4 +1,4 @@
-import { useCalendarContext } from "@/context/Calendar/useCalendarContext";
+import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
 import { useEventsContext } from "@/context/Events/useEventsContext";
 import { useDraggable } from "@dnd-kit/core";
 import { Textarea } from "@heroui/input";
@@ -13,7 +13,7 @@ export const EventTextInput: React.FC<EventTextInputProps> = ({
   position = { x: 0, y: 0 },
 }) => {
   const eventsController = useEventsContext();
-  const calendarContext = useCalendarContext();
+  const calendarContext = useCalendarV2Context();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 

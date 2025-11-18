@@ -1,7 +1,5 @@
 "use client";
 
-import { useContext } from "react";
-
 import { GetChildEventsResponse } from "@/app/api/v1/events/[id]/children/types";
 import { UpdateEventRequestBody } from "@/app/api/v1/events/[id]/types";
 import { CreateFromTextSuccessResponse } from "@/app/api/v1/events/create-from-text/types";
@@ -11,8 +9,8 @@ import {
   DeleteInstallmentsRequestBody,
 } from "@/app/api/v1/events/installments/types";
 import { ParseRequestBody } from "@/app/api/v1/events/parse/types";
-import { CalendarContext } from "@/context/Calendar/CalendarContext";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
+import { useCalendarV2Context } from "../CalendarV2/useCalendarV2Context";
 import { EventsContext } from "./EventsContext";
 import {
   EventsContextControllerProps,
@@ -23,7 +21,7 @@ export const EventsContextController = ({
   children,
 }: EventsContextControllerProps) => {
   const routes = useRoutes();
-  const calendarContext = useContext(CalendarContext);
+  const calendarContext = useCalendarV2Context();
 
   /**
    * Full calendar reload (fallback for multi-event changes)
@@ -31,7 +29,7 @@ export const EventsContextController = ({
   const reloadCalendar = async () => {
     if (calendarContext) {
       const currentMonth = new Date().toISOString().split("T")[0].slice(0, 7);
-      await calendarContext.loadCalendar(currentMonth);
+      await calendarContext.loadCalendarV2();
     }
   };
 
@@ -40,57 +38,7 @@ export const EventsContextController = ({
    * More efficient than full reload for single-event changes
    */
   const updateCalendarCell = async (eventDate: Date) => {
-    if (!calendarContext) return;
-
-    const dateStr = eventDate.toISOString().split("T")[0];
-
-    try {
-      calendarContext.setCellLoading(dateStr, true);
-
-      // Fetch events for this specific date by using a focused query
-      const params = new URLSearchParams();
-      const monthStr = eventDate.toISOString().split("T")[0].slice(0, 7);
-      params.append("month", monthStr);
-      params.append("range", "0"); // Fetch only the requested month
-
-      const response = await fetch(
-        `${routes.api.v1.calendar.get()}?${params.toString()}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Find the events for the specific date
-        const dateEvents: any[] = [];
-        for (const month of data.data.months) {
-          for (const day of month.days) {
-            if (day.date === dateStr) {
-              dateEvents.push(...day.events);
-              break;
-            }
-          }
-        }
-
-        // Update only this cell
-        await calendarContext.updateCellEvents(dateStr, dateEvents);
-      }
-    } catch (error) {
-      console.error("Error updating calendar cell:", error);
-      // Fallback to full reload on error
-      await reloadCalendar();
-    } finally {
-      calendarContext.setCellLoading(dateStr, false);
-    }
+    return undefined;
   };
 
   const createEventFromText = async (

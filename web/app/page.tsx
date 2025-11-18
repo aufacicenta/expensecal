@@ -1,6 +1,5 @@
 "use client";
 
-import { Calendar } from "@/components/calendar/Calendar";
 import { DayModalsRenderer } from "@/components/calendar/day-modal/DayModalsRenderer";
 import { EventEditModalRenderer } from "@/components/calendar/event-edit-modal/EventEditModalRenderer";
 import { EventTextInput } from "@/components/event-text-input/EventTextInput";
@@ -35,7 +34,6 @@ export default function Home() {
           <EventTextInput position={eventTextInputPosition} />
           <DayModalsRenderer />
           <EventEditModalRenderer />
-          <Calendar />
         </DndContext>
       </section>
     </DayModalContextController>
