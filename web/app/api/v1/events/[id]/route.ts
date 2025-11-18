@@ -54,7 +54,8 @@ export async function PUT(
     initModels(db);
 
     // Find the event
-    const event = await Event.findByPk(id);
+    let event = await Event.findByPk(id);
+
     if (!event) {
       return NextResponse.json(
         {
@@ -214,42 +215,83 @@ export async function PUT(
 
     // Handle category assignments if provided
     if (body.categoryIds !== undefined) {
-      // Delete existing category associations
+      // Determine which events to update categories for
+      // If this is a recurring event (has parent_event_id or recurrence_rule),
+      // update categories for all related events (parent, self, and all children)
+      let eventIdsToUpdate = [event.id];
+
+      if (event.parent_event_id || event.recurrence_rule) {
+        // Get the parent event ID
+        const parentEventId = event.parent_event_id || event.id;
+
+        // Find all events in this recurring series
+        const allRelatedEvents = await Event.findAll({
+          where: {
+            user_id: user.id,
+            [Op.or]: [
+              { id: parentEventId },
+              { parent_event_id: parentEventId },
+            ],
+          },
+          attributes: ["id"],
+        });
+
+        eventIdsToUpdate = allRelatedEvents.map((e) => e.id);
+      }
+
+      // Delete existing category associations for all affected events
       await EventCategories.destroy({
         where: {
-          event_id: event.id,
+          event_id: eventIdsToUpdate,
         },
       });
 
-      // Create new category associations
-      if (body.categoryIds.length > 0) {
-        const eventCategoriesData = body.categoryIds.map((categoryId) => ({
-          event_id: event.id,
-          category_id: categoryId,
-        }));
+      // Create new category associations for all affected events
+      if (body.categoryIds !== undefined && body.categoryIds.length > 0) {
+        const eventCategoriesData = eventIdsToUpdate.flatMap((eventId) =>
+          body.categoryIds!.map((categoryId) => ({
+            event_id: eventId,
+            category_id: categoryId,
+          })),
+        );
         await EventCategories.bulkCreate(eventCategoriesData);
       }
+    }
+
+    // Refetch the event
+    event = await Event.findByPk(id, {
+      include: [
+        {
+          model: Currency,
+          as: "currency",
+          attributes: ["id", "symbol", "name"],
+        },
+        {
+          model: Category,
+          as: "categories",
+          through: {
+            as: "event_categories",
+          },
+        },
+      ],
+    });
+
+    if (!event) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Event not found",
+          details: `No event found with id: ${id}`,
+        },
+        { status: 404 },
+      );
     }
 
     // Return updated event
     return NextResponse.json(
       {
         success: true,
-        data: {
-          id: event.id,
-          user_id: event.user_id,
-          type: event.type,
-          amount: event.amount,
-          currency_id: event.currency_id,
-          quantity: event.quantity,
-          description: event.description,
-          event_date: event.event_date,
-          parent_event_id: event.parent_event_id,
-          recurrence_rule: event.recurrence_rule,
-          recurrence_end_date: event.recurrence_end_date || null,
-          created_at: event.created_at,
-          updated_at: event.updated_at,
-        },
+        data: event,
       },
       { status: 200 },
     );

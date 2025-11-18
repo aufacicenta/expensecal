@@ -23,16 +23,43 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { EventCellCategoriesSelect } from "./event-cell-categories-select/EventCellCategoriesSelect";
 
 export const EventsTable: React.FC<EventsTableProps> = ({}) => {
-  const { calendarV2Data, loadCalendarV2 } = useCalendarV2Context();
+  const { calendarV2Data, loadCalendarV2, updateCalendarCellEvent } =
+    useCalendarV2Context();
   const { updateEvent } = useEventsContext();
   const { categories } = useEventCategoriesContext();
   const [showOriginalText, setShowOriginalText] = useState(false);
   const [selectedEventForCategories, setSelectedEventForCategories] =
     useState<CalendarEvent | null>(null);
+
+  const handleEventCategoryUpdate = useCallback(
+    async (
+      eventId: string,
+      categoryIds: string[],
+      eventDate: Date,
+      currentEvent: CalendarEvent,
+    ) => {
+      await updateEvent(eventId, {
+        categoryIds,
+      });
+
+      // Update calendar cell in-place instead of reloading entire calendar
+      const selectedCategoryObjects = categories.filter(
+        (cat) => cat.id && categoryIds.includes(cat.id),
+      );
+
+      const updatedEvent: CalendarEvent = {
+        ...currentEvent,
+        categories: selectedCategoryObjects as any,
+      };
+
+      updateCalendarCellEvent(updatedEvent, eventDate);
+    },
+    [categories, updateEvent, updateCalendarCellEvent],
+  );
 
   useEffect(() => {
     if (!!calendarV2Data) return;
@@ -202,20 +229,14 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                           <EventCellCategoriesSelect
                                             event={eventObj}
                                             availableCategories={categories}
-                                            onUpdate={async (
-                                              eventId,
-                                              categoryIds,
-                                            ) => {
-                                              await updateEvent(
+                                            onUpdate={(eventId, categoryIds) =>
+                                              handleEventCategoryUpdate(
                                                 eventId,
-                                                {
-                                                  categoryIds,
-                                                },
+                                                categoryIds,
                                                 eventObj.event_date,
-                                              );
-                                              // @TODO update this calendar cell only instead
-                                              await loadCalendarV2();
-                                            }}
+                                                eventObj,
+                                              )
+                                            }
                                             onClose={() =>
                                               setSelectedEventForCategories(
                                                 null,

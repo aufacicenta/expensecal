@@ -206,16 +206,8 @@ export const EventsContextController = ({
     }
   };
 
-  const updateEvent = async (
-    eventId: string,
-    body: UpdateEventRequestBody,
-    originalEventDate?: Date,
-  ) => {
+  const updateEvent = async (eventId: string, body: UpdateEventRequestBody) => {
     try {
-      // Track the original event date for refresh purposes
-      // If not provided, we'll try to fetch it
-      let trackedOriginalDate: Date | null = originalEventDate || null;
-
       const response = await fetch(routes.api.v1.events.detail(eventId), {
         method: "PUT",
         headers: {
@@ -229,29 +221,6 @@ export const EventsContextController = ({
       }
 
       const data = await response.json();
-
-      // Update the affected cells
-      if (data.data?.event_date) {
-        const newEventDate = new Date(data.data.event_date);
-
-        // If date changed, update both old and new date cells
-        if (trackedOriginalDate) {
-          const oldDateStr = trackedOriginalDate.toISOString().split("T")[0];
-          const newDateStr = newEventDate.toISOString().split("T")[0];
-
-          if (oldDateStr !== newDateStr) {
-            // Date was changed, update both cells
-            await updateCalendarCell(trackedOriginalDate);
-            await updateCalendarCell(newEventDate);
-          } else {
-            // Date wasn't changed, just update the current cell
-            await updateCalendarCell(newEventDate);
-          }
-        } else {
-          // Couldn't get original date, just update new date
-          await updateCalendarCell(newEventDate);
-        }
-      }
 
       return data;
     } catch (error) {

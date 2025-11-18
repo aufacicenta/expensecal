@@ -33,6 +33,15 @@ export type CalendarV2ContextType = {
   loadCalendarV2: () => Promise<void>;
 
   /**
+   * Update a calendar event in-place without reloading entire calendar
+   * Handles event property updates, date changes, and stats recalculation
+   * @param updatedEvent - The event with updated properties
+   * @param oldEventDate - The original event date (before update, if date changed)
+   * @returns boolean - true if update was successful, false if event not found
+   */
+  updateCalendarCellEvent: (updatedEvent: any, oldEventDate: Date) => boolean;
+
+  /**
    * Navigate to the previous month
    */
   goToPreviousMonth: () => void;
