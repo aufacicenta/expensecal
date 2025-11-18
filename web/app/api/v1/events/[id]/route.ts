@@ -414,21 +414,7 @@ export async function DELETE(
     return NextResponse.json(
       {
         success: true,
-        data: {
-          id: event.id,
-          user_id: event.user_id,
-          type: event.type,
-          amount: event.amount,
-          currency_id: event.currency_id,
-          quantity: event.quantity,
-          description: event.description,
-          event_date: event.event_date,
-          parent_event_id: event.parent_event_id,
-          recurrence_rule: event.recurrence_rule,
-          recurrence_end_date: event.recurrence_end_date || null,
-          created_at: event.created_at,
-          updated_at: event.updated_at,
-        },
+        data: event,
       },
       { status: 200 },
     );

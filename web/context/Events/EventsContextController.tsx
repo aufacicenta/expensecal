@@ -2,6 +2,7 @@
 
 import { GetChildEventsResponse } from "@/app/api/v1/events/[id]/children/types";
 import {
+  DeleteMode,
   UpdateEventRequestBody,
   UpdateEventSuccessResponse,
 } from "@/app/api/v1/events/[id]/types";
@@ -36,14 +37,6 @@ export const EventsContextController = ({
     }
   };
 
-  /**
-   * Fetch events for a specific date and update only that cell
-   * More efficient than full reload for single-event changes
-   */
-  const updateCalendarCell = async (eventDate: Date) => {
-    return undefined;
-  };
-
   const createEventFromText = async (
     body: ParseRequestBody & { create_installments?: boolean },
   ) => {
@@ -65,14 +58,6 @@ export const EventsContextController = ({
       }
 
       const data = (await response.json()) as CreateFromTextSuccessResponse;
-
-      // Update only the affected cell instead of reloading entire calendar
-      if (data.data?.event) {
-        const eventDate = new Date(data.data.event.event_date);
-        await updateCalendarCell(eventDate);
-      } else if (body.current_date) {
-        await updateCalendarCell(new Date(body.current_date));
-      }
 
       return data;
     } catch (error) {
@@ -118,11 +103,6 @@ export const EventsContextController = ({
       }
 
       const data = await response.json();
-
-      // Update only the affected cell instead of reloading entire calendar
-      if (data.data?.event_date) {
-        await updateCalendarCell(new Date(data.data.event_date));
-      }
 
       return data;
     } catch (error) {
@@ -240,7 +220,7 @@ export const EventsContextController = ({
 
   const deleteEvent = async (
     eventId: string,
-    deleteMode: "single" | "all-future" = "single",
+    deleteMode: DeleteMode = "single",
   ) => {
     try {
       const params = new URLSearchParams();
@@ -262,9 +242,15 @@ export const EventsContextController = ({
 
       const data = await response.json();
 
-      // Update only the affected cell instead of reloading entire calendar
-      if (data.data?.event_date) {
-        await updateCalendarCell(new Date(data.data.event_date));
+      // Update calendar to reflect deletion
+      // For all-future deletions, also delete all child events from calendar
+      if (deleteMode === "all-future") {
+        await calendarContext.loadCalendarV2();
+      } else if (calendarContext && data.data?.event_date) {
+        calendarContext.deleteCalendarCellEvent(
+          data.data,
+          new Date(data.data.event_date),
+        );
       }
 
       return data;

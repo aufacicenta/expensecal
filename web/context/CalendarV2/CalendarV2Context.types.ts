@@ -42,6 +42,15 @@ export type CalendarV2ContextType = {
   updateCalendarCellEvent: (updatedEvent: any, oldEventDate: Date) => boolean;
 
   /**
+   * Remove a deleted event from the calendar and recalculate stats
+   * Handles deletion and applies carry-forward cascade for all subsequent periods
+   * @param deletedEvent - The event that was deleted (with its properties)
+   * @param eventDate - The date of the deleted event
+   * @returns boolean - true if deletion was successful, false if event not found
+   */
+  deleteCalendarCellEvent: (deletedEvent: any, eventDate: Date) => boolean;
+
+  /**
    * Navigate to the previous month
    */
   goToPreviousMonth: () => void;

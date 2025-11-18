@@ -1,5 +1,6 @@
 import { GetChildEventsResponse } from "@/app/api/v1/events/[id]/children/types";
 import {
+  DeleteMode,
   UpdateEventRequestBody,
   UpdateEventResponse,
 } from "@/app/api/v1/events/[id]/types";
@@ -50,7 +51,7 @@ export type EventsContextType = {
   ) => Promise<UpdateEventResponse>;
   deleteEvent: (
     eventId: string,
-    deleteMode?: "single" | "all-future",
+    deleteMode?: DeleteMode,
   ) => Promise<UpdateEventResponse>;
   fetchChildEvents: (eventId: string) => Promise<GetChildEventsResponse>;
 };

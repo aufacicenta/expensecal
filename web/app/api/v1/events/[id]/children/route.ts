@@ -98,22 +98,7 @@ export async function GET(
     return NextResponse.json(
       {
         success: true,
-        data: childEvents.map((childEvent) => ({
-          id: childEvent.id,
-          user_id: childEvent.user_id,
-          type: childEvent.type,
-          amount: childEvent.amount,
-          currency_id: childEvent.currency_id,
-          quantity: childEvent.quantity,
-          description: childEvent.description,
-          event_date: childEvent.event_date,
-          parent_event_id: childEvent.parent_event_id,
-          recurrence_rule: childEvent.recurrence_rule,
-          recurrence_end_date: childEvent.recurrence_end_date || null,
-          created_at: childEvent.created_at,
-          updated_at: childEvent.updated_at,
-          currency: childEvent.currency || undefined,
-        })),
+        data: childEvents,
       },
       { status: 200 },
     );

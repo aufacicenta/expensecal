@@ -4,6 +4,7 @@ import { useEventCategoriesContext } from "@/context/EventCategories/useEventCat
 import { useEventsContext } from "@/context/Events/useEventsContext";
 import { EventsTableProps } from "./EventsTable.types";
 
+import { DeleteMode } from "@/app/api/v1/events/[id]/types";
 import {
   CalendarEvent,
   DayStats,
@@ -18,6 +19,7 @@ import clsx from "clsx";
 import Decimal from "decimal.js";
 import {
   ArrowLeftRight,
+  CalendarFold,
   Circle,
   Diff,
   ListFilter,
@@ -26,15 +28,20 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { StaggerLoadingAnimation } from "../stagger-loading-animation/StaggerLoadingAnimation";
+import { DeleteEventConfirmationModal } from "./delete-event-confirmation-modal/DeleteEventConfirmationModal";
 import { EventCellAmountEdit } from "./event-cell-amount-edit/EventCellAmountEdit";
 import { EventCellCategoriesSelect } from "./event-cell-categories-select/EventCellCategoriesSelect";
 import { EventCellCurrencyEdit } from "./event-cell-currency-edit/EventCellCurrencyEdit";
 import { EventCellQuantityEdit } from "./event-cell-quantity-edit/EventCellQuantityEdit";
 
 export const EventsTable: React.FC<EventsTableProps> = ({}) => {
-  const { calendarV2Data, loadCalendarV2, updateCalendarCellEvent } =
-    useCalendarV2Context();
-  const { updateEvent } = useEventsContext();
+  const {
+    calendarV2Data,
+    loadCalendarV2,
+    loading: isCalendarV2DataLoading,
+  } = useCalendarV2Context();
+  const { updateEvent, deleteEvent } = useEventsContext();
   const { categories } = useEventCategoriesContext();
   const { currencies } = useCurrencyContext();
   const [showOriginalText, setShowOriginalText] = useState(false);
@@ -45,6 +52,8 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
   const [selectedEventForAmount, setSelectedEventForAmount] =
     useState<CalendarEvent | null>(null);
   const [selectedEventForCurrency, setSelectedEventForCurrency] =
+    useState<CalendarEvent | null>(null);
+  const [selectedEventForDelete, setSelectedEventForDelete] =
     useState<CalendarEvent | null>(null);
 
   const handleEventCategoryUpdate = async (
@@ -108,6 +117,21 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     );
   };
 
+  const handleEventDelete = (event: CalendarEvent) => {
+    setSelectedEventForDelete(event);
+  };
+
+  const handleConfirmDelete = async (deleteMode: DeleteMode) => {
+    if (!selectedEventForDelete) return;
+
+    try {
+      await deleteEvent(selectedEventForDelete.id!, deleteMode);
+      setSelectedEventForDelete(null);
+    } catch (error) {
+      console.error("Failed to delete event:", error);
+    }
+  };
+
   useEffect(() => {
     if (!!calendarV2Data) return;
 
@@ -115,7 +139,21 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     loadCalendarV2();
   }, []);
 
-  if (!calendarV2Data) return "Loading...";
+  if (!calendarV2Data || isCalendarV2DataLoading) {
+    return (
+      <section className="bg-opacity-70 relative h-screen w-screen">
+        <nav className="absolute top-0 right-0 left-0 flex w-full justify-between [&>div]:p-4">
+          <div>
+            <span className="font-mono">ExpenseCal</span>
+          </div>
+          <div>
+            <span className="font-mono">Loading...</span>
+          </div>
+        </nav>
+        <StaggerLoadingAnimation />
+      </section>
+    );
+  }
 
   return (
     <section className="relative w-fit overflow-x-auto pt-[33px]">
@@ -254,7 +292,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                         )}
                                       </div>
                                       <div
-                                        className="border-content2 group relative w-[90px] cursor-pointer"
+                                        className="border-content2 group hover:bg-content1 relative w-[90px] cursor-pointer"
                                         data-cell-name="event-currency"
                                         onClick={() =>
                                           setSelectedEventForCurrency(eventObj)
@@ -271,9 +309,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                             }
                                           />
                                         )}
-                                        <span className="group-hover:text-content3">
-                                          {eventObj.currency?.symbol}
-                                        </span>
+                                        <span>{eventObj.currency?.symbol}</span>
                                       </div>
                                       <div
                                         className={clsx(
@@ -306,6 +342,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                         {eventObj.categories?.map(
                                           (category) => (
                                             <Chip
+                                              key={category.id}
                                               size="sm"
                                               variant="dot"
                                               startContent={
@@ -343,11 +380,31 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                           />
                                         )}
                                       </div>
-                                      <div className="border-content2 w-[70px] items-end text-right">
-                                        <Trash
-                                          className="stroke-content3 hover:stroke-danger cursor-pointer"
-                                          size={12}
-                                        />
+                                      <div className="border-content2 w-[70px]">
+                                        <div
+                                          className="flex justify-end gap-1"
+                                          data-cell-name="event-actions"
+                                        >
+                                          <div>
+                                            <CalendarFold
+                                              className="stroke-content3 hover:stroke-primary cursor-pointer"
+                                              size={12}
+                                              onClick={() =>
+                                                // handleEventDateChange
+                                                undefined
+                                              }
+                                            />
+                                          </div>
+                                          <div>
+                                            <Trash
+                                              className="stroke-content3 hover:stroke-danger cursor-pointer"
+                                              size={12}
+                                              onClick={() =>
+                                                handleEventDelete(eventObj)
+                                              }
+                                            />
+                                          </div>
+                                        </div>
                                       </div>
                                     </div>
                                   ))}
@@ -538,6 +595,12 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
           </div>
         </div>
       ))}
+      <DeleteEventConfirmationModal
+        isOpen={!!selectedEventForDelete}
+        isRecurring={!!selectedEventForDelete?.parent_event_id}
+        onClose={() => setSelectedEventForDelete(null)}
+        onConfirm={handleConfirmDelete}
+      />
     </section>
   );
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarEventData } from "@/app/api/v1/calendar/types";
+import { DeleteMode } from "@/app/api/v1/events/[id]/types";
 import { useCurrencyContext } from "@/context/Currency/useCurrencyContext";
 import { useEventEditModalContext } from "@/context/EventEditModal/EventEditModalContext";
 import { useEventsContext } from "@/context/Events/useEventsContext";
@@ -27,7 +28,7 @@ import {
 } from "@heroui/modal";
 import { Select, SelectItem } from "@heroui/select";
 import clsx from "clsx";
-import { AlertCircle, Trash2 } from "lucide-react";
+import { AlertCircle, Info, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { EventCategories } from "../event-categories/EventCategories";
 import {
@@ -136,7 +137,7 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
     setError(null);
   };
 
-  const handleDelete = async (deleteMode: "single" | "all-future") => {
+  const handleDelete = async (deleteMode: DeleteMode) => {
     if (
       !confirm(
         `Are you sure you want to delete this event${deleteMode === "all-future" ? " and all future occurrences" : ""}?`,
@@ -312,6 +313,15 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                 {editingField === "categories" ? (
                   <div className="space-y-2">
                     <div className="text-content4 text-xs">Categories</div>
+                    {(event.parent_event_id || event.recurrence_rule) && (
+                      <div className="text-xxs text-foreground flex items-center gap-1">
+                        <Info size={10} />
+                        <span>
+                          Categories will be applied to all occurrences in this
+                          recurring event series
+                        </span>
+                      </div>
+                    )}
                     <EventCategories
                       selectedIds={formData.categoryIds}
                       onSelectionChange={(ids) =>
@@ -326,7 +336,14 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                     disabled={loading}
                     className="hover:bg-content2 block w-full rounded p-2 text-left disabled:opacity-50"
                   >
-                    <div className="text-content4 text-xs">Categories</div>
+                    <div className="text-content4 text-xs">
+                      Categories
+                      {(event.parent_event_id || event.recurrence_rule) && (
+                        <span className="text-info ml-1 text-xs">
+                          (all occurrences)
+                        </span>
+                      )}
+                    </div>
                     <div className="font-medium">
                       {formData.categoryIds.length > 0
                         ? `${formData.categoryIds.length} selected`

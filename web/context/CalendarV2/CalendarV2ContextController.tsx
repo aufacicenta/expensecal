@@ -61,6 +61,240 @@ export const CalendarV2ContextController = ({
   };
 
   /**
+   * Remove a deleted event from the calendar and recalculate stats
+   * Handles deletion of single events and updates stats at all levels
+   * Applies carry-forward cascade to ensure all subsequent periods have correct stats
+   */
+  const deleteCalendarCellEvent = (deletedEvent: any, eventDate: Date) => {
+    if (!calendarV2Data) return false;
+
+    // Create a deep copy to avoid direct state mutations
+    const newCalendarData = JSON.parse(JSON.stringify(calendarV2Data));
+
+    const eventDateStr = toDateString(eventDate);
+    const [year, month, day] = eventDateStr.split("-");
+
+    // Find and remove the event from the calendar
+    if (newCalendarData.calendar[year]?.[month]?.[day]) {
+      const eventIndex = newCalendarData.calendar[year][month][day].findIndex(
+        (e: any) => e.id === deletedEvent.id,
+      );
+
+      if (eventIndex === -1) return false;
+
+      // Get the deleted event's converted amount for stats recalculation
+      const deletedConvertedAmount = new Decimal(
+        deletedEvent.exchangeRate || "0",
+      );
+
+      // Remove event from calendar
+      newCalendarData.calendar[year][month][day].splice(eventIndex, 1);
+
+      // If no events left for this day, remove the entire day object
+      let dayStillHasEvents =
+        newCalendarData.calendar[year][month][day].length > 0;
+      if (!dayStillHasEvents) {
+        delete newCalendarData.calendar[year][month][day];
+        delete (newCalendarData.stats[year][month] as any)[day];
+      }
+
+      // Update stats - only if day still exists
+      if (dayStillHasEvents) {
+        if (deletedEvent.type === "INCOME") {
+          (newCalendarData.stats[year][month] as any)[day].totalIncome =
+            new Decimal(
+              (newCalendarData.stats[year][month] as any)[day].totalIncome,
+            )
+              .minus(deletedConvertedAmount)
+              .toString();
+          (newCalendarData.stats[year][month] as any).stats.totalIncome =
+            new Decimal(
+              (newCalendarData.stats[year][month] as any).stats.totalIncome,
+            )
+              .minus(deletedConvertedAmount)
+              .toString();
+          newCalendarData.stats[year].stats.totalIncome = new Decimal(
+            newCalendarData.stats[year].stats.totalIncome,
+          )
+            .minus(deletedConvertedAmount)
+            .toString();
+        } else if (deletedEvent.type === "EXPENSE") {
+          (newCalendarData.stats[year][month] as any)[day].totalExpenses =
+            new Decimal(
+              (newCalendarData.stats[year][month] as any)[day].totalExpenses,
+            )
+              .minus(deletedConvertedAmount)
+              .toString();
+          (newCalendarData.stats[year][month] as any).stats.totalExpenses =
+            new Decimal(
+              (newCalendarData.stats[year][month] as any).stats.totalExpenses,
+            )
+              .minus(deletedConvertedAmount)
+              .toString();
+          newCalendarData.stats[year].stats.totalExpenses = new Decimal(
+            newCalendarData.stats[year].stats.totalExpenses,
+          )
+            .minus(deletedConvertedAmount)
+            .toString();
+        }
+
+        // Recalculate net for day, month, and year
+        (newCalendarData.stats[year][month] as any)[day].net = new Decimal(
+          (newCalendarData.stats[year][month] as any)[day].totalIncome,
+        )
+          .minus((newCalendarData.stats[year][month] as any)[day].totalExpenses)
+          .toString();
+      } else {
+        // Day is empty - subtract stats without day-level calculation
+        if (deletedEvent.type === "INCOME") {
+          (newCalendarData.stats[year][month] as any).stats.totalIncome =
+            new Decimal(
+              (newCalendarData.stats[year][month] as any).stats.totalIncome,
+            )
+              .minus(deletedConvertedAmount)
+              .toString();
+          newCalendarData.stats[year].stats.totalIncome = new Decimal(
+            newCalendarData.stats[year].stats.totalIncome,
+          )
+            .minus(deletedConvertedAmount)
+            .toString();
+        } else if (deletedEvent.type === "EXPENSE") {
+          (newCalendarData.stats[year][month] as any).stats.totalExpenses =
+            new Decimal(
+              (newCalendarData.stats[year][month] as any).stats.totalExpenses,
+            )
+              .minus(deletedConvertedAmount)
+              .toString();
+          newCalendarData.stats[year].stats.totalExpenses = new Decimal(
+            newCalendarData.stats[year].stats.totalExpenses,
+          )
+            .minus(deletedConvertedAmount)
+            .toString();
+        }
+      }
+
+      // Recalculate net for month and year
+      (newCalendarData.stats[year][month] as any).stats.net = new Decimal(
+        (newCalendarData.stats[year][month] as any).stats.totalIncome,
+      )
+        .minus((newCalendarData.stats[year][month] as any).stats.totalExpenses)
+        .toString();
+      newCalendarData.stats[year].stats.net = new Decimal(
+        newCalendarData.stats[year].stats.totalIncome,
+      )
+        .minus(newCalendarData.stats[year].stats.totalExpenses)
+        .toString();
+
+      // Apply carry-forward cascade from the affected year onwards
+      const allYears = Object.keys(newCalendarData.stats).sort();
+      const startYearIdx = allYears.indexOf(year);
+      if (startYearIdx === -1) return false;
+
+      let prevYearNet: string | undefined;
+      if (startYearIdx > 0) {
+        prevYearNet =
+          newCalendarData.stats[allYears[startYearIdx - 1]].stats.net;
+      }
+
+      for (let yearIdx = startYearIdx; yearIdx < allYears.length; yearIdx++) {
+        const yearData = newCalendarData.stats[allYears[yearIdx]];
+
+        // Add previous year's net to current year's income
+        if (prevYearNet !== undefined) {
+          yearData.stats.totalIncome = new Decimal(yearData.stats.totalIncome)
+            .plus(prevYearNet)
+            .toString();
+        }
+
+        // Recalculate year net
+        yearData.stats.net = new Decimal(yearData.stats.totalIncome)
+          .minus(yearData.stats.totalExpenses)
+          .toString();
+
+        prevYearNet = yearData.stats.net;
+
+        // Process months
+        const months = Object.keys(yearData)
+          .filter((k) => k !== "stats")
+          .sort();
+
+        const startMonthIdx =
+          yearIdx === startYearIdx ? months.indexOf(month) : 0;
+        let prevMonthNet: string | undefined;
+
+        if (startMonthIdx > 0) {
+          prevMonthNet = (yearData[months[startMonthIdx - 1]] as any).stats.net;
+        }
+
+        for (
+          let monthIdx = startMonthIdx;
+          monthIdx < months.length;
+          monthIdx++
+        ) {
+          const monthData = yearData[months[monthIdx]] as any;
+
+          // Add previous month's net to current month's income
+          if (prevMonthNet !== undefined) {
+            monthData.stats.totalIncome = new Decimal(
+              monthData.stats.totalIncome,
+            )
+              .plus(prevMonthNet)
+              .toString();
+          }
+
+          // Recalculate month net
+          monthData.stats.net = new Decimal(monthData.stats.totalIncome)
+            .minus(monthData.stats.totalExpenses)
+            .toString();
+
+          prevMonthNet = monthData.stats.net;
+
+          // Process days
+          const days = Object.keys(monthData)
+            .filter((k) => k !== "stats")
+            .sort();
+
+          let startDayIdx = 0;
+          if (yearIdx === startYearIdx && monthIdx === startMonthIdx) {
+            const dayIndex = days.indexOf(day);
+            // If day was deleted, start from 0; otherwise start from that day
+            startDayIdx = dayIndex === -1 ? 0 : dayIndex;
+          }
+
+          let prevDayNet: string | undefined;
+
+          if (startDayIdx > 0) {
+            prevDayNet = monthData[days[startDayIdx - 1]].net;
+          }
+
+          for (let dayIdx = startDayIdx; dayIdx < days.length; dayIdx++) {
+            const dayStats = monthData[days[dayIdx]];
+
+            // Add previous day's net to current day's income
+            if (prevDayNet !== undefined) {
+              dayStats.totalIncome = new Decimal(dayStats.totalIncome)
+                .plus(prevDayNet)
+                .toString();
+            }
+
+            // Recalculate day net
+            dayStats.net = new Decimal(dayStats.totalIncome)
+              .minus(dayStats.totalExpenses)
+              .toString();
+
+            prevDayNet = dayStats.net;
+          }
+        }
+      }
+
+      setCalendarV2Data(newCalendarData);
+      return true;
+    }
+
+    return false;
+  };
+
+  /**
    * Update a calendar event in-place without reloading the entire calendar
    * Handles event updates, date changes, and stats recalculation
    * Uses latest exchange rates to recalculate converted amounts
@@ -704,6 +938,7 @@ export const CalendarV2ContextController = ({
     error,
     loadCalendarV2,
     updateCalendarCellEvent,
+    deleteCalendarCellEvent,
     goToPreviousMonth,
     goToNextMonth,
     goToMonth,
