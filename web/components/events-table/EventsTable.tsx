@@ -1,11 +1,20 @@
 import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
 import { EventsTableProps } from "./EventsTable.types";
 
-import { MonthStats } from "@/app/api/v2/calendar/types";
+import { DayStats, MonthStats } from "@/app/api/v2/calendar/types";
 import { formatCurrency } from "@/lib/currency/formatter";
 import { formatDayShort, formatMonthShort } from "@/lib/date/formatters";
+import { Divider } from "@heroui/divider";
 import clsx from "clsx";
-import { ArrowLeftRight, Diff, ListFilter, Trash } from "lucide-react";
+import Decimal from "decimal.js";
+import {
+  ArrowLeftRight,
+  Diff,
+  ListFilter,
+  Trash,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 import { useEffect } from "react";
 
 export const EventsTable: React.FC<EventsTableProps> = ({}) => {
@@ -21,9 +30,9 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
   if (!calendarV2Data) return "Loading...";
 
   return (
-    <section className="relative pt-[33px]">
-      <nav className="[&>div]:border-content3 text-content4 bg-background fixed top-0 left-0 flex w-full items-center text-xs font-semibold [&>div]:flex [&>div]:items-center [&>div]:gap-1 [&>div]:border-[0.5px] [&>div]:p-1">
-        <div className="hover:text-content4-foreground w-[120px] cursor-pointer justify-center">
+    <section className="relative w-fit overflow-x-auto pt-[33px]">
+      <nav className="[&>div]:border-content3 text-content4 bg-background fixed top-0 left-0 flex w-fit items-center text-xs font-semibold [&>div]:flex [&>div]:items-center [&>div]:gap-1 [&>div]:border-[0.5px] [&>div]:p-1">
+        <div className="hover:text-content4-foreground w-[180px] cursor-pointer justify-center">
           <span>Year</span>
           <ListFilter size={12} />
         </div>
@@ -68,7 +77,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
       {Object.entries(calendarV2Data.calendar || {}).map(([year, yearObj]) => (
         <div className="border-content4 border-b" key={year}>
           <div className="flex">
-            <div className="border-content2 flex w-[120px] flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0">
+            <div className="border-content2 flex w-[180px] flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0">
               {year}
             </div>
             <div className="flex flex-col">
@@ -88,77 +97,144 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                           .sort(([dayA], [dayB]) => Number(dayA) - Number(dayB))
                           .map(([day, events]) => (
                             <div
-                              className="group border-b-content2 flex last-of-type:border-b"
+                              className="group border-b-content2 last-of-type:border-b"
                               key={`${year}-${month}-${day}`}
                             >
-                              <div className="border-content2 group-hover:bg-content2 flex w-[120px] flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0 p-1">
-                                <span className="text-xs">
-                                  {formatDayShort(`${year}-${month}-${day}`)}
-                                </span>
-                                <span>{day}</span>
-                              </div>
-                              <div className="">
-                                {events.map((eventObj) => (
-                                  <div
-                                    className={clsx(
-                                      "hover:bg-content2 flex flex-1 [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:border-[0.5px] [&>div]:border-b-0 [&>div]:p-1",
-                                      events.length === 1 && "h-full",
-                                    )}
-                                    key={eventObj.id}
-                                  >
-                                    <div className="border-content2 w-[120px] text-right">
-                                      {eventObj.quantity}
-                                    </div>
-                                    <div className="border-content2 w-[120px] text-right">
-                                      {formatCurrency(eventObj.amount)}
-                                    </div>
+                              <div className="flex">
+                                <div className="border-content2 group-hover:bg-content2 flex w-[120px] flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0 p-1">
+                                  <span className="text-xs">
+                                    {formatDayShort(`${year}-${month}-${day}`)}
+                                  </span>
+                                  <span>{day}</span>
+                                </div>
+                                <div className="">
+                                  {events.map((eventObj) => (
                                     <div
                                       className={clsx(
-                                        "border-content2 w-[120px] text-right",
+                                        "hover:bg-content2 last-of-type:border-b-content2 flex flex-1 last-of-type:border-b-[0.5px] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:border-[0.5px] [&>div]:border-b-0 [&>div]:p-1",
+                                        events.length === 1 && "h-full",
                                       )}
+                                      key={eventObj.id}
                                     >
-                                      {formatCurrency(
-                                        Number(eventObj.amount) *
-                                          Number(eventObj.quantity),
-                                      )}
-                                    </div>
-                                    <div className="border-content2 w-[90px]">
-                                      {eventObj.currency?.symbol}
-                                    </div>
-                                    <div
-                                      className={clsx(
-                                        "border-content2 w-[120px] text-right",
-                                        eventObj.type === "EXPENSE" &&
-                                          "text-danger",
-                                        eventObj.type === "INCOME" &&
-                                          "text-success",
-                                      )}
-                                    >
-                                      {formatCurrency(eventObj.exchangeRate)}
-                                    </div>
-                                    <div className="border-content2 w-[180px]">
-                                      {eventObj.categories?.map((category) => (
-                                        <span className="text-xs">
-                                          {category.name},{" "}
+                                      <div className="border-content2 w-[120px] text-right">
+                                        {eventObj.quantity}
+                                      </div>
+                                      <div className="border-content2 w-[120px] text-right">
+                                        {formatCurrency(eventObj.amount)}
+                                      </div>
+                                      <div
+                                        className={clsx(
+                                          "border-content2 w-[120px] text-right",
+                                        )}
+                                      >
+                                        {formatCurrency(
+                                          Number(eventObj.amount) *
+                                            Number(eventObj.quantity),
+                                        )}
+                                      </div>
+                                      <div className="border-content2 w-[90px]">
+                                        {eventObj.currency?.symbol}
+                                      </div>
+                                      <div
+                                        className={clsx(
+                                          "border-content2 w-[120px] text-right",
+                                          eventObj.type === "EXPENSE" &&
+                                            "text-danger",
+                                          eventObj.type === "INCOME" &&
+                                            "text-success",
+                                        )}
+                                      >
+                                        {formatCurrency(eventObj.exchangeRate)}
+                                      </div>
+                                      <div className="border-content2 w-[180px]">
+                                        {eventObj.categories?.map(
+                                          (category) => (
+                                            <span className="text-xs">
+                                              {category.name},{" "}
+                                            </span>
+                                          ),
+                                        )}
+                                      </div>
+                                      <div className="border-content2 w-[180px] text-xs">
+                                        <span>{eventObj.description}</span>
+                                      </div>
+                                      <div className="border-content2 w-[210px] overflow-x-auto text-xs">
+                                        <span className="block w-max">
+                                          {eventObj.original_text}
                                         </span>
-                                      ))}
+                                      </div>
+                                      <div className="border-content2 w-[210px] items-end text-right">
+                                        <Trash
+                                          className="stroke-content3 hover:stroke-danger cursor-pointer"
+                                          size={12}
+                                        />
+                                      </div>
                                     </div>
-                                    <div className="border-content2 w-[180px] text-xs">
-                                      <span>{eventObj.description}</span>
-                                    </div>
-                                    <div className="border-content2 w-[210px] overflow-x-auto text-xs">
-                                      <span className="block w-max">
-                                        {eventObj.original_text}
-                                      </span>
-                                    </div>
-                                    <div className="border-content2 w-[210px] items-end text-right">
-                                      <Trash
-                                        className="stroke-content3 hover:stroke-danger cursor-pointer"
-                                        size={12}
-                                      />
-                                    </div>
-                                  </div>
-                                ))}
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Day Stats */}
+                              <div className="group-hover:bg-content2 border-content2 [&>div]:border-b-content2 w-[120px] border-r-[0.5px] border-l-[0.5px] text-right text-xs [&>div]:px-1 [&>div]:not-[:last-child]:border-b-[0.5px]">
+                                <div className="text-success">
+                                  <span>
+                                    {formatCurrency(
+                                      (
+                                        (
+                                          calendarV2Data.stats[year][
+                                            month
+                                          ] as MonthStats
+                                        )[day] as DayStats
+                                      ).totalIncome,
+                                    )}
+                                  </span>
+                                </div>
+                                <div className="text-danger">
+                                  <span>
+                                    {formatCurrency(
+                                      (
+                                        (
+                                          calendarV2Data.stats[year][
+                                            month
+                                          ] as MonthStats
+                                        )[day] as DayStats
+                                      ).totalExpenses,
+                                    )}
+                                  </span>
+                                </div>
+                                <div
+                                  className={clsx(
+                                    "flex items-center justify-end",
+                                    Number(
+                                      (
+                                        (
+                                          calendarV2Data.stats[year][
+                                            month
+                                          ] as MonthStats
+                                        )[day] as DayStats
+                                      ).net,
+                                    ) > 0
+                                      ? "text-success"
+                                      : "text-danger",
+                                  )}
+                                >
+                                  <Diff size={9} />
+                                  <span>
+                                    {(() => {
+                                      let net = new Decimal(
+                                        (
+                                          (
+                                            calendarV2Data.stats[year][
+                                              month
+                                            ] as MonthStats
+                                          )[day] as DayStats
+                                        ).net,
+                                      );
+                                      net = net.lt(0) ? net.times(-1) : net;
+                                      return formatCurrency(net.toString());
+                                    })()}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           ))}
@@ -196,10 +272,15 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                       >
                         <Diff size={9} />
                         <span>
-                          {formatCurrency(
-                            (calendarV2Data.stats[year][month] as MonthStats)
-                              .stats.net,
-                          )}
+                          {(() => {
+                            let net = new Decimal(
+                              (
+                                calendarV2Data.stats[year][month] as MonthStats
+                              ).stats.net,
+                            );
+                            net = net.lt(0) ? net.times(-1) : net;
+                            return formatCurrency(net.toString());
+                          })()}
                         </span>
                       </div>
                     </div>
@@ -209,29 +290,70 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
           </div>
 
           {/* Year Stats */}
-          <div className="border-content2 [&>div]:border-b-content2 w-[120px] border-r-[0.5px] border-l-[0.5px] text-right text-xs [&>div]:px-1 [&>div]:not-[:last-child]:border-b-[0.5px]">
-            <div className="text-success">
-              <span>
+          <div className="border-content2 [&>div]:border-b-content2 w-[180px] border-r-[0.5px] border-l-[0.5px] text-right text-xs [&>div]:px-1 [&>div]:not-[:last-child]:border-b-[0.5px]">
+            <span className="text-content4 mb-1 block text-center">
+              {year} Income - Expenses
+            </span>
+            <div className="text-success flex items-center justify-between gap-1">
+              <div className="flex items-center gap-1">
+                {Number(
+                  calendarV2Data.stats[year].stats?.totalIncomePercentChange,
+                ) >= 0 ? (
+                  <TrendingUp size={12} />
+                ) : (
+                  <TrendingDown size={12} />
+                )}
+                {calendarV2Data.stats[year].stats?.totalIncomePercentChange}%
+              </div>
+              <Divider orientation="vertical" className="h-3" />
+              <span className="w-7/12">
                 {formatCurrency(calendarV2Data.stats[year].stats.totalIncome)}
               </span>
             </div>
-            <div className="text-danger">
-              <span>
+            <div className="text-danger flex items-center justify-between gap-1">
+              <div className="flex items-center gap-1">
+                {Number(
+                  calendarV2Data.stats[year].stats?.totalExpensesPercentChange,
+                ) >= 0 ? (
+                  <TrendingUp size={12} />
+                ) : (
+                  <TrendingDown size={12} />
+                )}
+                {calendarV2Data.stats[year].stats?.totalExpensesPercentChange}%
+              </div>
+              <Divider orientation="vertical" className="h-3" />
+              <span className="w-7/12">
                 {formatCurrency(calendarV2Data.stats[year].stats.totalExpenses)}
               </span>
             </div>
             <div
               className={clsx(
-                "flex items-center justify-end",
+                "flex items-center justify-between gap-1",
                 Number(calendarV2Data.stats[year].stats.net) > 0
                   ? "text-success"
                   : "text-danger",
               )}
             >
-              <Diff size={9} />
-              <span>
-                {formatCurrency(calendarV2Data.stats[year].stats.net)}
-              </span>
+              <div className="flex items-center gap-1">
+                {Number(calendarV2Data.stats[year].stats?.netPercentChange) >=
+                0 ? (
+                  <TrendingUp size={12} />
+                ) : (
+                  <TrendingDown size={12} />
+                )}
+                {calendarV2Data.stats[year].stats?.netPercentChange}%
+              </div>
+              <Divider orientation="vertical" className="h-3" />
+              <div className="flex w-7/12 items-center justify-end">
+                <Diff size={9} />
+                <span>
+                  {(() => {
+                    let net = new Decimal(calendarV2Data.stats[year].stats.net);
+                    net = net.lt(0) ? net.times(-1) : net;
+                    return formatCurrency(net.toString());
+                  })()}
+                </span>
+              </div>
             </div>
           </div>
         </div>

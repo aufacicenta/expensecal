@@ -16,6 +16,36 @@ import {
 } from "./types";
 
 /**
+ * Calculate percentage change from previous value
+ * For the first period (prevValue is undefined), returns "0.0"
+ * For zero previous values, returns "0.0" to avoid division by zero
+ */
+function calculatePercentChange(
+  currentValue: string,
+  prevValue: string | undefined,
+): string {
+  if (prevValue === undefined) {
+    return "0.0";
+  }
+
+  const prev = new Decimal(prevValue);
+  const curr = new Decimal(currentValue);
+
+  if (prev.isZero()) {
+    return "0.0";
+  }
+
+  const percentChange = curr
+    .minus(prev)
+    .dividedBy(prev)
+    .times(100)
+    .toDecimalPlaces(2)
+    .toString();
+
+  return percentChange;
+}
+
+/**
  * GET /api/v2/calendar
  * Fetch all calendar events for user, organized by year/month/day
  * Protected endpoint (requires authentication)
@@ -195,6 +225,171 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
               }
             }
           }
+        }
+      }
+    }
+
+    // Add previous period's net to current period's totalIncome (carry forward net balance)
+    const sortedYearsForCarryForward = Object.keys(stats).sort();
+    let prevYearNet: string | undefined;
+
+    for (const year of sortedYearsForCarryForward) {
+      const yearData = stats[year];
+
+      // Add previous year's net to current year's income
+      if (prevYearNet !== undefined) {
+        yearData.stats.totalIncome = new Decimal(yearData.stats.totalIncome)
+          .plus(prevYearNet)
+          .toString();
+      }
+
+      // Track current year's net for next iteration
+      prevYearNet = yearData.stats.net;
+
+      // Process months within this year
+      const sortedMonths = Object.keys(yearData)
+        .filter((key) => key !== "stats")
+        .sort();
+      let prevMonthNet: string | undefined;
+
+      for (const month of sortedMonths) {
+        const monthData = yearData[month] as any;
+
+        // Add previous month's net to current month's income
+        if (prevMonthNet !== undefined) {
+          monthData.stats.totalIncome = new Decimal(monthData.stats.totalIncome)
+            .plus(prevMonthNet)
+            .toString();
+        }
+
+        // Recalculate month net after income adjustment
+        monthData.stats.net = new Decimal(monthData.stats.totalIncome)
+          .minus(monthData.stats.totalExpenses)
+          .toString();
+
+        // Track current month's net for next iteration
+        prevMonthNet = monthData.stats.net;
+
+        // Process days within this month
+        const sortedDays = Object.keys(monthData)
+          .filter((key) => key !== "stats")
+          .sort();
+        let prevDayNet: string | undefined;
+
+        for (const day of sortedDays) {
+          const dayStats = monthData[day];
+
+          // Add previous day's net to current day's income
+          if (prevDayNet !== undefined) {
+            dayStats.totalIncome = new Decimal(dayStats.totalIncome)
+              .plus(prevDayNet)
+              .toString();
+          }
+
+          // Recalculate day net after income adjustment
+          dayStats.net = new Decimal(dayStats.totalIncome)
+            .minus(dayStats.totalExpenses)
+            .toString();
+
+          // Track current day's net for next iteration
+          prevDayNet = dayStats.net;
+        }
+      }
+
+      // Recalculate year net after income adjustment
+      yearData.stats.net = new Decimal(yearData.stats.totalIncome)
+        .minus(yearData.stats.totalExpenses)
+        .toString();
+    }
+
+    // Calculate percentage changes for all stats levels
+    const sortedYears = Object.keys(stats).sort();
+    let prevYearStats: FinancialSummary | undefined;
+
+    for (const year of sortedYears) {
+      const yearData = stats[year];
+
+      // Calculate year-level percentage changes
+      (yearData.stats as any).totalIncomePercentChange = calculatePercentChange(
+        yearData.stats.totalIncome,
+        prevYearStats?.totalIncome,
+      );
+      (yearData.stats as any).totalExpensesPercentChange =
+        calculatePercentChange(
+          yearData.stats.totalExpenses,
+          prevYearStats?.totalExpenses,
+        );
+      (yearData.stats as any).netPercentChange = calculatePercentChange(
+        yearData.stats.net,
+        prevYearStats?.net,
+      );
+
+      // Track previous year for next iteration
+      prevYearStats = {
+        totalIncome: yearData.stats.totalIncome,
+        totalExpenses: yearData.stats.totalExpenses,
+        net: yearData.stats.net,
+      };
+
+      // Process months within this year
+      const sortedMonths = Object.keys(yearData)
+        .filter((key) => key !== "stats")
+        .sort();
+      let prevMonthStats: FinancialSummary | undefined;
+
+      for (const month of sortedMonths) {
+        const monthData = yearData[month] as any;
+
+        // Calculate month-level percentage changes
+        monthData.stats.totalIncomePercentChange = calculatePercentChange(
+          monthData.stats.totalIncome,
+          prevMonthStats?.totalIncome,
+        );
+        monthData.stats.totalExpensesPercentChange = calculatePercentChange(
+          monthData.stats.totalExpenses,
+          prevMonthStats?.totalExpenses,
+        );
+        monthData.stats.netPercentChange = calculatePercentChange(
+          monthData.stats.net,
+          prevMonthStats?.net,
+        );
+
+        // Track previous month for next iteration
+        prevMonthStats = {
+          totalIncome: monthData.stats.totalIncome,
+          totalExpenses: monthData.stats.totalExpenses,
+          net: monthData.stats.net,
+        };
+
+        // Process days within this month
+        const sortedDays = Object.keys(monthData)
+          .filter((key) => key !== "stats")
+          .sort();
+        let prevDayStats: FinancialSummary | undefined;
+
+        for (const day of sortedDays) {
+          const dayStats = monthData[day];
+
+          // Calculate day-level percentage changes
+          dayStats.totalIncomePercentChange = calculatePercentChange(
+            dayStats.totalIncome,
+            prevDayStats?.totalIncome,
+          );
+          dayStats.totalExpensesPercentChange = calculatePercentChange(
+            dayStats.totalExpenses,
+            prevDayStats?.totalExpenses,
+          );
+          dayStats.netPercentChange = calculatePercentChange(
+            dayStats.net,
+            prevDayStats?.net,
+          );
+
+          // Track previous day for next iteration
+          prevDayStats = {
+            totalIncome: dayStats.totalIncome,
+            totalExpenses: dayStats.totalExpenses,
+            net: dayStats.net,
+          };
         }
       }
     }

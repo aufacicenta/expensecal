@@ -5,7 +5,11 @@ export type FinancialSummary = {
   totalIncome: string;
   totalExpenses: string;
   net: string;
+  totalIncomePercentChange?: string;
+  totalExpensesPercentChange?: string;
+  netPercentChange?: string;
 };
+
 export type CalendarEvent = EventAttributes & { exchangeRate: string };
 
 type Day = Array<CalendarEvent>;
@@ -13,11 +17,11 @@ type Month = Record<string, Day>;
 type Year = Record<string, Month>;
 export type CalendarData = Record<string, Year>;
 
-type DayStats = FinancialSummary;
+export type DayStats = FinancialSummary;
 
 export type MonthStats = {
   stats: FinancialSummary;
-  [day: string]: DayStats | FinancialSummary;
+  [day: string]: DayStats;
 };
 
 type YearStats = {
