@@ -1,4 +1,5 @@
 import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
+import { useCurrencyContext } from "@/context/Currency/useCurrencyContext";
 import { useEventCategoriesContext } from "@/context/EventCategories/useEventCategoriesContext";
 import { useEventsContext } from "@/context/Events/useEventsContext";
 import { EventsTableProps } from "./EventsTable.types";
@@ -27,6 +28,7 @@ import {
 import { useEffect, useState } from "react";
 import { EventCellAmountEdit } from "./event-cell-amount-edit/EventCellAmountEdit";
 import { EventCellCategoriesSelect } from "./event-cell-categories-select/EventCellCategoriesSelect";
+import { EventCellCurrencyEdit } from "./event-cell-currency-edit/EventCellCurrencyEdit";
 import { EventCellQuantityEdit } from "./event-cell-quantity-edit/EventCellQuantityEdit";
 
 export const EventsTable: React.FC<EventsTableProps> = ({}) => {
@@ -34,12 +36,15 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     useCalendarV2Context();
   const { updateEvent } = useEventsContext();
   const { categories } = useEventCategoriesContext();
+  const { currencies } = useCurrencyContext();
   const [showOriginalText, setShowOriginalText] = useState(false);
   const [selectedEventForCategories, setSelectedEventForCategories] =
     useState<CalendarEvent | null>(null);
   const [selectedEventForQuantity, setSelectedEventForQuantity] =
     useState<CalendarEvent | null>(null);
   const [selectedEventForAmount, setSelectedEventForAmount] =
+    useState<CalendarEvent | null>(null);
+  const [selectedEventForCurrency, setSelectedEventForCurrency] =
     useState<CalendarEvent | null>(null);
 
   const handleEventCategoryUpdate = async (
@@ -83,6 +88,21 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
       eventId,
       {
         amount,
+      },
+      eventDate,
+    );
+  };
+
+  const handleEventCurrencyUpdate = async (
+    eventId: string,
+    currencyId: string,
+    eventDate: Date,
+  ) => {
+    // Update the event with new currency
+    await updateEvent(
+      eventId,
+      {
+        currency_id: currencyId,
       },
       eventDate,
     );
@@ -225,7 +245,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                       </div>
                                       <div
                                         className={clsx(
-                                          "border-content2 w-[120px] text-right",
+                                          "border-content2 w-[120px] cursor-no-drop text-right",
                                         )}
                                       >
                                         {formatCurrency(
@@ -233,8 +253,27 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                             Number(eventObj.quantity),
                                         )}
                                       </div>
-                                      <div className="border-content2 w-[90px]">
-                                        {eventObj.currency?.symbol}
+                                      <div
+                                        className="border-content2 group relative w-[90px] cursor-pointer"
+                                        data-cell-name="event-currency"
+                                        onClick={() =>
+                                          setSelectedEventForCurrency(eventObj)
+                                        }
+                                      >
+                                        {selectedEventForCurrency?.id ===
+                                          eventObj.id && (
+                                          <EventCellCurrencyEdit
+                                            event={eventObj}
+                                            availableCurrencies={currencies}
+                                            onUpdate={handleEventCurrencyUpdate}
+                                            onClose={() =>
+                                              setSelectedEventForCurrency(null)
+                                            }
+                                          />
+                                        )}
+                                        <span className="group-hover:text-content3">
+                                          {eventObj.currency?.symbol}
+                                        </span>
                                       </div>
                                       <div
                                         className={clsx(
