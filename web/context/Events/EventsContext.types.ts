@@ -46,7 +46,7 @@ export type EventsContextType = {
   updateEvent: (
     eventId: string,
     body: UpdateEventRequestBody,
-    originalEventDate?: Date,
+    originalEventDate: Date,
   ) => Promise<UpdateEventResponse>;
   deleteEvent: (
     eventId: string,

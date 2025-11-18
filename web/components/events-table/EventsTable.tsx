@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { EventCellCategoriesSelect } from "./event-cell-categories-select/EventCellCategoriesSelect";
+import { EventCellQuantityEdit } from "./event-cell-quantity-edit/EventCellQuantityEdit";
 
 export const EventsTable: React.FC<EventsTableProps> = ({}) => {
   const { calendarV2Data, loadCalendarV2, updateCalendarCellEvent } =
@@ -34,6 +35,8 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
   const [showOriginalText, setShowOriginalText] = useState(false);
   const [selectedEventForCategories, setSelectedEventForCategories] =
     useState<CalendarEvent | null>(null);
+  const [selectedEventForQuantity, setSelectedEventForQuantity] =
+    useState<CalendarEvent | null>(null);
 
   const handleEventCategoryUpdate = useCallback(
     async (
@@ -42,23 +45,30 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
       eventDate: Date,
       currentEvent: CalendarEvent,
     ) => {
-      await updateEvent(eventId, {
-        categoryIds,
-      });
-
-      // Update calendar cell in-place instead of reloading entire calendar
-      const selectedCategoryObjects = categories.filter(
-        (cat) => cat.id && categoryIds.includes(cat.id),
+      // Update the event with new category ids
+      await updateEvent(
+        eventId,
+        {
+          categoryIds,
+        },
+        eventDate,
       );
-
-      const updatedEvent: CalendarEvent = {
-        ...currentEvent,
-        categories: selectedCategoryObjects as any,
-      };
-
-      updateCalendarCellEvent(updatedEvent, eventDate);
     },
     [categories, updateEvent, updateCalendarCellEvent],
+  );
+
+  const handleEventQuantityUpdate = useCallback(
+    async (eventId: string, quantity: number, eventDate: Date) => {
+      // Update the event with new quantity
+      await updateEvent(
+        eventId,
+        {
+          quantity,
+        },
+        eventDate,
+      );
+    },
+    [calendarV2Data, updateEvent, updateCalendarCellEvent],
   );
 
   useEffect(() => {
@@ -153,13 +163,29 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                   {events.map((eventObj) => (
                                     <div
                                       className={clsx(
-                                        "hover:bg-content2 last-of-type:border-b-content2 flex flex-1 last-of-type:border-b-[0.5px] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:border-[0.5px] [&>div]:border-b-0 [&>div]:p-1",
+                                        "hover:bg-content2 last-of-type:border-b-content2 flex flex-1 text-xs last-of-type:border-b-[0.5px] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:border-[0.5px] [&>div]:border-b-0 [&>div]:p-1",
                                         events.length === 1 && "h-full",
                                       )}
                                       key={eventObj.id}
                                     >
-                                      <div className="border-content2 w-[120px] text-right">
-                                        {eventObj.quantity}
+                                      <div
+                                        className="border-content2 group hover:bg-content1 relative w-[120px] cursor-pointer text-right transition-colors"
+                                        data-cell-name="event-quantity"
+                                        onClick={() =>
+                                          setSelectedEventForQuantity(eventObj)
+                                        }
+                                      >
+                                        {(selectedEventForQuantity?.id ===
+                                          eventObj.id && (
+                                          <EventCellQuantityEdit
+                                            event={eventObj}
+                                            onUpdate={handleEventQuantityUpdate}
+                                            onClose={() =>
+                                              setSelectedEventForQuantity(null)
+                                            }
+                                          />
+                                        )) ||
+                                          eventObj.quantity}
                                       </div>
                                       <div className="border-content2 w-[120px] text-right">
                                         {formatCurrency(eventObj.amount)}
@@ -188,7 +214,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                       >
                                         {formatCurrency(eventObj.exchangeRate)}
                                       </div>
-                                      <div className="border-content2 w-[210px] text-xs">
+                                      <div className="border-content2 w-[210px]">
                                         <span>
                                           {showOriginalText &&
                                           eventObj.original_text

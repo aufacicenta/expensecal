@@ -1,7 +1,10 @@
 "use client";
 
 import { GetChildEventsResponse } from "@/app/api/v1/events/[id]/children/types";
-import { UpdateEventRequestBody } from "@/app/api/v1/events/[id]/types";
+import {
+  UpdateEventRequestBody,
+  UpdateEventSuccessResponse,
+} from "@/app/api/v1/events/[id]/types";
 import { CreateFromTextSuccessResponse } from "@/app/api/v1/events/create-from-text/types";
 import { CreateEventRequestBody } from "@/app/api/v1/events/create/types";
 import {
@@ -206,7 +209,11 @@ export const EventsContextController = ({
     }
   };
 
-  const updateEvent = async (eventId: string, body: UpdateEventRequestBody) => {
+  const updateEvent = async (
+    eventId: string,
+    body: UpdateEventRequestBody,
+    oldEventDate: Date,
+  ) => {
     try {
       const response = await fetch(routes.api.v1.events.detail(eventId), {
         method: "PUT",
@@ -220,7 +227,9 @@ export const EventsContextController = ({
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as UpdateEventSuccessResponse;
+
+      calendarContext.updateCalendarCellEvent(data.data, oldEventDate);
 
       return data;
     } catch (error) {
