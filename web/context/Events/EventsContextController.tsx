@@ -216,31 +216,6 @@ export const EventsContextController = ({
       // If not provided, we'll try to fetch it
       let trackedOriginalDate: Date | null = originalEventDate || null;
 
-      // If original date not provided, try to fetch the current event
-      if (!trackedOriginalDate) {
-        try {
-          const currentEventResponse = await fetch(
-            routes.api.v1.events.detail(eventId),
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-              },
-            },
-          );
-
-          if (currentEventResponse.ok) {
-            const currentEventData = await currentEventResponse.json();
-            if (currentEventData.data?.event_date) {
-              trackedOriginalDate = new Date(currentEventData.data.event_date);
-            }
-          }
-        } catch (err) {
-          // If we can't fetch the original, we'll just update the new date
-          console.warn("Could not fetch original event date:", err);
-        }
-      }
-
       const response = await fetch(routes.api.v1.events.detail(eventId), {
         method: "PUT",
         headers: {

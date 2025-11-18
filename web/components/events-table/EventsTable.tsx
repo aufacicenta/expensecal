@@ -1,14 +1,22 @@
 import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
+import { useEventCategoriesContext } from "@/context/EventCategories/useEventCategoriesContext";
+import { useEventsContext } from "@/context/Events/useEventsContext";
 import { EventsTableProps } from "./EventsTable.types";
 
-import { DayStats, MonthStats } from "@/app/api/v2/calendar/types";
+import {
+  CalendarEvent,
+  DayStats,
+  MonthStats,
+} from "@/app/api/v2/calendar/types";
 import { formatCurrency } from "@/lib/currency/formatter";
 import { formatDayShort, formatMonthShort } from "@/lib/date/formatters";
+import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import clsx from "clsx";
 import Decimal from "decimal.js";
 import {
   ArrowLeftRight,
+  Circle,
   Diff,
   ListFilter,
   Trash,
@@ -16,10 +24,15 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { EventCellCategoriesSelect } from "./event-cell-categories-select/EventCellCategoriesSelect";
 
 export const EventsTable: React.FC<EventsTableProps> = ({}) => {
-  const { calendarV2Data, loading, loadCalendarV2 } = useCalendarV2Context();
+  const { calendarV2Data, loadCalendarV2 } = useCalendarV2Context();
+  const { updateEvent } = useEventsContext();
+  const { categories } = useEventCategoriesContext();
   const [showOriginalText, setShowOriginalText] = useState(false);
+  const [selectedEventForCategories, setSelectedEventForCategories] =
+    useState<CalendarEvent | null>(null);
 
   useEffect(() => {
     if (!!calendarV2Data) return;
@@ -156,13 +169,59 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                             : eventObj.description}
                                         </span>
                                       </div>
-                                      <div className="border-content2 w-[180px]">
+                                      <div
+                                        className="border-content2 group relative w-[180px] cursor-pointer"
+                                        data-cell-name="event-categories"
+                                        onClick={() =>
+                                          setSelectedEventForCategories(
+                                            eventObj,
+                                          )
+                                        }
+                                      >
                                         {eventObj.categories?.map(
                                           (category) => (
-                                            <span className="text-xs">
-                                              {category.name},{" "}
-                                            </span>
+                                            <Chip
+                                              size="sm"
+                                              variant="dot"
+                                              startContent={
+                                                <Circle
+                                                  stroke={category.color}
+                                                  size={12}
+                                                />
+                                              }
+                                              classNames={{
+                                                content: `text-xs`,
+                                              }}
+                                            >
+                                              {category.name}
+                                            </Chip>
                                           ),
+                                        )}
+                                        {selectedEventForCategories?.id ===
+                                          eventObj.id && (
+                                          <EventCellCategoriesSelect
+                                            event={eventObj}
+                                            availableCategories={categories}
+                                            onUpdate={async (
+                                              eventId,
+                                              categoryIds,
+                                            ) => {
+                                              await updateEvent(
+                                                eventId,
+                                                {
+                                                  categoryIds,
+                                                },
+                                                eventObj.event_date,
+                                              );
+                                              // @TODO update this calendar cell only instead
+                                              await loadCalendarV2();
+                                            }}
+                                            onClose={() =>
+                                              setSelectedEventForCategories(
+                                                null,
+                                              )
+                                            }
+                                          />
                                         )}
                                       </div>
                                       <div className="border-content2 w-[70px] items-end text-right">
