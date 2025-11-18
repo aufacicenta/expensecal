@@ -10,6 +10,7 @@ import {
 } from "@/app/api/v2/calendar/types";
 import { formatCurrency } from "@/lib/currency/formatter";
 import { formatDayShort, formatMonthShort } from "@/lib/date/formatters";
+import { EventAttributes } from "@expensecal/database/models/Event";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import clsx from "clsx";
@@ -24,6 +25,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { EventCellAmountEdit } from "./event-cell-amount-edit/EventCellAmountEdit";
 import { EventCellCategoriesSelect } from "./event-cell-categories-select/EventCellCategoriesSelect";
 import { EventCellQuantityEdit } from "./event-cell-quantity-edit/EventCellQuantityEdit";
 
@@ -36,6 +38,8 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
   const [selectedEventForCategories, setSelectedEventForCategories] =
     useState<CalendarEvent | null>(null);
   const [selectedEventForQuantity, setSelectedEventForQuantity] =
+    useState<CalendarEvent | null>(null);
+  const [selectedEventForAmount, setSelectedEventForAmount] =
     useState<CalendarEvent | null>(null);
 
   const handleEventCategoryUpdate = async (
@@ -64,6 +68,21 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
       eventId,
       {
         quantity,
+      },
+      eventDate,
+    );
+  };
+
+  const handleEventAmountUpdate = async (
+    eventId: string,
+    amount: EventAttributes["amount"],
+    eventDate: Date,
+  ) => {
+    // Update the event with new amount
+    await updateEvent(
+      eventId,
+      {
+        amount,
       },
       eventDate,
     );
@@ -185,8 +204,24 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                         )) ||
                                           eventObj.quantity}
                                       </div>
-                                      <div className="border-content2 w-[120px] text-right">
-                                        {formatCurrency(eventObj.amount)}
+                                      <div
+                                        className="border-content2 group hover:bg-content1 relative w-[120px] cursor-pointer text-right transition-colors"
+                                        data-cell-name="event-amount"
+                                        onClick={() =>
+                                          setSelectedEventForAmount(eventObj)
+                                        }
+                                      >
+                                        {(selectedEventForAmount?.id ===
+                                          eventObj.id && (
+                                          <EventCellAmountEdit
+                                            event={eventObj}
+                                            onUpdate={handleEventAmountUpdate}
+                                            onClose={() =>
+                                              setSelectedEventForAmount(null)
+                                            }
+                                          />
+                                        )) ||
+                                          formatCurrency(eventObj.amount)}
                                       </div>
                                       <div
                                         className={clsx(

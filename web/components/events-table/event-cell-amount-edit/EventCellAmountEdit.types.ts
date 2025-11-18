@@ -1,11 +1,11 @@
 import { CalendarEvent } from "@/app/api/v2/calendar/types";
 import { EventAttributes } from "@expensecal/database/models/Event";
 
-export type EventCellQuantityEditProps = {
+export type EventCellAmountEditProps = {
   event: CalendarEvent;
   onUpdate: (
     eventId: string,
-    quantity: EventAttributes["quantity"],
+    amount: EventAttributes["amount"],
     eventDate: Date,
   ) => Promise<void>;
   onClose: () => void;
