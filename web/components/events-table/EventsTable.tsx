@@ -23,7 +23,7 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { EventCellCategoriesSelect } from "./event-cell-categories-select/EventCellCategoriesSelect";
 import { EventCellQuantityEdit } from "./event-cell-quantity-edit/EventCellQuantityEdit";
 
@@ -38,38 +38,36 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
   const [selectedEventForQuantity, setSelectedEventForQuantity] =
     useState<CalendarEvent | null>(null);
 
-  const handleEventCategoryUpdate = useCallback(
-    async (
-      eventId: string,
-      categoryIds: string[],
-      eventDate: Date,
-      currentEvent: CalendarEvent,
-    ) => {
-      // Update the event with new category ids
-      await updateEvent(
-        eventId,
-        {
-          categoryIds,
-        },
-        eventDate,
-      );
-    },
-    [categories, updateEvent, updateCalendarCellEvent],
-  );
+  const handleEventCategoryUpdate = async (
+    eventId: string,
+    categoryIds: string[],
+    eventDate: Date,
+    currentEvent: CalendarEvent,
+  ) => {
+    // Update the event with new category ids
+    await updateEvent(
+      eventId,
+      {
+        categoryIds,
+      },
+      eventDate,
+    );
+  };
 
-  const handleEventQuantityUpdate = useCallback(
-    async (eventId: string, quantity: number, eventDate: Date) => {
-      // Update the event with new quantity
-      await updateEvent(
-        eventId,
-        {
-          quantity,
-        },
-        eventDate,
-      );
-    },
-    [calendarV2Data, updateEvent, updateCalendarCellEvent],
-  );
+  const handleEventQuantityUpdate = async (
+    eventId: string,
+    quantity: number,
+    eventDate: Date,
+  ) => {
+    // Update the event with new quantity
+    await updateEvent(
+      eventId,
+      {
+        quantity,
+      },
+      eventDate,
+    );
+  };
 
   useEffect(() => {
     if (!!calendarV2Data) return;

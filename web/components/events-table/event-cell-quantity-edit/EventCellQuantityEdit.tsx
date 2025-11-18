@@ -14,6 +14,7 @@ export const EventCellQuantityEdit: React.FC<EventCellQuantityEditProps> = ({
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isSavedRef = useRef(false);
 
   // Focus and select input on mount
   useEffect(() => {
@@ -32,6 +33,7 @@ export const EventCellQuantityEdit: React.FC<EventCellQuantityEditProps> = ({
     try {
       setError("");
       setIsLoading(true);
+      isSavedRef.current = true;
 
       // Validate using zod schema
       const validatedData = eventQuantitySchema.parse({
@@ -53,12 +55,15 @@ export const EventCellQuantityEdit: React.FC<EventCellQuantityEditProps> = ({
         setError("Failed to update quantity");
       }
       console.error("Failed to update event quantity:", error);
+      isSavedRef.current = false;
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleBlur = () => {
+    if (isSavedRef.current) return;
+
     if (value !== String(event.quantity)) {
       handleSave();
     } else {
