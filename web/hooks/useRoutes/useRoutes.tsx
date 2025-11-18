@@ -31,6 +31,9 @@ export const routes = {
         get: () => `/api/v1/categories`,
         create: () => `/api/v1/categories/create`,
       },
+      exchangeRates: {
+        get: () => `/api/v1/exchange-rates`,
+      },
     },
     v2: {
       calendar: {

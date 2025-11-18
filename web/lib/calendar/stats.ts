@@ -1,8 +1,6 @@
 import { FinancialSummary } from "@/app/api/v2/calendar/types";
-import { Event } from "@expensecal/database";
-import { EventType } from "@expensecal/database/models/Event";
 import Decimal from "decimal.js";
-import { convertCurrency } from "../exchange-rates";
+import { convertCurrency } from "../exchange-rates/exchangeRateService";
 
 /**
  * Calculate financial summary for a day
@@ -32,46 +30,6 @@ export function convertAmount(
   }
 
   return convertedAmount;
-}
-
-/**
- * Calculate financial summary for a day
- * Converts all events to the base currency using exchange rates
- */
-export function calculateDayFinancialSummary(
-  events: Event[],
-  baseCurrencySymbol: string,
-  exchangeRates: Map<string, string>,
-): FinancialSummary {
-  let totalIncome = new Decimal(0);
-  let totalExpenses = new Decimal(0);
-
-  for (const event of events) {
-    const amount = new Decimal(event.amount).times(event.quantity || 1);
-    const currencySymbol = event.currency?.symbol || "UNKNOWN";
-
-    // Convert amount to base currency if needed
-    let convertedAmount = convertAmount(
-      amount,
-      currencySymbol,
-      baseCurrencySymbol,
-      exchangeRates,
-    );
-
-    if (event.type === EventType.INCOME) {
-      totalIncome = totalIncome.plus(convertedAmount);
-    } else if (event.type === EventType.EXPENSE) {
-      totalExpenses = totalExpenses.plus(convertedAmount);
-    }
-  }
-
-  const net = totalIncome.minus(totalExpenses);
-
-  return {
-    totalIncome: totalIncome.toString(),
-    totalExpenses: totalExpenses.toString(),
-    net: net.toString(),
-  };
 }
 
 /**

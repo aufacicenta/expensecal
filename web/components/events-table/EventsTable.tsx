@@ -205,7 +205,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                       </div>
                                       <div
                                         className={clsx(
-                                          "border-content2 w-[120px] text-right",
+                                          "border-content2 w-[120px] cursor-no-drop text-right",
                                           eventObj.type === "EXPENSE" &&
                                             "text-danger",
                                           eventObj.type === "INCOME" &&

@@ -7,6 +7,7 @@ import { CurrencyContextController } from "@/context/Currency/CurrencyContextCon
 import { EventCategoriesContextController } from "@/context/EventCategories/EventCategoriesContextController";
 import { EventEditModalContextController } from "@/context/EventEditModal/EventEditModalContext";
 import { EventsContextController } from "@/context/Events/EventsContextController";
+import { ExchangeRatesContextController } from "@/context/ExchangeRates/ExchangeRatesContextController";
 import { FilteringContextController } from "@/context/Filtering/FilteringContextController";
 import { HeroUIProvider } from "@heroui/system";
 import { ToastProvider } from "@heroui/toast";
@@ -34,19 +35,21 @@ export function Providers({ children, themeProps }: ProvidersProps) {
     <HeroUIProvider navigate={router.push}>
       <ToastProvider />
       <NextThemesProvider {...themeProps}>
-        <CalendarV2ContextController>
-          <EventEditModalContextController>
-            <EventsContextController>
-              <CurrencyContextController>
-                <FilteringContextController>
-                  <EventCategoriesContextController>
-                    {children}
-                  </EventCategoriesContextController>
-                </FilteringContextController>
-              </CurrencyContextController>
-            </EventsContextController>
-          </EventEditModalContextController>
-        </CalendarV2ContextController>
+        <ExchangeRatesContextController>
+          <CalendarV2ContextController>
+            <EventEditModalContextController>
+              <EventsContextController>
+                <CurrencyContextController>
+                  <FilteringContextController>
+                    <EventCategoriesContextController>
+                      {children}
+                    </EventCategoriesContextController>
+                  </FilteringContextController>
+                </CurrencyContextController>
+              </EventsContextController>
+            </EventEditModalContextController>
+          </CalendarV2ContextController>
+        </ExchangeRatesContextController>
       </NextThemesProvider>
     </HeroUIProvider>
   );
