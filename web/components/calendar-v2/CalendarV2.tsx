@@ -17,7 +17,7 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
   const {
     calendarV2Data,
     currentMonth,
-    loading,
+    actionStates,
     goToPreviousMonth,
     goToNextMonth,
     goToMonth,
@@ -83,7 +83,7 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
   // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (loading || currentMonthIndex === -1) return;
+      if (actionStates.loadCalendarV2.isLoading || currentMonthIndex === -1) return;
 
       switch (event.key.toLowerCase()) {
         case "arrowleft":
@@ -110,7 +110,7 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [
-    loading,
+    actionStates.loadCalendarV2.isLoading,
     currentMonthIndex,
     availableMonths.length,
     goToPreviousMonth,

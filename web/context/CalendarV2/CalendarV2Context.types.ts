@@ -5,6 +5,13 @@ export type CalendarV2ContextControllerProps = {
   children: ReactNode;
 };
 
+export type CalendarV2ContextActionStates = {
+  loadCalendarV2: {
+    isLoading: boolean;
+    error?: string;
+  };
+};
+
 export type CalendarV2ContextType = {
   /**
    * V2 calendar data structure: year -> month -> day -> events[]
@@ -17,14 +24,9 @@ export type CalendarV2ContextType = {
   currentMonth: Date;
 
   /**
-   * Loading state for calendar data
+   * Action States for all relevant async functions
    */
-  loading: boolean;
-
-  /**
-   * Error message if loading failed
-   */
-  error: string | null;
+  actionStates: CalendarV2ContextActionStates;
 
   /**
    * Load all calendar events from v2 endpoint

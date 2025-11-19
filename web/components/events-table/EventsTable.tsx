@@ -45,9 +45,13 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
   const {
     calendarV2Data,
     loadCalendarV2,
-    loading: isCalendarV2DataLoading,
+    actionStates: calendarV2ContextActionStates,
   } = useCalendarV2Context();
-  const { updateEvent, deleteEvent } = useEventsContext();
+  const {
+    updateEvent,
+    deleteEvent,
+    actionStates: eventsContextActionStates,
+  } = useEventsContext();
   const { categories } = useEventCategoriesContext();
   const { currencies } = useCurrencyContext();
   const [showOriginalText, setShowOriginalText] = useState(false);
@@ -150,6 +154,20 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     }
   };
 
+  const getLoadingStateComponent = () => (
+    <section className="bg-background/70 fixed top-0 right-0 bottom-0 left-0 z-50 h-screen w-screen">
+      <nav className="absolute top-0 right-0 left-0 flex w-full justify-between [&>div]:p-4">
+        <div>
+          <span className="font-mono">ExpenseCal</span>
+        </div>
+        <div>
+          <span className="font-mono">Loading...</span>
+        </div>
+      </nav>
+      <StaggerLoadingAnimation />
+    </section>
+  );
+
   useEffect(() => {
     if (!!calendarV2Data) return;
 
@@ -157,24 +175,15 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     loadCalendarV2();
   }, []);
 
-  if (!calendarV2Data || isCalendarV2DataLoading) {
-    return (
-      <section className="bg-opacity-70 relative h-screen w-screen">
-        <nav className="absolute top-0 right-0 left-0 flex w-full justify-between [&>div]:p-4">
-          <div>
-            <span className="font-mono">ExpenseCal</span>
-          </div>
-          <div>
-            <span className="font-mono">Loading...</span>
-          </div>
-        </nav>
-        <StaggerLoadingAnimation />
-      </section>
-    );
-  }
+  if (!calendarV2Data) return getLoadingStateComponent();
 
   return (
     <section className="relative w-fit overflow-x-auto pt-[33px]">
+      {/* Loading State Over Existing Calendar*/}
+      {(calendarV2ContextActionStates.loadCalendarV2.isLoading ||
+        eventsContextActionStates.deleteEvent.isLoading) &&
+        getLoadingStateComponent()}
+
       {/* Fixed Table Nav */}
       <nav className="[&>div]:border-content3 text-content4 bg-background fixed top-0 left-0 flex w-fit items-center text-xs font-semibold [&>div]:flex [&>div]:items-center [&>div]:gap-1 [&>div]:border-[0.5px] [&>div]:p-1">
         <div className="hover:text-content4-foreground w-[180px] cursor-pointer justify-center">

@@ -10,7 +10,7 @@ export const NavbarTop: React.FC<NavbarTopProps> = ({
   currentMonthIndex,
   availableMonths,
 }) => {
-  const { loading, goToPreviousMonth, goToNextMonth } = useCalendarV2Context();
+  const { actionStates, goToPreviousMonth, goToNextMonth } = useCalendarV2Context();
 
   return (
     <div
@@ -24,7 +24,7 @@ export const NavbarTop: React.FC<NavbarTopProps> = ({
       <div className="flex items-center">
         <button
           onClick={goToPreviousMonth}
-          disabled={loading || currentMonthIndex <= 0}
+          disabled={actionStates.loadCalendarV2.isLoading || currentMonthIndex <= 0}
           className="rounded-md p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="Previous month"
         >
@@ -38,7 +38,7 @@ export const NavbarTop: React.FC<NavbarTopProps> = ({
         </h2>
         <button
           onClick={goToNextMonth}
-          disabled={loading || currentMonthIndex >= availableMonths.length - 1}
+          disabled={actionStates.loadCalendarV2.isLoading || currentMonthIndex >= availableMonths.length - 1}
           className="rounded-md p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="Next month"
         >

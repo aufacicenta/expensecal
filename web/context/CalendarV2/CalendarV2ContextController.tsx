@@ -18,6 +18,7 @@ import { useState } from "react";
 
 import { CalendarV2Context } from "./CalendarV2Context";
 import {
+  CalendarV2ContextActionStates,
   CalendarV2ContextControllerProps,
   CalendarV2ContextType,
 } from "./CalendarV2Context.types";
@@ -31,12 +32,22 @@ export const CalendarV2ContextController = ({
     GetCalendarV2SuccessResponse["data"] | undefined
   >(undefined);
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [actionStates, setActionStates] =
+    useState<CalendarV2ContextActionStates>({
+      loadCalendarV2: {
+        isLoading: true,
+        error: undefined,
+      },
+    });
 
   const loadCalendarV2 = async () => {
-    setLoading(true);
-    setError(null);
+    setActionStates((prev) => ({
+      ...prev,
+      loadCalendarV2: {
+        isLoading: true,
+        error: undefined,
+      },
+    }));
     try {
       const url = routes.api.v2.calendar.get();
       const response = await fetch(url, {
@@ -54,17 +65,34 @@ export const CalendarV2ContextController = ({
       if (data.success) {
         const successResponse = data as GetCalendarV2SuccessResponse;
         setCalendarV2Data(successResponse.data);
+        setActionStates((prev) => ({
+          ...prev,
+          loadCalendarV2: {
+            isLoading: false,
+            error: undefined,
+          },
+        }));
       } else {
         const errorMsg = data.error || "Failed to load calendar";
-        setError(errorMsg);
+        setActionStates((prev) => ({
+          ...prev,
+          loadCalendarV2: {
+            isLoading: false,
+            error: errorMsg,
+          },
+        }));
         console.error("Failed to load calendar:", errorMsg);
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Unknown error";
-      setError(errorMsg);
+      setActionStates((prev) => ({
+        ...prev,
+        loadCalendarV2: {
+          isLoading: false,
+          error: errorMsg,
+        },
+      }));
       console.error("Error loading calendar:", err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -354,8 +382,7 @@ export const CalendarV2ContextController = ({
   const props: CalendarV2ContextType = {
     calendarV2Data,
     currentMonth,
-    loading,
-    error,
+    actionStates,
     loadCalendarV2,
     updateCalendarCellEvent,
     deleteCalendarCellEvent,
