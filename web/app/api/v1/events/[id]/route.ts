@@ -15,6 +15,7 @@ import { Currency } from "@expensecal/database/models/Currency";
 import { Event } from "@expensecal/database/models/Event";
 import { EventCategories } from "@expensecal/database/models/EventCategories";
 import { NextRequest, NextResponse } from "next/server";
+import { deleteEventWithValidation } from "../delete-helpers";
 import { UpdateEventRequestBody, UpdateEventResponse } from "./types";
 
 /**
@@ -353,71 +354,48 @@ export async function DELETE(
     // Initialize database models
     initModels(db);
 
-    // Find the event
-    const event = await Event.findByPk(id);
-    if (!event) {
+    try {
+      // Use shared deletion logic
+      const event = await deleteEventWithValidation({
+        eventId: id,
+        userId: user.id,
+        deleteMode: deleteMode as "single" | "all-future",
+      });
+
       return NextResponse.json(
         {
-          success: false,
-          error: "Event not found",
-          details: `No event found with id: ${id}`,
+          success: true,
+          data: event,
         },
-        { status: 404 },
+        { status: 200 },
       );
-    }
+    } catch (error) {
+      const errorType = (error as any).errorType;
 
-    // Verify ownership
-    if (event.user_id !== user.id) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Forbidden",
-          details: "You do not have permission to delete this event",
-        },
-        { status: 403 },
-      );
-    }
-
-    if (deleteMode === "all-future") {
-      // Delete this event and all future child events if recurring
-      if (event.parent_event_id || event.recurrence_rule) {
-        // Get parent event if this is a child
-        const parentId = event.parent_event_id || event.id;
-
-        // Delete this event and all child events with event_date >= this event's date
-        await Event.destroy({
-          where: {
-            user_id: user.id,
-            [Op.or]: [
-              {
-                id: event.id,
-              },
-              {
-                parent_event_id: parentId,
-                event_date: {
-                  [Op.gte]: event.event_date,
-                },
-              },
-            ],
+      if (errorType === "NotFound") {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Event not found",
+            details: error instanceof Error ? error.message : String(error),
           },
-        });
-      } else {
-        // Not a recurring event, just delete it
-        await event.destroy();
+          { status: 404 },
+        );
       }
-    } else {
-      // Delete only this single event
-      await event.destroy();
-    }
 
-    // Return success response with deleted event info
-    return NextResponse.json(
-      {
-        success: true,
-        data: event,
-      },
-      { status: 200 },
-    );
+      if (errorType === "Forbidden") {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Forbidden",
+            details: error instanceof Error ? error.message : String(error),
+          },
+          { status: 403 },
+        );
+      }
+
+      throw error;
+    }
   } catch (error) {
     console.error("Delete event endpoint error:", error);
     return NextResponse.json(

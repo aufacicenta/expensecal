@@ -37,6 +37,7 @@ export const EventsContextController = ({
     deleteInstallments: { isLoading: false, error: undefined },
     updateEvent: { isLoading: false, error: undefined },
     deleteEvent: { isLoading: false, error: undefined },
+    deleteEventMultiple: { isLoading: false, error: undefined },
     fetchChildEvents: { isLoading: false, error: undefined },
   });
 
@@ -374,6 +375,50 @@ export const EventsContextController = ({
     }
   };
 
+  const deleteEventMultiple = async (
+    eventIds: string[],
+    deleteMode: DeleteMode = "single",
+  ) => {
+    setActionStates((prev) => ({
+      ...prev,
+      deleteEventMultiple: { isLoading: true, error: undefined },
+    }));
+    try {
+      const response = await fetch(routes.api.v1.events.deleteMultiple(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          eventIds,
+          deleteMode,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      await response.json();
+
+      // Reload calendar after bulk deletion
+      await reloadCalendar();
+
+      setActionStates((prev) => ({
+        ...prev,
+        deleteEventMultiple: { isLoading: false, error: undefined },
+      }));
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      setActionStates((prev) => ({
+        ...prev,
+        deleteEventMultiple: { isLoading: false, error: errorMsg },
+      }));
+      console.error("Error deleting multiple events:", error);
+      throw error;
+    }
+  };
+
   const fetchChildEvents = async (
     eventId: string,
   ): Promise<GetChildEventsResponse> => {
@@ -410,6 +455,7 @@ export const EventsContextController = ({
     deleteInstallments,
     updateEvent,
     deleteEvent,
+    deleteEventMultiple,
     fetchChildEvents,
   };
 

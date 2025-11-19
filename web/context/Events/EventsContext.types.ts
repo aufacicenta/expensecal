@@ -62,6 +62,10 @@ export type EventsContextActionStates = {
     isLoading: boolean;
     error?: string;
   };
+  deleteEventMultiple: {
+    isLoading: boolean;
+    error?: string;
+  };
   fetchChildEvents: {
     isLoading: boolean;
     error?: string;
@@ -96,5 +100,9 @@ export type EventsContextType = {
     eventId: string,
     deleteMode?: DeleteMode,
   ) => Promise<UpdateEventResponse>;
+  deleteEventMultiple: (
+    eventIds: string[],
+    deleteMode?: DeleteMode,
+  ) => Promise<void>;
   fetchChildEvents: (eventId: string) => Promise<GetChildEventsResponse>;
 };

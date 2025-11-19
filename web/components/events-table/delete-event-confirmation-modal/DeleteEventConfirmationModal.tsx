@@ -10,7 +10,14 @@ import { DeleteEventConfirmationModalProps } from "./DeleteEventConfirmationModa
 
 export const DeleteEventConfirmationModal: React.FC<
   DeleteEventConfirmationModalProps
-> = ({ isOpen, isRecurring, onClose, onConfirm }) => {
+> = ({
+  isOpen,
+  isRecurring,
+  isMultiple,
+  multipleCount,
+  onClose,
+  onConfirm,
+}) => {
   const handleDeleteSingle = () => {
     onConfirm("single");
     onClose();
@@ -22,14 +29,18 @@ export const DeleteEventConfirmationModal: React.FC<
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} backdrop="blur" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} size="lg">
       <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">Delete Event</ModalHeader>
+        <ModalHeader className="flex flex-col gap-1">
+          {isMultiple ? "Delete Multiple Events" : "Delete Event"}
+        </ModalHeader>
         <ModalBody>
           <p>
-            {isRecurring
-              ? "This is a recurring event. What would you like to delete?"
-              : "Are you sure you want to delete this event?"}
+            {isMultiple
+              ? `Are you sure you want to delete ${multipleCount} selected events?`
+              : isRecurring
+                ? "This is a recurring event. What would you like to delete?"
+                : "Are you sure you want to delete this event?"}
           </p>
         </ModalBody>
         <ModalFooter>
@@ -38,9 +49,13 @@ export const DeleteEventConfirmationModal: React.FC<
             variant="bordered"
             onPress={handleDeleteSingle}
           >
-            {isRecurring ? "Delete this event only" : "Delete"}
+            {isMultiple
+              ? `Delete All ${multipleCount} Events`
+              : isRecurring
+                ? "Delete this event only"
+                : "Delete"}
           </Button>
-          {isRecurring && (
+          {isRecurring && !isMultiple && (
             <Button
               color="danger"
               variant="bordered"

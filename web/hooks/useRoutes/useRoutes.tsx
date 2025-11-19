@@ -15,6 +15,7 @@ export const routes = {
           `/api/v1/events/${encodeURIComponent(eventId)}`,
         children: (eventId: string) =>
           `/api/v1/events/${encodeURIComponent(eventId)}/children`,
+        deleteMultiple: () => `/api/v1/events/delete-multiple`,
         installments: {
           create: () => `/api/v1/events/installments/create`,
           list: () => `/api/v1/events/installments/list`,

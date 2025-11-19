@@ -13,6 +13,7 @@ import {
 import { formatCurrency } from "@/lib/currency/formatter";
 import { formatDayShort, formatMonthShort } from "@/lib/date/formatters";
 import { EventAttributes } from "@expensecal/database/models/Event";
+import { Checkbox } from "@heroui/checkbox";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import {
@@ -51,6 +52,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     updateEvent,
     deleteEvent,
     actionStates: eventsContextActionStates,
+    deleteEventMultiple,
   } = useEventsContext();
   const { categories } = useEventCategoriesContext();
   const { currencies } = useCurrencyContext();
@@ -63,6 +65,9 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     useState<CalendarEvent | null>(null);
   const [selectedEventForDelete, setSelectedEventForDelete] =
     useState<CalendarEvent | null>(null);
+  const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   const handleEventCategoryUpdate = async (
     eventId: string,
@@ -144,13 +149,45 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
   };
 
   const handleConfirmDelete = async (deleteMode: DeleteMode) => {
-    if (!selectedEventForDelete) return;
+    if (selectedEventIds.size > 0 && selectedEventForDelete) {
+      // Multiple delete if events are selected
+      try {
+        await handleBulkDelete(deleteMode);
+        setSelectedEventForDelete(null);
+      } catch (error) {
+        console.error("Failed to delete multiple events:", error);
+      }
+    } else if (selectedEventForDelete) {
+      // Single delete
+      try {
+        await deleteEvent(selectedEventForDelete.id!, deleteMode);
+        setSelectedEventForDelete(null);
+      } catch (error) {
+        console.error("Failed to delete event:", error);
+      }
+    }
+  };
+
+  const handleToggleEventSelection = (eventId: string) => {
+    setSelectedEventIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(eventId)) {
+        newSet.delete(eventId);
+      } else {
+        newSet.add(eventId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleBulkDelete = async (deleteMode: DeleteMode = "single") => {
+    if (selectedEventIds.size === 0) return;
 
     try {
-      await deleteEvent(selectedEventForDelete.id!, deleteMode);
-      setSelectedEventForDelete(null);
+      await deleteEventMultiple(Array.from(selectedEventIds), deleteMode);
+      setSelectedEventIds(new Set());
     } catch (error) {
-      console.error("Failed to delete event:", error);
+      console.error("Failed to delete multiple events:", error);
     }
   };
 
@@ -181,11 +218,12 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     <section className="relative w-fit overflow-x-auto pt-[33px]">
       {/* Loading State Over Existing Calendar*/}
       {(calendarV2ContextActionStates.loadCalendarV2.isLoading ||
-        eventsContextActionStates.deleteEvent.isLoading) &&
+        eventsContextActionStates.deleteEvent.isLoading ||
+        eventsContextActionStates.deleteEventMultiple.isLoading) &&
         getLoadingStateComponent()}
 
       {/* Fixed Table Nav */}
-      <nav className="[&>div]:border-content3 text-content4 bg-background fixed top-0 left-0 flex w-fit items-center text-xs font-semibold [&>div]:flex [&>div]:items-center [&>div]:gap-1 [&>div]:border-[0.5px] [&>div]:p-1">
+      <nav className="[&>div]:border-content3 text-content4 bg-background fixed top-0 left-0 flex w-fit items-center text-xs font-semibold [&>div]:flex [&>div]:h-[25px] [&>div]:items-center [&>div]:gap-1 [&>div]:border-[0.5px] [&>div]:p-1">
         <div className="hover:text-content4-foreground w-[180px] cursor-pointer justify-center">
           <span>Year</span>
           <ListFilter size={12} />
@@ -196,6 +234,13 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
         </div>
         <div className="w-[120px] justify-center">
           <span>Day</span>
+        </div>
+        <div className="w-[70px] justify-center">
+          <Checkbox
+            isSelected={false}
+            size="sm"
+            classNames={{ wrapper: "me-0", base: "p-0" }}
+          />
         </div>
         <div className="w-[120px] justify-end">
           <span>Qty</span>
@@ -270,6 +315,27 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                       )}
                                       key={eventObj.id}
                                     >
+                                      <div
+                                        className="border-content2 group hover:bg-content1 relative w-[70px] cursor-pointer items-center transition-colors"
+                                        data-cell-name="event-day-row-checkbox"
+                                      >
+                                        <Checkbox
+                                          isSelected={selectedEventIds.has(
+                                            eventObj.id || "",
+                                          )}
+                                          onChange={() =>
+                                            handleToggleEventSelection(
+                                              eventObj.id || "",
+                                            )
+                                          }
+                                          color="default"
+                                          size="md"
+                                          classNames={{
+                                            wrapper: "me-0",
+                                            base: "p-0",
+                                          }}
+                                        />
+                                      </div>
                                       <div
                                         className="border-content2 group hover:bg-content1 relative w-[120px] cursor-pointer text-right transition-colors"
                                         data-cell-name="event-quantity"
@@ -378,6 +444,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                                             category.color
                                                           }
                                                           size={12}
+                                                          className="mr-1"
                                                         />
                                                       }
                                                       classNames={{
@@ -452,9 +519,22 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                             <Trash
                                               className="stroke-content3 hover:stroke-danger cursor-pointer"
                                               size={12}
-                                              onClick={() =>
-                                                handleEventDelete(eventObj)
-                                              }
+                                              onClick={() => {
+                                                if (
+                                                  selectedEventIds.size > 0 &&
+                                                  selectedEventIds.has(
+                                                    eventObj.id || "",
+                                                  )
+                                                ) {
+                                                  // Delete only if this event is part of the selected set
+                                                  handleEventDelete(eventObj);
+                                                } else if (
+                                                  selectedEventIds.size === 0
+                                                ) {
+                                                  // Single delete when no events are selected
+                                                  handleEventDelete(eventObj);
+                                                }
+                                              }}
                                             />
                                           </div>
                                         </div>
@@ -647,6 +727,8 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
       <DeleteEventConfirmationModal
         isOpen={!!selectedEventForDelete}
         isRecurring={!!selectedEventForDelete?.parent_event_id}
+        isMultiple={selectedEventIds.size > 1}
+        multipleCount={selectedEventIds.size}
         onClose={() => setSelectedEventForDelete(null)}
         onConfirm={handleConfirmDelete}
       />
