@@ -32,7 +32,6 @@ export const EventsContextController = ({
    */
   const reloadCalendar = async () => {
     if (calendarContext) {
-      const currentMonth = new Date().toISOString().split("T")[0].slice(0, 7);
       await calendarContext.loadCalendarV2();
     }
   };
@@ -243,15 +242,7 @@ export const EventsContextController = ({
       const data = await response.json();
 
       // Update calendar to reflect deletion
-      // For all-future deletions, also delete all child events from calendar
-      if (deleteMode === "all-future") {
-        await calendarContext.loadCalendarV2();
-      } else if (calendarContext && data.data?.event_date) {
-        calendarContext.deleteCalendarCellEvent(
-          data.data,
-          new Date(data.data.event_date),
-        );
-      }
+      await reloadCalendar();
 
       return data;
     } catch (error) {

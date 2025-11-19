@@ -27,7 +27,6 @@ import {
   ArrowLeftRight,
   CalendarFold,
   Circle,
-  Diff,
   ListFilter,
   Trash,
   TrendingDown,
@@ -500,10 +499,9 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                       : "text-danger",
                                   )}
                                 >
-                                  <Diff size={9} />
                                   <span>
                                     {(() => {
-                                      let net = new Decimal(
+                                      const net = new Decimal(
                                         (
                                           (
                                             calendarV2Data.stats[year][
@@ -512,7 +510,6 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                           )[day] as DayStats
                                         ).net,
                                       );
-                                      net = net.lt(0) ? net.times(-1) : net;
                                       return formatCurrency(net.toString());
                                     })()}
                                   </span>
@@ -552,15 +549,13 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                             : "text-danger",
                         )}
                       >
-                        <Diff size={9} />
                         <span>
                           {(() => {
-                            let net = new Decimal(
+                            const net = new Decimal(
                               (
                                 calendarV2Data.stats[year][month] as MonthStats
                               ).stats.net,
                             );
-                            net = net.lt(0) ? net.times(-1) : net;
                             return formatCurrency(net.toString());
                           })()}
                         </span>
@@ -627,11 +622,11 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
               </div>
               <Divider orientation="vertical" className="h-3" />
               <div className="flex w-6/12 items-center justify-end">
-                <Diff size={9} />
                 <span>
                   {(() => {
-                    let net = new Decimal(calendarV2Data.stats[year].stats.net);
-                    net = net.lt(0) ? net.times(-1) : net;
+                    const net = new Decimal(
+                      calendarV2Data.stats[year].stats.net,
+                    );
                     return formatCurrency(net.toString());
                   })()}
                 </span>
