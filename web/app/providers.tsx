@@ -2,6 +2,7 @@
 
 import type { ThemeProviderProps } from "next-themes";
 
+import { CommandsModal } from "@/components/commands-modal/CommandsModal";
 import { CalendarV2ContextController } from "@/context/CalendarV2/CalendarV2ContextController";
 import { CurrencyContextController } from "@/context/Currency/CurrencyContextController";
 import { EventCategoriesContextController } from "@/context/EventCategories/EventCategoriesContextController";
@@ -42,7 +43,10 @@ export function Providers({ children, themeProps }: ProvidersProps) {
                 <CurrencyContextController>
                   <FilteringContextController>
                     <EventCategoriesContextController>
-                      {children}
+                      <>
+                        <CommandsModal />
+                        {children}
+                      </>
                     </EventCategoriesContextController>
                   </FilteringContextController>
                 </CurrencyContextController>

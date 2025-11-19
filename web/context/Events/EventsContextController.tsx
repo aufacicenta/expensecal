@@ -76,6 +76,8 @@ export const EventsContextController = ({
 
       const data = (await response.json()) as CreateFromTextSuccessResponse;
 
+      await reloadCalendar();
+
       setActionStates((prev) => ({
         ...prev,
         createEventFromText: { isLoading: false, error: undefined },

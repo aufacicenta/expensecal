@@ -105,33 +105,38 @@ export async function createInstallments(
       ? parentAmount.dividedBy(installmentCount).toDecimalPlaces(8) // 8 decimals for crypto support
       : parentAmount; // Use the original amount if not splitting
 
-    // Create installment events and links
+    // Create installment events and links using bulkCreate for better performance
     const installmentIds: string[] = [];
 
-    for (const instance of instances) {
-      // Create the installment event
-      const installmentEvent = await Event.create({
-        user_id: parentEvent.user_id,
-        type: parentEvent.type,
-        amount: amountPerInstallment.toString(),
-        currency_id: parentEvent.currency_id,
-        quantity: 1,
-        description: `${parentEvent.description}${splitAmount ? " - Installment" : ""}`,
-        event_date: instance.date,
-        parent_event_id: parentEventId,
-        // Installments themselves don't have recurrence
-        recurrence_rule: null,
-        recurrence_end_date: null,
-      });
+    // Prepare event data for bulk creation
+    const eventsData = instances.map((instance) => ({
+      user_id: parentEvent.user_id,
+      type: parentEvent.type,
+      amount: amountPerInstallment.toString(),
+      currency_id: parentEvent.currency_id,
+      quantity: 1,
+      description: `${parentEvent.description}${splitAmount ? " - Installment" : ""}`,
+      event_date: instance.date,
+      parent_event_id: parentEventId,
+      // Installments themselves don't have recurrence
+      recurrence_rule: null,
+      recurrence_end_date: null,
+    }));
 
-      // Create the junction record
-      await EventInstallment.create({
-        parent_event_id: parentEventId,
-        installment_event_id: installmentEvent.id,
-      });
+    // Bulk create all installment events
+    const createdEvents = await Event.bulkCreate(eventsData);
 
-      installmentIds.push(installmentEvent.id);
-    }
+    // Prepare junction data for bulk creation
+    const installmentLinksData = createdEvents.map((event) => ({
+      parent_event_id: parentEventId,
+      installment_event_id: event.id,
+    }));
+
+    // Bulk create all junction records
+    await EventInstallment.bulkCreate(installmentLinksData);
+
+    // Collect installment IDs
+    installmentIds.push(...createdEvents.map((event) => event.id));
 
     return {
       success: true,

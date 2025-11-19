@@ -202,38 +202,8 @@ export async function POST(
         }
 
         responseData.installments = {
-          parent_event: {
-            id: updatedParent.id,
-            user_id: updatedParent.user_id,
-            type: updatedParent.type,
-            amount: updatedParent.amount,
-            currency_id: updatedParent.currency_id,
-            quantity: updatedParent.quantity,
-            description: updatedParent.description,
-            event_date: updatedParent.event_date.toISOString(),
-            parent_event_id: null,
-            recurrence_rule: updatedParent.recurrence_rule || "",
-            recurrence_end_date:
-              updatedParent.recurrence_end_date?.toISOString() || null,
-            original_text: updatedParent.original_text || null,
-            created_at: updatedParent.created_at.toISOString(),
-            updated_at: updatedParent.updated_at.toISOString(),
-          },
-          installments: installmentEvents.map((inst) => ({
-            id: inst.id,
-            user_id: inst.user_id,
-            type: inst.type,
-            amount: inst.amount,
-            currency_id: inst.currency_id,
-            quantity: inst.quantity,
-            description: inst.description,
-            event_date: inst.event_date.toISOString(),
-            parent_event_id: inst.parent_event_id!,
-            recurrence_rule: null,
-            recurrence_end_date: null,
-            created_at: inst.created_at.toISOString(),
-            updated_at: inst.updated_at.toISOString(),
-          })),
+          parent_event: updatedParent,
+          installments: installmentEvents.map((inst) => inst),
           installment_count: installmentsResult.installmentCount,
           amount_per_installment: amountPerInstallment,
         };

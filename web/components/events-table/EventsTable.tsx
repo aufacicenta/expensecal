@@ -42,6 +42,7 @@ import { EventCellCurrencyEdit } from "./event-cell-currency-edit/EventCellCurre
 import { EventCellDateEdit } from "./event-cell-date-edit/EventCellDateEdit";
 import { EventCellQuantityEdit } from "./event-cell-quantity-edit/EventCellQuantityEdit";
 
+// @TODO handle an edge case with EventCellDateEdit where editing a recurring event may need to update all the dates in the series.
 export const EventsTable: React.FC<EventsTableProps> = ({}) => {
   const {
     calendarV2Data,
