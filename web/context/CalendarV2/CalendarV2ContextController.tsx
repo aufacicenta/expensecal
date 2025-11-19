@@ -362,15 +362,25 @@ export const CalendarV2ContextController = ({
           1,
         );
 
+        // Check if day is now empty
+        const oldDayStillHasEvents =
+          newCalendarData.calendar[oldYear][oldMonth][oldDay].length > 0;
+        if (!oldDayStillHasEvents) {
+          delete newCalendarData.calendar[oldYear][oldMonth][oldDay];
+          delete (newCalendarData.stats[oldYear][oldMonth] as any)[oldDay];
+        }
+
         // Subtract old event's contribution from old stats using latest rates
         const oldConvertedAmount = recalculateConvertedAmount(oldEvent);
         if (oldEvent.type === "INCOME") {
-          newCalendarData.stats[oldYear][oldMonth][oldDay].totalIncome =
-            new Decimal(
-              newCalendarData.stats[oldYear][oldMonth][oldDay].totalIncome,
-            )
-              .minus(oldConvertedAmount)
-              .toString();
+          if (oldDayStillHasEvents) {
+            newCalendarData.stats[oldYear][oldMonth][oldDay].totalIncome =
+              new Decimal(
+                newCalendarData.stats[oldYear][oldMonth][oldDay].totalIncome,
+              )
+                .minus(oldConvertedAmount)
+                .toString();
+          }
           (newCalendarData.stats[oldYear][oldMonth] as any).stats.totalIncome =
             new Decimal(
               (
@@ -385,12 +395,14 @@ export const CalendarV2ContextController = ({
             .minus(oldConvertedAmount)
             .toString();
         } else if (oldEvent.type === "EXPENSE") {
-          newCalendarData.stats[oldYear][oldMonth][oldDay].totalExpenses =
-            new Decimal(
-              newCalendarData.stats[oldYear][oldMonth][oldDay].totalExpenses,
-            )
-              .minus(oldConvertedAmount)
-              .toString();
+          if (oldDayStillHasEvents) {
+            newCalendarData.stats[oldYear][oldMonth][oldDay].totalExpenses =
+              new Decimal(
+                newCalendarData.stats[oldYear][oldMonth][oldDay].totalExpenses,
+              )
+                .minus(oldConvertedAmount)
+                .toString();
+          }
           (
             newCalendarData.stats[oldYear][oldMonth] as any
           ).stats.totalExpenses = new Decimal(
@@ -407,18 +419,20 @@ export const CalendarV2ContextController = ({
             .toString();
         }
 
-        // Recalculate net for old stats
-        (newCalendarData.stats[oldYear][oldMonth] as any)[oldDay].net =
-          new Decimal(
-            (newCalendarData.stats[oldYear][oldMonth] as any)[
-              oldDay
-            ].totalIncome,
-          )
-            .minus(
-              (newCalendarData.stats[oldYear][oldMonth] as any)[oldDay]
-                .totalExpenses,
+        // Recalculate net for old stats (only if day still exists)
+        if (oldDayStillHasEvents) {
+          (newCalendarData.stats[oldYear][oldMonth] as any)[oldDay].net =
+            new Decimal(
+              (newCalendarData.stats[oldYear][oldMonth] as any)[
+                oldDay
+              ].totalIncome,
             )
-            .toString();
+              .minus(
+                (newCalendarData.stats[oldYear][oldMonth] as any)[oldDay]
+                  .totalExpenses,
+              )
+              .toString();
+        }
         (newCalendarData.stats[oldYear][oldMonth] as any).stats.net =
           new Decimal(
             (newCalendarData.stats[oldYear][oldMonth] as any).stats.totalIncome,
@@ -725,6 +739,17 @@ export const CalendarV2ContextController = ({
             }
           }
 
+          // Ensure day stats object exists before updating
+          if (
+            !(newCalendarData.stats[yearForMonth][monthToClear] as any)[day]
+          ) {
+            (newCalendarData.stats[yearForMonth][monthToClear] as any)[day] = {
+              totalIncome: "0",
+              totalExpenses: "0",
+              net: "0",
+            };
+          }
+
           (newCalendarData.stats[yearForMonth][monthToClear] as any)[
             day
           ].totalIncome = dayIncome.toString();
@@ -876,12 +901,18 @@ export const CalendarV2ContextController = ({
           let prevDayNet: string | undefined;
 
           if (startDayIdx > 0) {
-            prevDayNet = monthData[days[startDayIdx - 1]].net;
+            const prevDay = monthData[days[startDayIdx - 1]];
+            if (prevDay) {
+              prevDayNet = prevDay.net;
+            }
           }
 
           for (let dayIdx = startDayIdx; dayIdx < days.length; dayIdx++) {
             const day = days[dayIdx];
             const dayStats = monthData[day];
+
+            // Skip if day stats doesn't exist
+            if (!dayStats) continue;
 
             // Add previous day's net to current day's income
             if (prevDayNet !== undefined) {

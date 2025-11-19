@@ -15,6 +15,12 @@ import { formatDayShort, formatMonthShort } from "@/lib/date/formatters";
 import { EventAttributes } from "@expensecal/database/models/Event";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
+import {
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+} from "@heroui/dropdown";
 import clsx from "clsx";
 import Decimal from "decimal.js";
 import {
@@ -33,6 +39,7 @@ import { DeleteEventConfirmationModal } from "./delete-event-confirmation-modal/
 import { EventCellAmountEdit } from "./event-cell-amount-edit/EventCellAmountEdit";
 import { EventCellCategoriesSelect } from "./event-cell-categories-select/EventCellCategoriesSelect";
 import { EventCellCurrencyEdit } from "./event-cell-currency-edit/EventCellCurrencyEdit";
+import { EventCellDateEdit } from "./event-cell-date-edit/EventCellDateEdit";
 import { EventCellQuantityEdit } from "./event-cell-quantity-edit/EventCellQuantityEdit";
 
 export const EventsTable: React.FC<EventsTableProps> = ({}) => {
@@ -114,6 +121,21 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
         currency_id: currencyId,
       },
       eventDate,
+    );
+  };
+
+  const handleEventDateUpdate = async (
+    eventId: string,
+    newDate: Date,
+    oldDate: Date,
+  ) => {
+    // Update the event with new date
+    await updateEvent(
+      eventId,
+      {
+        event_date: newDate,
+      },
+      oldDate,
     );
   };
 
@@ -385,16 +407,30 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                           className="flex justify-end gap-1"
                                           data-cell-name="event-actions"
                                         >
-                                          <div>
-                                            <CalendarFold
-                                              className="stroke-content3 hover:stroke-primary cursor-pointer"
-                                              size={12}
-                                              onClick={() =>
-                                                // handleEventDateChange
-                                                undefined
-                                              }
-                                            />
-                                          </div>
+                                          <Dropdown>
+                                            <DropdownTrigger>
+                                              <CalendarFold
+                                                className="stroke-content3 hover:stroke-primary cursor-pointer"
+                                                size={12}
+                                              />
+                                            </DropdownTrigger>
+                                            <DropdownMenu>
+                                              <DropdownItem
+                                                key="edit-date"
+                                                isReadOnly
+                                              >
+                                                <EventCellDateEdit
+                                                  event={eventObj}
+                                                  onUpdate={
+                                                    handleEventDateUpdate
+                                                  }
+                                                  onClose={() => {
+                                                    // Dropdown will close automatically
+                                                  }}
+                                                />
+                                              </DropdownItem>
+                                            </DropdownMenu>
+                                          </Dropdown>
                                           <div>
                                             <Trash
                                               className="stroke-content3 hover:stroke-danger cursor-pointer"
