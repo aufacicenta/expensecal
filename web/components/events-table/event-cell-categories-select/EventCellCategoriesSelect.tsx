@@ -1,6 +1,8 @@
+import { EventCategoriesCreateModal } from "@/components/event-categories-create-modal/EventCategoriesCreateModal";
 import { Button } from "@heroui/button";
 import { Select, SelectItem } from "@heroui/select";
 import clsx from "clsx";
+import { CircleCheckBig, CircleX, Plus } from "lucide-react";
 import { useState } from "react";
 import { EventCellCategoriesSelectProps } from "./EventCellCategoriesSelect.types";
 
@@ -15,6 +17,7 @@ export const EventCellCategoriesSelect: React.FC<
     new Set(initialIds),
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleSelectionChange = (newSelection: "all" | Set<React.Key>) => {
     const selectedSet: Set<string> =
@@ -51,13 +54,7 @@ export const EventCellCategoriesSelect: React.FC<
   };
 
   return (
-    <div
-      className={clsx(
-        "border-content2 bg-background absolute top-full right-0 left-0 z-50 w-full space-y-2 rounded-md border p-2 shadow-lg",
-        className,
-      )}
-      onClick={(e) => e.stopPropagation()}
-    >
+    <div className={clsx("space-y-2", className)}>
       <Select
         isMultiline
         selectionMode="multiple"
@@ -89,27 +86,47 @@ export const EventCellCategoriesSelect: React.FC<
           </SelectItem>
         ))}
       </Select>
-      <div className="flex gap-2">
-        <Button
-          size="sm"
-          color="primary"
-          onPress={handleConfirm}
-          isLoading={isLoading}
-          className="flex-1"
-          variant="bordered"
-        >
-          Confirm
-        </Button>
-        <Button
-          size="sm"
-          onPress={onClose}
-          isDisabled={isLoading}
-          className="flex-1"
-          variant="bordered"
-        >
-          Cancel
-        </Button>
+      <div className="flex justify-between gap-2">
+        <div>
+          <Button
+            size="sm"
+            onPress={() => setIsModalOpen(true)}
+            isDisabled={isLoading}
+            variant="bordered"
+            isIconOnly
+            title="Add new category"
+          >
+            <Plus size={16} />
+          </Button>
+        </div>
+        <div className="flex gap-1">
+          <Button
+            size="sm"
+            onPress={onClose}
+            isDisabled={isLoading}
+            variant="bordered"
+            isIconOnly
+          >
+            <CircleX size={16} />
+          </Button>
+          <Button
+            size="sm"
+            color="primary"
+            onPress={handleConfirm}
+            isLoading={isLoading}
+            variant="bordered"
+            isIconOnly
+          >
+            <CircleCheckBig size={16} />
+          </Button>
+        </div>
       </div>
+
+      {/* Create Category Modal */}
+      <EventCategoriesCreateModal
+        isOpen={isModalOpen}
+        onOpenChange={setIsModalOpen}
+      />
     </div>
   );
 };

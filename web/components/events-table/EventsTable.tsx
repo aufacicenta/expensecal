@@ -52,8 +52,6 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
   const { categories } = useEventCategoriesContext();
   const { currencies } = useCurrencyContext();
   const [showOriginalText, setShowOriginalText] = useState(false);
-  const [selectedEventForCategories, setSelectedEventForCategories] =
-    useState<CalendarEvent | null>(null);
   const [selectedEventForQuantity, setSelectedEventForQuantity] =
     useState<CalendarEvent | null>(null);
   const [selectedEventForAmount, setSelectedEventForAmount] =
@@ -67,7 +65,6 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     eventId: string,
     categoryIds: string[],
     eventDate: Date,
-    currentEvent: CalendarEvent,
   ) => {
     // Update the event with new category ids
     await updateEvent(
@@ -355,52 +352,64 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                       <div
                                         className="border-content2 group relative w-[180px] cursor-pointer"
                                         data-cell-name="event-categories"
-                                        onClick={() =>
-                                          setSelectedEventForCategories(
-                                            eventObj,
-                                          )
-                                        }
                                       >
-                                        {eventObj.categories?.map(
-                                          (category) => (
-                                            <Chip
-                                              key={category.id}
-                                              size="sm"
-                                              variant="dot"
-                                              startContent={
-                                                <Circle
-                                                  stroke={category.color}
-                                                  size={12}
-                                                />
-                                              }
-                                              classNames={{
-                                                content: `text-xs`,
-                                              }}
+                                        <Dropdown>
+                                          <DropdownTrigger>
+                                            <div className="flex h-full flex-wrap gap-1">
+                                              {eventObj.categories &&
+                                              eventObj.categories.length > 0 ? (
+                                                eventObj.categories.map(
+                                                  (category) => (
+                                                    <Chip
+                                                      key={category.id}
+                                                      size="sm"
+                                                      variant="dot"
+                                                      startContent={
+                                                        <Circle
+                                                          stroke={
+                                                            category.color
+                                                          }
+                                                          size={12}
+                                                        />
+                                                      }
+                                                      classNames={{
+                                                        content: `text-xs`,
+                                                      }}
+                                                    >
+                                                      {category.name}
+                                                    </Chip>
+                                                  ),
+                                                )
+                                              ) : (
+                                                <div className="w-full"></div>
+                                              )}
+                                            </div>
+                                          </DropdownTrigger>
+                                          <DropdownMenu variant="light">
+                                            <DropdownItem
+                                              key="edit-categories"
+                                              isReadOnly
                                             >
-                                              {category.name}
-                                            </Chip>
-                                          ),
-                                        )}
-                                        {selectedEventForCategories?.id ===
-                                          eventObj.id && (
-                                          <EventCellCategoriesSelect
-                                            event={eventObj}
-                                            availableCategories={categories}
-                                            onUpdate={(eventId, categoryIds) =>
-                                              handleEventCategoryUpdate(
-                                                eventId,
-                                                categoryIds,
-                                                eventObj.event_date,
-                                                eventObj,
-                                              )
-                                            }
-                                            onClose={() =>
-                                              setSelectedEventForCategories(
-                                                null,
-                                              )
-                                            }
-                                          />
-                                        )}
+                                              <EventCellCategoriesSelect
+                                                event={eventObj}
+                                                availableCategories={categories}
+                                                onUpdate={(
+                                                  eventId,
+                                                  categoryIds,
+                                                ) =>
+                                                  handleEventCategoryUpdate(
+                                                    eventId,
+                                                    categoryIds,
+                                                    eventObj.event_date,
+                                                  )
+                                                }
+                                                onClose={() => {
+                                                  // Dropdown will close automatically
+                                                }}
+                                              />
+                                            </DropdownItem>
+                                          </DropdownMenu>
+                                        </Dropdown>
                                       </div>
                                       <div className="border-content2 w-[70px]">
                                         <div
