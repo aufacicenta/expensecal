@@ -192,6 +192,79 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     }
   };
 
+  const handleToggleDaySelection = (events: CalendarEvent[]) => {
+    const dayEventIds = events
+      .map((event) => event.id)
+      .filter((id): id is string => id !== undefined);
+
+    setSelectedEventIds((prev) => {
+      const newSet = new Set(prev);
+      const allDayEventsSelected = dayEventIds.every((id) => newSet.has(id));
+
+      if (allDayEventsSelected) {
+        // Deselect all events in this day
+        dayEventIds.forEach((id) => newSet.delete(id));
+      } else {
+        // Select all events in this day
+        dayEventIds.forEach((id) => newSet.add(id));
+      }
+
+      return newSet;
+    });
+  };
+
+  const handleToggleMonthSelection = (
+    monthObj: Record<string, CalendarEvent[]>,
+  ) => {
+    const monthEventIds = Object.values(monthObj)
+      .flatMap((events) => events.map((event) => event.id))
+      .filter((id): id is string => id !== undefined);
+
+    setSelectedEventIds((prev) => {
+      const newSet = new Set(prev);
+      const allMonthEventsSelected = monthEventIds.every((id) =>
+        newSet.has(id),
+      );
+
+      if (allMonthEventsSelected) {
+        // Deselect all events in this month
+        monthEventIds.forEach((id) => newSet.delete(id));
+      } else {
+        // Select all events in this month
+        monthEventIds.forEach((id) => newSet.add(id));
+      }
+
+      return newSet;
+    });
+  };
+
+  const handleToggleYearSelection = (
+    yearObj: Record<string, Record<string, CalendarEvent[]>>,
+  ) => {
+    const yearEventIds = Object.values(yearObj)
+      .flatMap((monthObj) =>
+        Object.values(monthObj).flatMap((events) =>
+          events.map((event) => event.id),
+        ),
+      )
+      .filter((id): id is string => id !== undefined);
+
+    setSelectedEventIds((prev) => {
+      const newSet = new Set(prev);
+      const allYearEventsSelected = yearEventIds.every((id) => newSet.has(id));
+
+      if (allYearEventsSelected) {
+        // Deselect all events in this year
+        yearEventIds.forEach((id) => newSet.delete(id));
+      } else {
+        // Select all events in this year
+        yearEventIds.forEach((id) => newSet.add(id));
+      }
+
+      return newSet;
+    });
+  };
+
   const getLoadingStateComponent = () => (
     <section className="bg-background/70 fixed top-0 right-0 bottom-0 left-0 z-50 h-screen w-screen">
       <nav className="absolute top-0 right-0 left-0 flex w-full justify-between [&>div]:p-4">
@@ -277,7 +350,11 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
       {Object.entries(calendarV2Data.calendar || {}).map(([year, yearObj]) => (
         <div className="border-content4 border-b" key={year}>
           <div className="flex">
-            <div className="border-content2 flex w-[180px] flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0">
+            <div
+              className="border-content2 group hover:bg-content1 flex w-[180px] cursor-pointer flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0 p-1 transition-colors"
+              data-cell-name="event-year"
+              onClick={() => handleToggleYearSelection(yearObj)}
+            >
               {year}
             </div>
             <div className="flex flex-col">
@@ -289,7 +366,11 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                     key={`${year}-${month}`}
                   >
                     <div className="flex">
-                      <div className="border-content2 flex w-[120px] flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0">
+                      <div
+                        className="border-content2 group hover:bg-content1 flex w-[120px] cursor-pointer flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0 p-1 transition-colors"
+                        data-cell-name="event-month"
+                        onClick={() => handleToggleMonthSelection(monthObj)}
+                      >
                         {formatMonthShort(`${year}-${month}`)}
                       </div>
                       <div className="flex flex-col">
@@ -301,7 +382,13 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                               key={`${year}-${month}-${day}`}
                             >
                               <div className="flex">
-                                <div className="border-content2 group-hover:bg-content2 flex w-[120px] flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0 p-1">
+                                <div
+                                  className="border-content2 group-hover:bg-content2 hover:bg-content1 flex w-[120px] cursor-pointer flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0 p-1 transition-colors"
+                                  data-cell-name="event-day"
+                                  onClick={() =>
+                                    handleToggleDaySelection(events)
+                                  }
+                                >
                                   <span className="text-xs">
                                     {formatDayShort(`${year}-${month}-${day}`)}
                                   </span>
@@ -546,7 +633,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                               </div>
 
                               {/* Day Stats */}
-                              <div className="group-hover:bg-content2 border-content2 [&>div]:border-b-content2 w-[120px] border-r-[0.5px] border-l-[0.5px] text-right text-xs [&>div]:px-1 [&>div]:not-[:last-child]:border-b-[0.5px]">
+                              <div className="border-content2 [&>div]:border-b-content2 w-[120px] border-r-[0.5px] border-l-[0.5px] text-right text-xs [&>div]:px-1 [&>div]:not-[:last-child]:border-b-[0.5px]">
                                 <div className="text-success">
                                   <span>
                                     {formatCurrency(
