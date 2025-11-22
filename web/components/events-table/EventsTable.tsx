@@ -460,6 +460,9 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
         <div className="w-[120px] justify-end">
           <span>Ex. Rate (USD)</span>
         </div>
+        <div className="w-[90px] justify-center">
+          <span>Type</span>
+        </div>
         <div
           className="hover:text-content4-foreground w-[210px] cursor-pointer"
           onClick={() => setShowOriginalText(!showOriginalText)}
@@ -677,6 +680,15 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                         )}
                                       >
                                         {formatCurrency(eventObj.exchangeRate)}
+                                      </div>
+                                      <div className="border-content2 w-[90px] !flex-row items-center">
+                                        <Chip
+                                          variant="bordered"
+                                          size="sm"
+                                          className="capitalize"
+                                        >
+                                          {getStructureType(eventObj)}
+                                        </Chip>
                                       </div>
                                       <div className="border-content2 w-[210px]">
                                         <span>

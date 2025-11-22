@@ -52,6 +52,7 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
         user_id: user.id,
       },
       include: [
+        "childEvents",
         {
           model: Currency,
           as: "currency",
@@ -76,7 +77,7 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
     const calendarData: CalendarData = {};
     const stats: CalendarStatsData = {};
 
-    events.forEach((event) => {
+    for (const event of events) {
       const dateStr = toDateString(event.event_date);
       const [year, month, day] = dateStr.split("-");
 
@@ -142,7 +143,7 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
         month,
         day,
       );
-    });
+    }
 
     // Calculate net for all stats levels
     for (const year in stats) {

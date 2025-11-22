@@ -108,13 +108,13 @@ export async function createInstallments(
     // Create installment events and links using bulkCreate for better performance
     const installmentIds: string[] = [];
 
-    // Prepare event data for bulk creation
+    // Prepare event data for bulk creation (without installment_id yet)
     const eventsData = instances.map((instance) => ({
       user_id: parentEvent.user_id,
       type: parentEvent.type,
       amount: amountPerInstallment.toString(),
       currency_id: parentEvent.currency_id,
-      quantity: 1,
+      quantity: parentEvent.quantity,
       description: `${parentEvent.description}${splitAmount ? " - Installment" : ""}`,
       event_date: instance.date,
       parent_event_id: parentEventId,
@@ -133,7 +133,15 @@ export async function createInstallments(
     }));
 
     // Bulk create all junction records
-    await EventInstallment.bulkCreate(installmentLinksData);
+    const createdInstallments =
+      await EventInstallment.bulkCreate(installmentLinksData);
+
+    // Update each event with its corresponding installment_id
+    for (let i = 0; i < createdEvents.length; i++) {
+      await createdEvents[i].update({
+        installment_id: createdInstallments[i].id,
+      });
+    }
 
     // Collect installment IDs
     installmentIds.push(...createdEvents.map((event) => event.id));
@@ -272,6 +280,139 @@ export async function recreateInstallments(
       parentEventId,
       installmentCount: 0,
       installmentIds: [],
+      error: errorMessage,
+    };
+  }
+}
+
+/**
+ * Options for creating recurring events from a parent event
+ */
+export interface CreateRecurringEventsOptions {
+  /**
+   * The parent event ID that will be expanded into recurring events
+   */
+  parentEventId: string;
+
+  /**
+   * Optional end date for generating instances
+   * If not provided, uses UNTIL or COUNT from RRULE
+   */
+  endDate?: Date;
+}
+
+/**
+ * Result of creating recurring events
+ */
+export interface CreateRecurringEventsResult {
+  success: boolean;
+  parentEventId: string;
+  recurringEventCount: number;
+  recurringEventIds: string[];
+  error?: string;
+}
+
+/**
+ * Creates recurring child events from a parent recurring event
+ *
+ * Unlike installments, recurring events:
+ * - Do NOT create EventInstallment junction records
+ * - Do NOT set installment_id on child events
+ * - Use the same amount as the parent (not split)
+ *
+ * The function:
+ * 1. Retrieves the parent event
+ * 2. Validates it has a recurrence_rule
+ * 3. Generates recurrence instances
+ * 4. Creates individual child events with the parent's amount
+ * 5. Does not create any junction table records
+ *
+ * @param options Configuration for creating recurring events
+ * @returns Result with created recurring event IDs
+ * @throws Error if parent event doesn't exist or validation fails
+ *
+ * @example
+ * const result = await createRecurringEvents({
+ *   parentEventId: "event-123",
+ * });
+ *
+ * if (result.success) {
+ *   console.log(`Created ${result.recurringEventCount} recurring events`);
+ * }
+ */
+export async function createRecurringEvents(
+  options: CreateRecurringEventsOptions,
+): Promise<CreateRecurringEventsResult> {
+  const { parentEventId, endDate } = options;
+
+  try {
+    // Initialize models
+    initModels(db);
+
+    // Fetch the parent event
+    const parentEvent = await Event.findByPk(parentEventId);
+
+    if (!parentEvent) {
+      throw new Error(`Parent event with ID ${parentEventId} not found`);
+    }
+
+    // Validate that the parent event has a recurrence rule
+    if (!parentEvent.recurrence_rule) {
+      throw new Error(
+        `Parent event ${parentEventId} does not have a recurrence_rule`,
+      );
+    }
+
+    // Generate recurrence instances
+    const instances = generateRecurrenceInstances({
+      rruleString: parentEvent.recurrence_rule,
+      startDate: parentEvent.event_date,
+      endDate: endDate || parentEvent.recurrence_end_date || undefined,
+    });
+
+    if (instances.length === 0) {
+      throw new Error(
+        "No recurrence instances generated from the recurrence rule",
+      );
+    }
+
+    // Create recurring child events without splitting amount
+    const recurringEventIds: string[] = [];
+
+    // Prepare event data for bulk creation
+    const eventsData = instances.map((instance) => ({
+      user_id: parentEvent.user_id,
+      type: parentEvent.type,
+      amount: parentEvent.amount, // Use parent amount as-is, no splitting
+      currency_id: parentEvent.currency_id,
+      quantity: parentEvent.quantity,
+      description: parentEvent.description,
+      event_date: instance.date,
+      parent_event_id: parentEventId,
+      // Child recurring events don't have their own recurrence
+      recurrence_rule: null,
+      recurrence_end_date: null,
+    }));
+
+    // Bulk create all recurring events
+    const createdEvents = await Event.bulkCreate(eventsData);
+
+    // Collect event IDs
+    recurringEventIds.push(...createdEvents.map((event) => event.id));
+
+    return {
+      success: true,
+      parentEventId,
+      recurringEventCount: recurringEventIds.length,
+      recurringEventIds,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return {
+      success: false,
+      parentEventId,
+      recurringEventCount: 0,
+      recurringEventIds: [],
       error: errorMessage,
     };
   }

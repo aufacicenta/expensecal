@@ -1,4 +1,7 @@
-import { createInstallments } from "@/lib/events/createInstallments";
+import {
+  createInstallments,
+  createRecurringEvents,
+} from "@/lib/events/createInstallments";
 import { getParserInstance } from "@/lib/parser/parserFactory";
 import {
   createValidationErrorResponse,
@@ -11,17 +14,25 @@ import { initModels } from "@expensecal/database/models";
 import { Currency } from "@expensecal/database/models/Currency";
 import { Event, EventType } from "@expensecal/database/models/Event";
 import { NextRequest, NextResponse } from "next/server";
-import { CreateFromTextRequestBody, CreateFromTextResponse } from "./types";
+import {
+  CreateFromTextRequestBody,
+  CreateFromTextResponse,
+  CreateFromTextSuccessResponse,
+} from "./types";
 
 /**
  * POST /api/v1/events/create-from-text
- * Parse natural language text, create an event, and optionally create recurrence installments in one call
+ * Parse natural language text, create an event, and optionally create recurring events or installments in one call
  * Protected endpoint (requires authentication)
  *
  * Request body:
  * - text: Natural language text to parse (required)
  * - current_date: ISO 8601 format date for context (optional)
  * - create_installments: If true and event has recurrence_rule, automatically create installments (optional, default false)
+ *
+ * Behavior:
+ * - If split_installments from parser is true: creates installments (amount split across instances)
+ * - If split_installments from parser is false: creates recurring events (same amount for each instance)
  */
 export async function POST(
   request: NextRequest,
@@ -149,74 +160,121 @@ export async function POST(
       updated_at: event.updated_at.toISOString(),
     };
 
-    const responseData: any = {
+    const responseData: CreateFromTextSuccessResponse["data"] = {
       event: eventData,
       parsed: parseResult,
     };
 
-    // Create installments if requested and event has recurrence rule
+    // Create installments or recurring events if event has recurrence rule
     if (event.recurrence_rule && parseResult.recurrence_rule) {
       try {
-        const installmentsResult = await createInstallments({
-          parentEventId: event.id,
-          splitAmount: parseResult.split_installments || false,
-        });
+        const shouldSplitAmount = parseResult.split_installments === true;
 
-        if (!installmentsResult.success) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: "Failed to create installments",
-              details: installmentsResult.error,
-              stage: "installments",
+        if (shouldSplitAmount) {
+          // Create installments (split amount across instances)
+          const installmentsResult = await createInstallments({
+            parentEventId: event.id,
+            splitAmount: true,
+          });
+
+          if (!installmentsResult.success) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: "Failed to create installments",
+                details: installmentsResult.error,
+                stage: "installments",
+              },
+              { status: 400 },
+            );
+          }
+
+          // Fetch installment events with fresh data
+          const installmentEvents = await Event.findAll({
+            where: {
+              id: installmentsResult.installmentIds,
             },
-            { status: 400 },
-          );
-        }
+            order: [["event_date", "ASC"]],
+          });
 
-        // Fetch installment events with fresh data
-        const installmentEvents = await Event.findAll({
-          where: {
-            id: installmentsResult.installmentIds,
-          },
-          order: [["event_date", "ASC"]],
-        });
+          // Calculate amount per installment
+          const amountPerInstallment = installmentEvents.length
+            ? installmentEvents[0].amount
+            : "0";
 
-        // Calculate amount per installment
-        const amountPerInstallment = installmentEvents.length
-          ? installmentEvents[0].amount
-          : "0";
+          // Fetch updated parent event
+          const updatedParent = await Event.findByPk(event.id);
+          if (!updatedParent) {
+            return NextResponse.json(
+              {
+                success: false,
+                error:
+                  "Failed to retrieve parent event after installment creation",
+                stage: "installments",
+              },
+              { status: 500 },
+            );
+          }
 
-        // Fetch updated parent event
-        const updatedParent = await Event.findByPk(event.id);
-        if (!updatedParent) {
-          return NextResponse.json(
-            {
-              success: false,
-              error:
-                "Failed to retrieve parent event after installment creation",
-              stage: "installments",
+          responseData.installments = {
+            parent_event: updatedParent.toJSON(),
+            installments: installmentEvents.map((inst) => inst),
+            installment_count: installmentsResult.installmentCount,
+            amount_per_installment: amountPerInstallment,
+          };
+        } else {
+          // Create recurring events (same amount for each instance)
+          const recurringResult = await createRecurringEvents({
+            parentEventId: event.id,
+          });
+
+          if (!recurringResult.success) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: "Failed to create recurring events",
+                details: recurringResult.error,
+                stage: "installments",
+              },
+              { status: 400 },
+            );
+          }
+
+          // Fetch recurring events with fresh data
+          const recurringEvents = await Event.findAll({
+            where: {
+              id: recurringResult.recurringEventIds,
             },
-            { status: 500 },
-          );
-        }
+            order: [["event_date", "ASC"]],
+          });
 
-        responseData.installments = {
-          parent_event: updatedParent,
-          installments: installmentEvents.map((inst) => inst),
-          installment_count: installmentsResult.installmentCount,
-          amount_per_installment: amountPerInstallment,
-        };
-      } catch (installmentError) {
-        console.error("Error creating installments:", installmentError);
+          // Fetch updated parent event
+          const updatedParent = await Event.findByPk(event.id);
+          if (!updatedParent) {
+            return NextResponse.json(
+              {
+                success: false,
+                error:
+                  "Failed to retrieve parent event after recurring events creation",
+                stage: "installments",
+              },
+              { status: 500 },
+            );
+          }
+
+          responseData.recurring_events = {
+            parent_event: updatedParent.toJSON(),
+            recurring_events: recurringEvents.map((evt) => evt),
+            recurring_event_count: recurringResult.recurringEventCount,
+          };
+        }
+      } catch (error) {
+        console.error("Error creating recurrence events:", error);
         return NextResponse.json(
           {
             success: false,
-            error: "Failed to create installments",
-            details:
-              installmentError instanceof Error
-                ? installmentError.message
-                : String(installmentError),
+            error: "Failed to create recurrence events",
+            details: error instanceof Error ? error.message : String(error),
             stage: "installments",
           },
           { status: 400 },
@@ -224,7 +282,7 @@ export async function POST(
       }
     }
 
-    // Return created event with parsed data and optional installments
+    // Return created event with parsed data and optional installments or recurring events
     return NextResponse.json(
       {
         success: true,

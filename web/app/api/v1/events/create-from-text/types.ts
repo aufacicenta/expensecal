@@ -4,7 +4,11 @@
  */
 
 import { BaseErrorResponse, BaseSuccessResponse } from "../../types";
-import { InstallmentEventData, ParentEventData } from "../installments/types";
+import {
+  InstallmentEventData,
+  ParentEventData,
+  RecurringEventData,
+} from "../installments/types";
 import { ParsedEventData } from "../parse/types";
 
 export type CreateFromTextRequestBody = {
@@ -39,6 +43,11 @@ export type CreateFromTextSuccessResponse = {
       installments: InstallmentEventData[];
       installment_count: number;
       amount_per_installment: string;
+    };
+    recurring_events?: {
+      parent_event: ParentEventData;
+      recurring_events: RecurringEventData[];
+      recurring_event_count: number;
     };
   };
 } & BaseSuccessResponse;

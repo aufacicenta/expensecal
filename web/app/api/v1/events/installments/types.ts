@@ -1,3 +1,5 @@
+import { EventAttributes } from "@expensecal/database/models/Event";
+
 /**
  * Request body for creating installments from a parent recurring event
  */
@@ -19,40 +21,17 @@ export type CreateInstallmentsRequestBody = {
 /**
  * Single installment event data in response
  */
-export type InstallmentEventData = {
-  id: string;
-  user_id: string;
-  type: "EXPENSE" | "INCOME";
-  amount: string;
-  currency_id: string;
-  quantity: number;
-  description: string;
-  event_date: string; // ISO 8601
-  parent_event_id: string;
-  recurrence_rule: null; // Installments never have their own recurrence
-  recurrence_end_date: null;
-  created_at: string;
-  updated_at: string;
-};
+export type InstallmentEventData = EventAttributes;
+
+/**
+ * Single recurring event data in response
+ */
+export type RecurringEventData = EventAttributes;
 
 /**
  * Parent event data in response
  */
-export type ParentEventData = {
-  id: string;
-  user_id: string;
-  type: "EXPENSE" | "INCOME";
-  amount: string;
-  currency_id: string;
-  quantity: number;
-  description: string;
-  event_date: string; // ISO 8601
-  parent_event_id: null;
-  recurrence_rule: string; // RFC 5545 RRULE format
-  recurrence_end_date: string | null;
-  created_at: string;
-  updated_at: string;
-};
+export type ParentEventData = EventAttributes;
 
 /**
  * Response for successful installment creation
