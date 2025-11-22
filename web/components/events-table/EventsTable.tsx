@@ -393,6 +393,40 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     });
   };
 
+  const getAllEventIds = (): string[] => {
+    if (!calendarV2Data?.calendar) return [];
+
+    return Object.values(calendarV2Data.calendar)
+      .flatMap((yearObj) =>
+        Object.values(yearObj).flatMap((monthObj) =>
+          Object.values(monthObj).flatMap((events) =>
+            events.map((event) => event.id),
+          ),
+        ),
+      )
+      .filter((id): id is string => id !== undefined);
+  };
+
+  const handleToggleAllSelection = () => {
+    const allEventIds = getAllEventIds();
+    if (allEventIds.length === 0) return;
+
+    setSelectedEventIds((prev) => {
+      const newSet = new Set(prev);
+      const allEventsSelected = allEventIds.every((id) => newSet.has(id));
+
+      if (allEventsSelected) {
+        // Deselect all events
+        allEventIds.forEach((id) => newSet.delete(id));
+      } else {
+        // Select all events
+        allEventIds.forEach((id) => newSet.add(id));
+      }
+
+      return newSet;
+    });
+  };
+
   const getLoadingStateComponent = () => (
     <section className="bg-background/70 fixed top-0 right-0 bottom-0 left-0 z-[1000] h-screen w-screen">
       <nav className="absolute top-0 right-0 left-0 flex w-full justify-between [&>div]:p-4">
@@ -439,7 +473,15 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
         </div>
         <div className="w-[70px] justify-center">
           <Checkbox
-            isSelected={false}
+            isSelected={
+              selectedEventIds.size > 0 &&
+              selectedEventIds.size === getAllEventIds().length
+            }
+            isIndeterminate={
+              selectedEventIds.size > 0 &&
+              selectedEventIds.size < getAllEventIds().length
+            }
+            onChange={handleToggleAllSelection}
             size="sm"
             classNames={{ wrapper: "me-0", base: "p-0" }}
           />
