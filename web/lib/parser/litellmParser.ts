@@ -4,6 +4,8 @@
  */
 
 import Event, { EventAttributes } from "@expensecal/database/models/Event";
+import { buildPrompt } from "./buildPrompt";
+import { getSystemPrompt } from "./systemPrompt";
 
 export interface ParsedExpenseEvent {
   type: "EXPENSE" | "INCOME";
@@ -14,6 +16,7 @@ export interface ParsedExpenseEvent {
   event_date: string;
   recurrence_rule?: string | null;
   recurrence_end_date?: string | null;
+  split_installments?: boolean;
   confidence: number;
   raw_text: string;
 }
@@ -30,7 +33,7 @@ export class LiteLLMParser {
   private schema: any;
 
   constructor(
-    model: string = "openai/gpt-5-nano",
+    model: string = process.env.LLM_MODEL || "openai/gpt-5-nano",
     apiBase?: string,
     apiKey?: string,
   ) {
@@ -49,7 +52,7 @@ export class LiteLLMParser {
   ): Promise<ParsedExpenseEvent | ParseError> {
     try {
       const referenceDate = currentDate || new Date();
-      const prompt = this.buildPrompt(text, referenceDate);
+      const prompt = buildPrompt(text, referenceDate);
 
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -65,6 +68,11 @@ export class LiteLLMParser {
         body: JSON.stringify({
           model: this.model,
           input: [
+            {
+              role: "system",
+              content: getSystemPrompt(),
+              type: "message",
+            },
             {
               role: "user",
               content: prompt,
@@ -136,76 +144,6 @@ export class LiteLLMParser {
     }
   }
 
-  private buildPrompt(text: string, referenceDate: Date): string {
-    const dateStr = referenceDate.toISOString().split("T")[0];
-    const dayOfWeek = referenceDate.toLocaleDateString("en-US", {
-      weekday: "long",
-    });
-
-    return `Current date: ${dateStr} (${dayOfWeek})
-
-Extract structured data from this expense description. You must respond with a JSON object that matches the Event schema.
-
-Rules:
-1. Extract AMOUNT as a decimal string (e.g., "100.50", "3.00")
-2. Extract CURRENCY symbol (USD, EUR, GBP, MXN, JPY, BTC, ETH, CAD, AUD, CHF, etc.)
-3. Extract QUANTITY (number of items, default to 1)
-4. Extract DESCRIPTION (what the expense is for)
-5. Parse DATE to ISO 8601 format (e.g., "2025-10-15T00:00:00.000Z")
-   - "yesterday" = ${new Date(referenceDate.getTime() - 86400000).toISOString()}
-   - "today" = ${referenceDate.toISOString()}
-   - "tomorrow" = ${new Date(referenceDate.getTime() + 86400000).toISOString()}
-   - "last week" = subtract 7 days
-   - "next month" = add 1 month
-6. Determine TYPE: "EXPENSE" or "INCOME"
-7. Calculate CONFIDENCE (0.0 to 1.0) based on clarity of input
-8. Set recurrence_rule and recurrence_end_date to null unless recurring pattern is specified
-   - If recurring, use RFC 5545 RRULE format (e.g., "FREQ=MONTHLY;INTERVAL=1")
-
-Examples:
-Input: "100 USD for yesterday's dinner with friends"
-Output: {
-  "type": "EXPENSE",
-  "amount": "100.00",
-  "currency": "USD",
-  "quantity": 1,
-  "description": "dinner with friends",
-  "event_date": "2025-10-14T00:00:00.000Z",
-  "confidence": 0.95,
-  "recurrence_rule": null,
-  "recurrence_end_date": null
-}
-
-Input: "5 coffees at 3 EUR each this morning"
-Output: {
-  "type": "EXPENSE",
-  "amount": "3.00",
-  "currency": "EUR",
-  "quantity": 5,
-  "description": "coffees",
-  "event_date": "2025-10-15T00:00:00.000Z",
-  "confidence": 0.90,
-  "recurrence_rule": null,
-  "recurrence_end_date": null
-}
-
-Input: "Monthly rent of 1500 USD starting today"
-Output: {
-  "type": "EXPENSE",
-  "amount": "1500.00",
-  "currency": "USD",
-  "quantity": 1,
-  "description": "rent",
-  "event_date": "2025-10-15T00:00:00.000Z",
-  "confidence": 0.95,
-  "recurrence_rule": "FREQ=MONTHLY;INTERVAL=1",
-  "recurrence_end_date": null
-}
-
-Now parse this:
-Input: "${text}"`;
-  }
-
   async checkHealth(): Promise<{
     available: boolean;
     model: string;
@@ -220,7 +158,7 @@ Input: "${text}"`;
         headers["Authorization"] = `Bearer ${this.apiKey}`;
       }
 
-      const response = await fetch(`${this.apiBase}/health`, {
+      const response = await fetch(`${this.apiBase}/health/liveness`, {
         method: "GET",
         headers,
       });

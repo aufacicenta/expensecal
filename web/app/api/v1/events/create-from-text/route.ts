@@ -1,5 +1,5 @@
 import { createInstallments } from "@/lib/events/createInstallments";
-import { getLocalLMStudioParser } from "@/lib/parser/localLMStudioParser";
+import { getParserInstance } from "@/lib/parser/parserFactory";
 import {
   createValidationErrorResponse,
   validateISO8601Date,
@@ -59,8 +59,8 @@ export async function POST(
     }
     const currentDate = currentDateResult.date ?? undefined;
 
-    // Get parser instance (Ollama or LiteLLM based on env)
-    const parser = getLocalLMStudioParser();
+    // Get parser instance (Local LM Studio for dev, LiteLLM for production/staging)
+    const parser = getParserInstance();
 
     // Check if Ollama is available
     const health = await parser.checkHealth();
