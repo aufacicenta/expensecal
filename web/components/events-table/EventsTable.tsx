@@ -28,19 +28,28 @@ import {
   ArrowLeftRight,
   CalendarFold,
   Circle,
+  CircleCheckBig,
+  CircleX,
   ListFilter,
+  Loader2,
   Trash,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StaggerLoadingAnimation } from "../stagger-loading-animation/StaggerLoadingAnimation";
 import { DeleteEventConfirmationModal } from "./delete-event-confirmation-modal/DeleteEventConfirmationModal";
-import { EventCellAmountEdit } from "./event-cell-amount-edit/EventCellAmountEdit";
+import {
+  EventCellAmountEdit,
+  type EventCellAmountEditHandle,
+} from "./event-cell-amount-edit/EventCellAmountEdit";
 import { EventCellCategoriesSelect } from "./event-cell-categories-select/EventCellCategoriesSelect";
 import { EventCellCurrencyEdit } from "./event-cell-currency-edit/EventCellCurrencyEdit";
 import { EventCellDateEdit } from "./event-cell-date-edit/EventCellDateEdit";
-import { EventCellQuantityEdit } from "./event-cell-quantity-edit/EventCellQuantityEdit";
+import {
+  EventCellQuantityEdit,
+  type EventCellQuantityEditHandle,
+} from "./event-cell-quantity-edit/EventCellQuantityEdit";
 
 // @TODO handle an edge case with EventCellDateEdit where editing a recurring event may need to update all the dates in the series.
 export const EventsTable: React.FC<EventsTableProps> = ({}) => {
@@ -62,13 +71,110 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     useState<CalendarEvent | null>(null);
   const [selectedEventForAmount, setSelectedEventForAmount] =
     useState<CalendarEvent | null>(null);
-  const [selectedEventForCurrency, setSelectedEventForCurrency] =
-    useState<CalendarEvent | null>(null);
   const [selectedEventForDelete, setSelectedEventForDelete] =
     useState<CalendarEvent | null>(null);
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(
     new Set(),
   );
+  const [dirtyEventIds, setDirtyEventIds] = useState<
+    Map<string, Set<"quantity" | "amount">>
+  >(new Map());
+  const [loadingEventIds, setLoadingEventIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const amountEditRefs = useRef<Map<string, EventCellAmountEditHandle>>(
+    new Map(),
+  );
+  const quantityEditRefs = useRef<Map<string, EventCellQuantityEditHandle>>(
+    new Map(),
+  );
+
+  const markEventAsDirty = (
+    eventId: string,
+    fieldType: "quantity" | "amount",
+  ) => {
+    setDirtyEventIds((prev) => {
+      const newMap = new Map(prev);
+      const fieldSet = newMap.get(eventId) || new Set();
+      fieldSet.add(fieldType);
+      newMap.set(eventId, fieldSet);
+      return newMap;
+    });
+  };
+
+  const clearEventDirty = (
+    eventId: string,
+    fieldType?: "quantity" | "amount",
+  ) => {
+    setDirtyEventIds((prev) => {
+      const newMap = new Map(prev);
+      const fieldSet = newMap.get(eventId);
+      if (!fieldSet) return prev;
+
+      if (fieldType) {
+        // Clear only specific field type
+        fieldSet.delete(fieldType);
+        if (fieldSet.size === 0) {
+          newMap.delete(eventId);
+        }
+      } else {
+        // Clear all fields for this event
+        newMap.delete(eventId);
+      }
+      return newMap;
+    });
+  };
+
+  const isAnyFieldLoading = (eventId: string): boolean => {
+    const isFieldLoading = loadingEventIds.has(eventId);
+    return isFieldLoading;
+  };
+
+  const handleAmountLoadingChange = (eventId: string, isLoading: boolean) => {
+    setLoadingEventIds((prev) => {
+      const newSet = new Set(prev);
+      if (isLoading) {
+        newSet.add(eventId);
+      } else {
+        newSet.delete(eventId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleQuantityLoadingChange = (eventId: string, isLoading: boolean) => {
+    setLoadingEventIds((prev) => {
+      const newSet = new Set(prev);
+      if (isLoading) {
+        newSet.add(eventId);
+      } else {
+        newSet.delete(eventId);
+      }
+      return newSet;
+    });
+  };
+
+  const registerAmountEditRef = (
+    eventId: string,
+    ref: EventCellAmountEditHandle | null,
+  ) => {
+    if (ref) {
+      amountEditRefs.current.set(eventId, ref);
+    } else {
+      amountEditRefs.current.delete(eventId);
+    }
+  };
+
+  const registerQuantityEditRef = (
+    eventId: string,
+    ref: EventCellQuantityEditHandle | null,
+  ) => {
+    if (ref) {
+      quantityEditRefs.current.set(eventId, ref);
+    } else {
+      quantityEditRefs.current.delete(eventId);
+    }
+  };
 
   const handleEventCategoryUpdate = async (
     eventId: string,
@@ -98,6 +204,9 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
       },
       eventDate,
     );
+
+    clearEventDirty(eventId || "", "quantity");
+    registerQuantityEditRef(eventId || "", null);
   };
 
   const handleEventAmountUpdate = async (
@@ -113,6 +222,9 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
       },
       eventDate,
     );
+
+    clearEventDirty(eventId || "", "amount");
+    registerAmountEditRef(eventId || "", null);
   };
 
   const handleEventCurrencyUpdate = async (
@@ -147,6 +259,22 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
 
   const handleEventDelete = (event: CalendarEvent) => {
     setSelectedEventForDelete(event);
+  };
+
+  const handleSaveAllDirtyFields = (eventId: string) => {
+    const dirtyFields = dirtyEventIds.get(eventId);
+    if (!dirtyFields) return;
+
+    try {
+      if (dirtyFields.has("quantity")) {
+        quantityEditRefs.current.get(eventId)?.save();
+      }
+      if (dirtyFields.has("amount")) {
+        amountEditRefs.current.get(eventId)?.save();
+      }
+    } catch (error) {
+      console.error("Failed to save event:", error);
+    }
   };
 
   const handleConfirmDelete = async (deleteMode: DeleteMode) => {
@@ -343,7 +471,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
           <span>Categories</span>
           <ListFilter size={12} />
         </div>
-        <div className="w-[70px] justify-end">
+        <div className="w-[120px] justify-end">
           <span>Actions</span>
         </div>
       </nav>
@@ -427,18 +555,37 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                       <div
                                         className="border-content2 group hover:bg-content1 relative w-[120px] cursor-pointer text-right transition-colors"
                                         data-cell-name="event-quantity"
-                                        onClick={() =>
-                                          setSelectedEventForQuantity(eventObj)
-                                        }
+                                        onClick={() => {
+                                          setSelectedEventForQuantity(eventObj);
+                                          markEventAsDirty(
+                                            eventObj.id || "",
+                                            "quantity",
+                                          );
+                                        }}
                                       >
                                         {(selectedEventForQuantity?.id ===
                                           eventObj.id && (
                                           <EventCellQuantityEdit
+                                            ref={(ref) => {
+                                              if (ref) {
+                                                registerQuantityEditRef(
+                                                  eventObj.id || "",
+                                                  ref,
+                                                );
+                                              }
+                                              // Ignore null - keep the ref alive for save()
+                                            }}
                                             event={eventObj}
                                             onUpdate={handleEventQuantityUpdate}
-                                            onClose={() =>
-                                              setSelectedEventForQuantity(null)
+                                            onLoadingChange={(isLoading) =>
+                                              handleQuantityLoadingChange(
+                                                eventObj.id || "",
+                                                isLoading,
+                                              )
                                             }
+                                            onClose={() => {
+                                              setSelectedEventForQuantity(null);
+                                            }}
                                           />
                                         )) ||
                                           eventObj.quantity}
@@ -446,18 +593,37 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                       <div
                                         className="border-content2 group hover:bg-content1 relative w-[120px] cursor-pointer text-right transition-colors"
                                         data-cell-name="event-amount"
-                                        onClick={() =>
-                                          setSelectedEventForAmount(eventObj)
-                                        }
+                                        onClick={() => {
+                                          setSelectedEventForAmount(eventObj);
+                                          markEventAsDirty(
+                                            eventObj.id || "",
+                                            "amount",
+                                          );
+                                        }}
                                       >
                                         {(selectedEventForAmount?.id ===
                                           eventObj.id && (
                                           <EventCellAmountEdit
+                                            ref={(ref) => {
+                                              if (ref) {
+                                                registerAmountEditRef(
+                                                  eventObj.id || "",
+                                                  ref,
+                                                );
+                                              }
+                                              // Ignore null - keep the ref alive for save()
+                                            }}
                                             event={eventObj}
                                             onUpdate={handleEventAmountUpdate}
-                                            onClose={() =>
-                                              setSelectedEventForAmount(null)
+                                            onLoadingChange={(isLoading) =>
+                                              handleAmountLoadingChange(
+                                                eventObj.id || "",
+                                                isLoading,
+                                              )
                                             }
+                                            onClose={() => {
+                                              setSelectedEventForAmount(null);
+                                            }}
                                           />
                                         )) ||
                                           formatCurrency(eventObj.amount)}
@@ -473,24 +639,33 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                         )}
                                       </div>
                                       <div
-                                        className="border-content2 group hover:bg-content1 relative w-[90px] cursor-pointer"
+                                        className="border-content2 group hover:bg-content1 relative w-[90px]"
                                         data-cell-name="event-currency"
-                                        onClick={() =>
-                                          setSelectedEventForCurrency(eventObj)
-                                        }
                                       >
-                                        {selectedEventForCurrency?.id ===
-                                          eventObj.id && (
-                                          <EventCellCurrencyEdit
-                                            event={eventObj}
-                                            availableCurrencies={currencies}
-                                            onUpdate={handleEventCurrencyUpdate}
-                                            onClose={() =>
-                                              setSelectedEventForCurrency(null)
-                                            }
-                                          />
-                                        )}
-                                        <span>{eventObj.currency?.symbol}</span>
+                                        <Dropdown>
+                                          <DropdownTrigger>
+                                            <span className="cursor-pointer">
+                                              {eventObj.currency?.symbol}
+                                            </span>
+                                          </DropdownTrigger>
+                                          <DropdownMenu variant="light">
+                                            <DropdownItem
+                                              key="edit-currency"
+                                              isReadOnly
+                                            >
+                                              <EventCellCurrencyEdit
+                                                event={eventObj}
+                                                availableCurrencies={currencies}
+                                                onUpdate={
+                                                  handleEventCurrencyUpdate
+                                                }
+                                                onClose={() => {
+                                                  // Dropdown will close automatically
+                                                }}
+                                              />
+                                            </DropdownItem>
+                                          </DropdownMenu>
+                                        </Dropdown>
                                       </div>
                                       <div
                                         className={clsx(
@@ -574,16 +749,90 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                           </DropdownMenu>
                                         </Dropdown>
                                       </div>
-                                      <div className="border-content2 w-[70px]">
+                                      <div className="border-content2 w-[120px]">
                                         <div
                                           className="flex justify-end gap-1"
                                           data-cell-name="event-actions"
                                         >
+                                          {/* Event Update Confirm Actions - Show for any dirty event */}
+                                          {dirtyEventIds.has(
+                                            eventObj.id || "",
+                                          ) && (
+                                            <>
+                                              <div
+                                                className="cursor-pointer"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleSaveAllDirtyFields(
+                                                    eventObj.id || "",
+                                                  );
+                                                }}
+                                              >
+                                                {isAnyFieldLoading(
+                                                  eventObj.id || "",
+                                                ) ? (
+                                                  <Loader2
+                                                    className="stroke-primary animate-spin"
+                                                    size={16}
+                                                  />
+                                                ) : (
+                                                  <CircleCheckBig
+                                                    className="stroke-primary hover:stroke-default"
+                                                    size={16}
+                                                  />
+                                                )}
+                                              </div>
+                                              <div
+                                                className="cursor-pointer"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (
+                                                    selectedEventForQuantity?.id ===
+                                                    eventObj.id
+                                                  ) {
+                                                    registerQuantityEditRef(
+                                                      eventObj.id || "",
+                                                      null,
+                                                    );
+                                                    clearEventDirty(
+                                                      eventObj.id || "",
+                                                      "quantity",
+                                                    );
+                                                    setSelectedEventForQuantity(
+                                                      null,
+                                                    );
+                                                  } else if (
+                                                    selectedEventForAmount?.id ===
+                                                    eventObj.id
+                                                  ) {
+                                                    registerAmountEditRef(
+                                                      eventObj.id || "",
+                                                      null,
+                                                    );
+                                                    clearEventDirty(
+                                                      eventObj.id || "",
+                                                      "amount",
+                                                    );
+                                                    setSelectedEventForAmount(
+                                                      null,
+                                                    );
+                                                  }
+                                                }}
+                                              >
+                                                <CircleX
+                                                  className="stroke-content3 hover:stroke-danger"
+                                                  size={16}
+                                                />
+                                              </div>
+                                              <Divider orientation="vertical" />
+                                            </>
+                                          )}
+                                          {/* Event Update Confirm Actions End */}
                                           <Dropdown>
                                             <DropdownTrigger>
                                               <CalendarFold
                                                 className="stroke-content3 hover:stroke-primary cursor-pointer"
-                                                size={12}
+                                                size={16}
                                               />
                                             </DropdownTrigger>
                                             <DropdownMenu>
@@ -606,7 +855,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                           <div>
                                             <Trash
                                               className="stroke-content3 hover:stroke-danger cursor-pointer"
-                                              size={12}
+                                              size={16}
                                               onClick={() => {
                                                 if (
                                                   selectedEventIds.size > 0 &&

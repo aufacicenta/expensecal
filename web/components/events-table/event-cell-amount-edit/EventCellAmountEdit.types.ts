@@ -9,5 +9,6 @@ export type EventCellAmountEditProps = {
     eventDate: Date,
   ) => Promise<void>;
   onClose: () => void;
+  onLoadingChange?: (isLoading: boolean) => void;
   className?: string;
 };

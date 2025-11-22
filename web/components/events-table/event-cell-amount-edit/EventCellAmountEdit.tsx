@@ -1,15 +1,26 @@
+import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
 import { eventAmountSchema } from "@/lib/validators/event";
 import { Input } from "@heroui/input";
 import clsx from "clsx";
-import { useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
+import { ZodError } from "zod";
 import { EventCellAmountEditProps } from "./EventCellAmountEdit.types";
 
-export const EventCellAmountEdit: React.FC<EventCellAmountEditProps> = ({
-  event,
-  onUpdate,
-  onClose,
-  className,
-}) => {
+export type EventCellAmountEditHandle = {
+  save: () => Promise<void>;
+};
+
+export const EventCellAmountEdit = forwardRef<
+  EventCellAmountEditHandle,
+  EventCellAmountEditProps
+>(({ event, onUpdate, onClose, onLoadingChange, className }, ref) => {
+  const { updateCalendarCellEvent } = useCalendarV2Context();
   const [value, setValue] = useState<string>(String(event.amount));
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
@@ -25,14 +36,26 @@ export const EventCellAmountEdit: React.FC<EventCellAmountEditProps> = ({
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(e.target.value);
+    const newValue = e.target.value;
+    setValue(newValue);
     setError(""); // Clear error on change
+
+    // Only update calendar context with valid amounts (not empty or NaN)
+    if (newValue !== "" && !isNaN(Number(newValue))) {
+      const updatedEvent = {
+        ...event,
+        amount: newValue,
+      };
+      updateCalendarCellEvent(updatedEvent, event.event_date);
+    }
   };
 
   const handleSave = async () => {
     try {
       setError("");
       setIsLoading(true);
+      // Notify parent when loading state changes
+      onLoadingChange?.(true);
       isSavedRef.current = true;
 
       // Validate using zod schema
@@ -53,7 +76,16 @@ export const EventCellAmountEdit: React.FC<EventCellAmountEditProps> = ({
       );
       onClose();
     } catch (error) {
-      if (error instanceof Error) {
+      if (error instanceof ZodError) {
+        // Format ZodError into a comprehensive message
+        const issues = error.issues.map((issue) => issue.message);
+        const uniqueIssues = Array.from(new Set(issues));
+        const errorMessage =
+          uniqueIssues.length > 0
+            ? uniqueIssues.join(" • ")
+            : "Validation failed";
+        setError(errorMessage);
+      } else if (error instanceof Error) {
         setError(error.message);
       } else {
         setError("Failed to update amount");
@@ -62,17 +94,13 @@ export const EventCellAmountEdit: React.FC<EventCellAmountEditProps> = ({
       isSavedRef.current = false;
     } finally {
       setIsLoading(false);
+      onLoadingChange?.(false);
     }
   };
 
   const handleBlur = () => {
-    if (isSavedRef.current) return;
-
-    if (value !== String(event.amount)) {
-      handleSave();
-    } else {
-      onClose();
-    }
+    // Just close on blur - don't auto-save to allow switching between fields
+    onClose();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -82,6 +110,11 @@ export const EventCellAmountEdit: React.FC<EventCellAmountEditProps> = ({
       onClose();
     }
   };
+
+  // Expose handleSave and getIsLoading to parent via ref
+  useImperativeHandle(ref, () => ({
+    save: handleSave,
+  }));
 
   return (
     <Input
@@ -105,4 +138,6 @@ export const EventCellAmountEdit: React.FC<EventCellAmountEditProps> = ({
       }}
     />
   );
-};
+});
+
+EventCellAmountEdit.displayName = "EventCellAmountEdit";

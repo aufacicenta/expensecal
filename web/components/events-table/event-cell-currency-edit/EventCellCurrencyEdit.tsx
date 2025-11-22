@@ -1,6 +1,7 @@
 import { Button } from "@heroui/button";
 import { Select, SelectItem } from "@heroui/select";
 import clsx from "clsx";
+import { CircleCheckBig, CircleX } from "lucide-react";
 import { useState } from "react";
 import { EventCellCurrencyEditProps } from "./EventCellCurrencyEdit.types";
 
@@ -52,10 +53,7 @@ export const EventCellCurrencyEdit: React.FC<EventCellCurrencyEditProps> = ({
 
   return (
     <div
-      className={clsx(
-        "border-content2 bg-background absolute top-full right-0 left-0 z-50 w-[180px] space-y-2 rounded-md border p-2 shadow-lg",
-        className,
-      )}
+      className={clsx("space-y-2", className)}
       onClick={(e) => e.stopPropagation()}
     >
       <Select
@@ -83,25 +81,25 @@ export const EventCellCurrencyEdit: React.FC<EventCellCurrencyEditProps> = ({
           </SelectItem>
         ))}
       </Select>
-      <div className="flex gap-2">
+      <div className="flex justify-end gap-2">
+        <Button
+          size="sm"
+          onPress={onClose}
+          isDisabled={isLoading}
+          variant="bordered"
+          isIconOnly
+        >
+          <CircleX size={16} />
+        </Button>
         <Button
           size="sm"
           color="primary"
           onPress={handleConfirm}
           isLoading={isLoading}
-          className="flex-1"
           variant="bordered"
+          isIconOnly
         >
-          Confirm
-        </Button>
-        <Button
-          size="sm"
-          onPress={onClose}
-          isDisabled={isLoading}
-          className="flex-1"
-          variant="bordered"
-        >
-          Cancel
+          <CircleCheckBig size={16} />
         </Button>
       </div>
     </div>
