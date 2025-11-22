@@ -320,20 +320,48 @@ export const CalendarV2ContextController = ({
         );
       }
 
-      // Rebuild stats from calendar for affected months
-      rebuildMonthStatsFromCalendar(
-        newCalendarData.calendar,
-        newCalendarData.stats,
-        oldYear,
-        oldMonth,
-      );
-      if (oldDateStr !== newDateStr) {
-        rebuildMonthStatsFromCalendar(
-          newCalendarData.calendar,
-          newCalendarData.stats,
-          newYear,
-          newMonth,
-        );
+      // Determine cascade start point
+      const cascadeStartYear =
+        oldDateStr !== newDateStr && newYear < oldYear ? newYear : oldYear;
+      const cascadeStartMonth =
+        cascadeStartYear === oldYear ? oldMonth : undefined;
+
+      // Rebuild stats from calendar for affected months and all subsequent months
+      // This removes the old cascade so we can reapply it cleanly
+      const allYears = Object.keys(newCalendarData.calendar).sort();
+      const cascadeStartYearIdx = allYears.indexOf(cascadeStartYear);
+
+      if (cascadeStartYearIdx !== -1) {
+        // Rebuild all months from cascade start year onwards
+        for (
+          let yearIdx = cascadeStartYearIdx;
+          yearIdx < allYears.length;
+          yearIdx++
+        ) {
+          const year = allYears[yearIdx];
+          const months = Object.keys(newCalendarData.stats[year])
+            .filter((k) => k !== "stats")
+            .sort();
+
+          const startMonthIdx =
+            yearIdx === cascadeStartYearIdx && cascadeStartMonth
+              ? months.indexOf(cascadeStartMonth)
+              : 0;
+
+          for (
+            let monthIdx = startMonthIdx;
+            monthIdx < months.length;
+            monthIdx++
+          ) {
+            const month = months[monthIdx];
+            rebuildMonthStatsFromCalendar(
+              newCalendarData.calendar,
+              newCalendarData.stats,
+              year,
+              month,
+            );
+          }
+        }
       }
 
       // Rebuild year stats from months
@@ -347,8 +375,6 @@ export const CalendarV2ContextController = ({
       );
 
       // Apply carry-forward cascade from the affected year onwards
-      const cascadeStartYear =
-        oldDateStr !== newDateStr && newYear < oldYear ? newYear : oldYear;
       applyCascadeForwardStats(newCalendarData.stats, cascadeStartYear);
     }
 
