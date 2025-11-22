@@ -21,11 +21,19 @@ export type EventStructureType = "single" | "recurring" | "installment";
  * }
  */
 export function getStructureType(event: EventAttributes): EventStructureType {
-  if (!event.parent_event_id) {
+  if (
+    !event.parent_event_id &&
+    (event.childEvents === undefined || event.childEvents?.length === 0)
+  ) {
     return "single";
   }
 
-  if (event.parent_event_id && !event.installment_id) {
+  if (
+    (event.parent_event_id && !event.installment_id) ||
+    (!event.parent_event_id &&
+      event.childEvents !== undefined &&
+      event.childEvents?.length > 0)
+  ) {
     return "recurring";
   }
 

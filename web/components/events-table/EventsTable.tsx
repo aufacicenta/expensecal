@@ -12,6 +12,7 @@ import {
 } from "@/app/api/v2/calendar/types";
 import { formatCurrency } from "@/lib/currency/formatter";
 import { formatDayShort, formatMonthShort } from "@/lib/date/formatters";
+import { getStructureType } from "@/lib/events/getStructureType";
 import { EventAttributes } from "@expensecal/database/models/Event";
 import { Checkbox } from "@heroui/checkbox";
 import { Chip } from "@heroui/chip";
@@ -27,9 +28,11 @@ import Decimal from "decimal.js";
 import {
   ArrowLeftRight,
   CalendarFold,
+  CalendarSync,
   Circle,
   CircleCheckBig,
   CircleX,
+  ListChevronsUpDown,
   ListFilter,
   Loader2,
   Trash,
@@ -746,7 +749,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                       >
                                         <Dropdown>
                                           <DropdownTrigger>
-                                            <div className="flex h-full flex-wrap gap-1">
+                                            <div className="flex h-full flex-wrap items-center gap-1">
                                               {eventObj.categories &&
                                               eventObj.categories.length > 0 ? (
                                                 eventObj.categories.map(
@@ -882,6 +885,28 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                             </>
                                           )}
                                           {/* Event Update Confirm Actions End */}
+                                          {/* @TODO make a single event recurring or in installments */}
+                                          {getStructureType(eventObj) ===
+                                            "single" && (
+                                            <div>
+                                              <CalendarSync
+                                                className="stroke-content3 hover:stroke-primary cursor-pointer"
+                                                size={16}
+                                              />
+                                            </div>
+                                          )}
+                                          {/* @TODO List a recurring|installment event childs or siblings */}
+                                          {(getStructureType(eventObj) ===
+                                            "recurring" ||
+                                            getStructureType(eventObj) ===
+                                              "installment") && (
+                                            <div>
+                                              <ListChevronsUpDown
+                                                className="stroke-content3 hover:stroke-primary cursor-pointer"
+                                                size={16}
+                                              />
+                                            </div>
+                                          )}
                                           <Dropdown>
                                             <DropdownTrigger>
                                               <CalendarFold

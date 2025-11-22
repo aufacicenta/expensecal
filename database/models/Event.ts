@@ -25,6 +25,8 @@ export interface EventAttributes {
   original_text?: string | null;
   currency?: Currency;
   categories?: Category[]; // Categories associated with this event
+  childEvents?: EventAttributes[]; // Brought from associations
+  parentEvent?: EventAttributes; // Brought from associations
   created_at?: Date;
   updated_at?: Date;
   deleted_at?: Date | null;
