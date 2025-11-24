@@ -1,11 +1,12 @@
 "use client";
 
-import { useEventEditModalContext } from "@/context/EventEditModal/EventEditModalContext";
 import { Chip } from "@heroui/chip";
+
 import { CalendarEventCellProps } from "./CalendarEventCell.types";
 
+import { useEventEditModalContext } from "@/context/EventEditModal/EventEditModalContext";
+
 export const CalendarEventCell: React.FC<CalendarEventCellProps> = ({
-  className,
   event,
 }) => {
   const { openModal } = useEventEditModalContext();
@@ -18,13 +19,13 @@ export const CalendarEventCell: React.FC<CalendarEventCellProps> = ({
   return (
     <div>
       <button
-        onClick={handleClick}
         className="w-full cursor-pointer text-left transition-opacity hover:opacity-80"
+        onClick={handleClick}
       >
         <Chip
-          variant="dot"
           color={event.type === "EXPENSE" ? "danger" : "success"}
           size="sm"
+          variant="dot"
         >
           {event.quantity}x {event.currency?.symbol}{" "}
           {Number(event.amount).toFixed(2)} {event.description}

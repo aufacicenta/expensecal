@@ -1,5 +1,16 @@
 "use client";
 
+import { useState } from "react";
+
+import { useCalendarV2Context } from "../CalendarV2/useCalendarV2Context";
+
+import { EventsContext } from "./EventsContext";
+import {
+  EventsContextActionStates,
+  EventsContextControllerProps,
+  EventsContextType,
+} from "./EventsContext.types";
+
 import { GetChildEventsResponse } from "@/app/api/v1/events/[id]/children/types";
 import {
   DeleteMode,
@@ -14,14 +25,6 @@ import {
 } from "@/app/api/v1/events/installments/types";
 import { ParseRequestBody } from "@/app/api/v1/events/parse/types";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
-import { useState } from "react";
-import { useCalendarV2Context } from "../CalendarV2/useCalendarV2Context";
-import { EventsContext } from "./EventsContext";
-import {
-  EventsContextActionStates,
-  EventsContextControllerProps,
-  EventsContextType,
-} from "./EventsContext.types";
 
 export const EventsContextController = ({
   children,
@@ -86,6 +89,7 @@ export const EventsContextController = ({
       return data;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
       setActionStates((prev) => ({
         ...prev,
         createEventFromText: { isLoading: false, error: errorMsg },
@@ -114,13 +118,16 @@ export const EventsContextController = ({
       }
 
       const data = await response.json();
+
       setActionStates((prev) => ({
         ...prev,
         parseEventText: { isLoading: false, error: undefined },
       }));
+
       return data;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
       setActionStates((prev) => ({
         ...prev,
         parseEventText: { isLoading: false, error: errorMsg },
@@ -158,6 +165,7 @@ export const EventsContextController = ({
       return data;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
       setActionStates((prev) => ({
         ...prev,
         createEvent: { isLoading: false, error: errorMsg },
@@ -199,6 +207,7 @@ export const EventsContextController = ({
       return data;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
       setActionStates((prev) => ({
         ...prev,
         createInstallments: { isLoading: false, error: errorMsg },
@@ -229,13 +238,16 @@ export const EventsContextController = ({
       }
 
       const data = await response.json();
+
       setActionStates((prev) => ({
         ...prev,
         listInstallments: { isLoading: false, error: undefined },
       }));
+
       return data;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
       setActionStates((prev) => ({
         ...prev,
         listInstallments: { isLoading: false, error: errorMsg },
@@ -277,6 +289,7 @@ export const EventsContextController = ({
       return data;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
       setActionStates((prev) => ({
         ...prev,
         deleteInstallments: { isLoading: false, error: errorMsg },
@@ -320,6 +333,7 @@ export const EventsContextController = ({
       return data;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
       setActionStates((prev) => ({
         ...prev,
         updateEvent: { isLoading: false, error: errorMsg },
@@ -339,6 +353,7 @@ export const EventsContextController = ({
     }));
     try {
       const params = new URLSearchParams();
+
       params.append("deleteMode", deleteMode);
 
       const response = await fetch(
@@ -368,6 +383,7 @@ export const EventsContextController = ({
       return data;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
       setActionStates((prev) => ({
         ...prev,
         deleteEvent: { isLoading: false, error: errorMsg },
@@ -412,6 +428,7 @@ export const EventsContextController = ({
       }));
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
       setActionStates((prev) => ({
         ...prev,
         deleteEventMultiple: { isLoading: false, error: errorMsg },
@@ -431,13 +448,16 @@ export const EventsContextController = ({
     try {
       const response = await fetch(routes.api.v1.events.children(eventId));
       const data = await response.json();
+
       setActionStates((prev) => ({
         ...prev,
         fetchChildEvents: { isLoading: false, error: undefined },
       }));
+
       return data;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
       setActionStates((prev) => ({
         ...prev,
         fetchChildEvents: { isLoading: false, error: errorMsg },

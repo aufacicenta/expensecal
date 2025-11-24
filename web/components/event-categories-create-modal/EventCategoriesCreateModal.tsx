@@ -1,6 +1,5 @@
 "use client";
 
-import { useEventCategoriesContext } from "@/context/EventCategories/useEventCategoriesContext";
 import { Button } from "@heroui/button";
 import { Input, Textarea } from "@heroui/input";
 import {
@@ -11,7 +10,10 @@ import {
   ModalHeader,
 } from "@heroui/modal";
 import { useState } from "react";
+
 import { EventCategoriesCreateModalProps } from "./EventCategoriesCreateModal.types";
+
+import { useEventCategoriesContext } from "@/context/EventCategories/useEventCategoriesContext";
 
 export const EventCategoriesCreateModal: React.FC<
   EventCategoriesCreateModalProps
@@ -30,13 +32,16 @@ export const EventCategoriesCreateModal: React.FC<
     // Validate name
     if (!formData.name.trim()) {
       setError("Category name is required");
+
       return;
     }
 
     // Validate color format
     const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
+
     if (!hexColorRegex.test(formData.color)) {
       setError("Please enter a valid hex color (e.g., #FF5733)");
+
       return;
     }
 
@@ -85,48 +90,51 @@ export const EventCategoriesCreateModal: React.FC<
         </ModalHeader>
         <ModalBody>
           <Input
+            isDisabled={isCreating}
             label="Category Name"
             placeholder="e.g., Groceries"
             value={formData.name}
             onValueChange={(value) => setFormData({ ...formData, name: value })}
-            isDisabled={isCreating}
           />
 
           <Textarea
+            isDisabled={isCreating}
             label="Description (Optional)"
+            minRows={2}
             placeholder="Add a description for this category"
             value={formData.description}
             onValueChange={(value) =>
               setFormData({ ...formData, description: value })
             }
-            minRows={2}
-            isDisabled={isCreating}
           />
 
           <div className="flex items-center gap-3">
             <Input
-              label="Color"
-              type="color"
-              value={formData.color}
-              onChange={(e) =>
-                setFormData({ ...formData, color: e.target.value })
-              }
-              isDisabled={isCreating}
               className="w-20"
+              isDisabled={isCreating}
+              label="Color"
               startContent={
                 <div
                   className="h-6 w-6 rounded border"
                   style={{ backgroundColor: formData.color }}
                 />
               }
+              type="color"
+              value={formData.color}
+              onChange={(e) =>
+                setFormData({ ...formData, color: e.target.value })
+              }
             />
             <Input
+              className="flex-1"
+              isDisabled={isCreating}
               label="Hex Code"
               placeholder="#FF5733"
               value={formData.color}
               onValueChange={(value) => {
                 // Validate and update hex color
                 const hexColorRegex = /^#?[0-9A-Fa-f]{0,6}$/;
+
                 if (hexColorRegex.test(value)) {
                   setFormData({
                     ...formData,
@@ -134,8 +142,6 @@ export const EventCategoriesCreateModal: React.FC<
                   });
                 }
               }}
-              isDisabled={isCreating}
-              className="flex-1"
             />
           </div>
 
@@ -144,16 +150,16 @@ export const EventCategoriesCreateModal: React.FC<
         <ModalFooter>
           <Button
             color="default"
+            isDisabled={isCreating}
             variant="light"
             onPress={() => handleOpenChange(false)}
-            isDisabled={isCreating}
           >
             Cancel
           </Button>
           <Button
             color="primary"
-            onPress={handleCreateCategory}
             isLoading={isCreating}
+            onPress={handleCreateCategory}
           >
             Create
           </Button>

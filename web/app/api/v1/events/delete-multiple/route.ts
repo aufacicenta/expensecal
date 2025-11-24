@@ -1,14 +1,17 @@
-import { createValidationErrorResponse, validateUUID } from "@/lib/validators";
-import { stackServerApp } from "@/stack/server";
 import db from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
 import { NextRequest, NextResponse } from "next/server";
+
 import { DeleteMode } from "../[id]/types";
 import { deleteEventWithValidation } from "../delete-helpers";
+
 import {
   DeleteMultipleEventsRequestBody,
   DeleteMultipleEventsResponse,
 } from "./types";
+
+import { stackServerApp } from "@/stack/server";
+import { createValidationErrorResponse, validateUUID } from "@/lib/validators";
 
 /**
  * POST /api/v1/events/delete-multiple
@@ -26,6 +29,7 @@ export async function POST(
   try {
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -55,6 +59,7 @@ export async function POST(
     // Validate each event ID is a valid UUID
     for (const eventId of body.eventIds) {
       const idError = validateUUID(eventId, "eventId", true);
+
       if (idError) {
         return createValidationErrorResponse(idError);
       }
@@ -62,6 +67,7 @@ export async function POST(
 
     // Validate deleteMode if provided
     const deleteMode: DeleteMode = body.deleteMode || "single";
+
     if (!["single", "all-future"].includes(deleteMode)) {
       return createValidationErrorResponse(
         new Error("deleteMode must be 'single' or 'all-future'"),
@@ -82,6 +88,7 @@ export async function POST(
           userId: user.id,
           deleteMode,
         });
+
         deletedEvents.push(deletedEvent);
       } catch (error) {
         const reason = error instanceof Error ? error.message : "Unknown error";
@@ -124,6 +131,7 @@ export async function POST(
     );
   } catch (error) {
     console.error("Delete multiple events endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,

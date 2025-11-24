@@ -1,12 +1,14 @@
-import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
-import { useEventsContext } from "@/context/Events/useEventsContext";
 import { Button } from "@heroui/button";
 import { Textarea } from "@heroui/input";
 import { addToast } from "@heroui/toast";
 import clsx from "clsx";
 import { Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+
 import { EventsMultiLineInputProps } from "./EventsMultiLineInput.types";
+
+import { useEventsContext } from "@/context/Events/useEventsContext";
+import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
 
 export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
   className,
@@ -86,29 +88,29 @@ export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
     <div className={clsx("flex flex-col gap-3", className)}>
       <Textarea
         ref={textareaRef}
-        label="Enter expenses or income"
-        placeholder="e.g., Spent $50 on groceries tomorrow&#10;Got paid $2000 next Friday"
-        value={input}
-        onValueChange={setInput}
-        onKeyDown={handleKeyDown}
+        className="w-full"
+        description="Ctrl+Enter (or Cmd+Enter on Mac) to submit"
         disabled={loading}
         isDisabled={loading}
-        description="Ctrl+Enter (or Cmd+Enter on Mac) to submit"
-        minRows={4}
+        label="Enter expenses or income"
         maxRows={8}
-        className="w-full"
+        minRows={4}
+        placeholder="e.g., Spent $50 on groceries tomorrow&#10;Got paid $2000 next Friday"
+        value={input}
         variant="bordered"
+        onKeyDown={handleKeyDown}
+        onValueChange={setInput}
       />
       <Button
         color="primary"
-        onPress={handleSubmit}
+        endContent={loading ? undefined : <Send size={16} />}
         isLoading={
           loading ||
           eventsController.actionStates.createEventFromText.isLoading ||
           calendarContext.actionStates.loadCalendarV2.isLoading
         }
         variant="bordered"
-        endContent={loading ? undefined : <Send size={16} />}
+        onPress={handleSubmit}
       >
         {loading
           ? "Creating..."

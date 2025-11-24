@@ -1,17 +1,19 @@
 "use client";
 
-import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
-import { useFilteringContext } from "@/context/Filtering/useFilteringContext";
+import { animate, createScope, Scope } from "animejs";
+import clsx from "clsx";
+import { useEffect, useMemo, useRef } from "react";
+
+import { CalendarV2Props } from "./CalendarV2.types";
+import { MonthGrid } from "./month-grid/MonthGrid";
+import { NavbarTop } from "./navbar-top/NavbarTop";
+
 import {
   extractAvailableMonths,
   findMonthIndex,
 } from "@/lib/calendar/monthExtractor";
-import { animate, createScope, Scope } from "animejs";
-import clsx from "clsx";
-import { useEffect, useMemo, useRef } from "react";
-import { CalendarV2Props } from "./CalendarV2.types";
-import { MonthGrid } from "./month-grid/MonthGrid";
-import { NavbarTop } from "./navbar-top/NavbarTop";
+import { useFilteringContext } from "@/context/Filtering/useFilteringContext";
+import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
 
 export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
   const {
@@ -21,7 +23,6 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
     goToPreviousMonth,
     goToNextMonth,
     goToMonth,
-    loadCalendarV2,
   } = useCalendarV2Context();
 
   const filteringContext = useFilteringContext();
@@ -83,7 +84,8 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
   // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (actionStates.loadCalendarV2.isLoading || currentMonthIndex === -1) return;
+      if (actionStates.loadCalendarV2.isLoading || currentMonthIndex === -1)
+        return;
 
       switch (event.key.toLowerCase()) {
         case "arrowleft":
@@ -106,6 +108,7 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
     };
 
     window.addEventListener("keydown", handleKeyDown);
+
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
@@ -125,8 +128,8 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
     >
       {/* Navbar */}
       <NavbarTop
-        currentMonthIndex={currentMonthIndex}
         availableMonths={availableMonths}
+        currentMonthIndex={currentMonthIndex}
       />
 
       {/* Carousel Container - overflow-x hidden to clip grids */}
@@ -142,13 +145,14 @@ export const CalendarV2: React.FC<CalendarV2Props> = ({ className }) => {
           {availableMonths.map((month) => {
             const yearMonthData =
               calendarV2Data?.calendar?.[month.year]?.[month.month];
+
             return (
               <MonthGrid
                 key={`${month.year}-${month.month}`}
-                year={parseInt(month.year, 10)}
-                month={parseInt(month.month, 10) - 1} // MonthGrid expects 0-indexed month
                 calendarData={yearMonthData}
+                month={parseInt(month.month, 10) - 1} // MonthGrid expects 0-indexed month
                 selectedCategoryIds={filteringContext.selectedCategoryIds}
+                year={parseInt(month.year, 10)}
               />
             );
           })}

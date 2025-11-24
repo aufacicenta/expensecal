@@ -1,13 +1,15 @@
 "use client";
 
-import { EventCategoriesCreateModal } from "@/components/event-categories-create-modal/EventCategoriesCreateModal";
-import { useEventCategoriesContext } from "@/context/EventCategories/useEventCategoriesContext";
 import { Button } from "@heroui/button";
 import { Select, SelectItem } from "@heroui/select";
 import clsx from "clsx";
 import { Plus } from "lucide-react";
 import { useState } from "react";
+
 import { EventCategoriesProps } from "./EventCategories.types";
+
+import { useEventCategoriesContext } from "@/context/EventCategories/useEventCategoriesContext";
+import { EventCategoriesCreateModal } from "@/components/event-categories-create-modal/EventCategoriesCreateModal";
 
 export const EventCategories: React.FC<EventCategoriesProps> = ({
   className,
@@ -32,21 +34,17 @@ export const EventCategories: React.FC<EventCategoriesProps> = ({
       {/* Categories Select */}
       <Select
         // label="Categories"
-        placeholder="Select categories"
-        selectedKeys={selectedCategoryIds}
-        onSelectionChange={(keys) =>
-          setSelectedCategoryIds(Array.from(keys as Set<string>))
-        }
-        selectionMode="multiple"
-        isDisabled={loading}
         className="w-48"
         classNames={{
           trigger: "min-h-10",
         }}
+        isDisabled={loading}
+        placeholder="Select categories"
         renderValue={(items) => (
           <div className="bg-content2 flex flex-wrap rounded p-1">
             {items.map((item) => {
               const category = categories.find((cat) => cat.id === item.key);
+
               return (
                 <div
                   key={item.key}
@@ -62,6 +60,11 @@ export const EventCategories: React.FC<EventCategoriesProps> = ({
             })}
           </div>
         )}
+        selectedKeys={selectedCategoryIds}
+        selectionMode="multiple"
+        onSelectionChange={(keys) =>
+          setSelectedCategoryIds(Array.from(keys as Set<string>))
+        }
       >
         {categories.map((category) => (
           <SelectItem key={category.id}>
@@ -79,10 +82,10 @@ export const EventCategories: React.FC<EventCategoriesProps> = ({
       {/* Create Category Button */}
       <Button
         isIconOnly
-        variant="light"
-        onPress={() => setIsModalOpen(true)}
         className="p-1"
         title="Create new category"
+        variant="light"
+        onPress={() => setIsModalOpen(true)}
       >
         <Plus size={18} />
       </Button>

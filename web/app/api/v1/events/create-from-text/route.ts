@@ -1,3 +1,15 @@
+import db from "@expensecal/database/db";
+import { initModels } from "@expensecal/database/models";
+import { Currency } from "@expensecal/database/models/Currency";
+import { Event, EventType } from "@expensecal/database/models/Event";
+import { NextRequest, NextResponse } from "next/server";
+
+import {
+  CreateFromTextRequestBody,
+  CreateFromTextResponse,
+  CreateFromTextSuccessResponse,
+} from "./types";
+
 import {
   createInstallments,
   createRecurringEvents,
@@ -9,16 +21,6 @@ import {
   validateRequiredString,
 } from "@/lib/validators";
 import { stackServerApp } from "@/stack/server";
-import db from "@expensecal/database/db";
-import { initModels } from "@expensecal/database/models";
-import { Currency } from "@expensecal/database/models/Currency";
-import { Event, EventType } from "@expensecal/database/models/Event";
-import { NextRequest, NextResponse } from "next/server";
-import {
-  CreateFromTextRequestBody,
-  CreateFromTextResponse,
-  CreateFromTextSuccessResponse,
-} from "./types";
 
 /**
  * POST /api/v1/events/create-from-text
@@ -40,6 +42,7 @@ export async function POST(
   try {
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -55,6 +58,7 @@ export async function POST(
 
     // Validate text
     const textError = validateRequiredString(body.text, "text");
+
     if (textError) {
       return createValidationErrorResponse(textError);
     }
@@ -65,6 +69,7 @@ export async function POST(
       "current_date",
       false,
     );
+
     if (currentDateResult.error) {
       return createValidationErrorResponse(currentDateResult.error);
     }
@@ -75,6 +80,7 @@ export async function POST(
 
     // Check if Ollama is available
     const health = await parser.checkHealth();
+
     if (!health.available) {
       return NextResponse.json(
         {
@@ -204,6 +210,7 @@ export async function POST(
 
           // Fetch updated parent event
           const updatedParent = await Event.findByPk(event.id);
+
           if (!updatedParent) {
             return NextResponse.json(
               {
@@ -250,6 +257,7 @@ export async function POST(
 
           // Fetch updated parent event
           const updatedParent = await Event.findByPk(event.id);
+
           if (!updatedParent) {
             return NextResponse.json(
               {
@@ -270,6 +278,7 @@ export async function POST(
         }
       } catch (error) {
         console.error("Error creating recurrence events:", error);
+
         return NextResponse.json(
           {
             success: false,
@@ -292,6 +301,7 @@ export async function POST(
     );
   } catch (error) {
     console.error("Create from text endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,

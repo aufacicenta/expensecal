@@ -1,4 +1,5 @@
 import { ExampleModelAttributes } from "@expensecal/database/models/ExampleModel";
+
 import { BaseResponse } from "../types";
 
 export type ExampleRequest = {

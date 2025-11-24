@@ -1,11 +1,13 @@
-import { toDateString } from "@/lib/date";
 import { Button } from "@heroui/button";
 import { DatePicker } from "@heroui/date-picker";
 import { CalendarDate, parseDate } from "@internationalized/date";
 import clsx from "clsx";
 import { CircleCheckBig, CircleX } from "lucide-react";
 import { useState } from "react";
+
 import { EventCellDateEditProps } from "./EventCellDateEdit.types";
+
+import { toDateString } from "@/lib/date";
 
 export const EventCellDateEdit: React.FC<EventCellDateEditProps> = ({
   event,
@@ -26,10 +28,12 @@ export const EventCellDateEdit: React.FC<EventCellDateEditProps> = ({
       setIsLoading(true);
       if (!event.id) {
         console.error("Event ID is missing");
+
         return;
       }
       if (!selectedDate) {
         console.error("Date is missing");
+
         return;
       }
       await onUpdate(
@@ -48,30 +52,30 @@ export const EventCellDateEdit: React.FC<EventCellDateEditProps> = ({
   return (
     <div className={clsx("space-y-2", className)}>
       <DatePicker
-        value={selectedDate}
-        onChange={setSelectedDate}
         isDisabled={isLoading}
-        size="sm"
-        variant="bordered"
         label="Select new date"
+        size="sm"
+        value={selectedDate}
+        variant="bordered"
+        onChange={setSelectedDate}
       />
       <div className="flex justify-end gap-2">
         <Button
-          size="sm"
-          onPress={onClose}
-          isDisabled={isLoading}
-          variant="bordered"
           isIconOnly
+          isDisabled={isLoading}
+          size="sm"
+          variant="bordered"
+          onPress={onClose}
         >
           <CircleX size={16} />
         </Button>
         <Button
-          size="sm"
-          color="primary"
-          onPress={handleConfirm}
-          isLoading={isLoading}
-          variant="bordered"
           isIconOnly
+          color="primary"
+          isLoading={isLoading}
+          size="sm"
+          variant="bordered"
+          onPress={handleConfirm}
         >
           <CircleCheckBig size={16} />
         </Button>

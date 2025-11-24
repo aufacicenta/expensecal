@@ -6,7 +6,6 @@ import { VisuallyHidden } from "@react-aria/visually-hidden";
 import clsx from "clsx";
 import { useTheme } from "next-themes";
 import { FC } from "react";
-
 import { Moon, Sun } from "lucide-react";
 
 export interface ThemeSwitchProps {

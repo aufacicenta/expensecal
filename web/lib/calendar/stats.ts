@@ -1,10 +1,12 @@
+import Decimal from "decimal.js";
+
+import { convertCurrency } from "../exchange-rates/exchangeRateService";
+
 import {
   CalendarData,
   CalendarStatsData,
   FinancialSummary,
 } from "@/app/api/v2/calendar/types";
-import Decimal from "decimal.js";
-import { convertCurrency } from "../exchange-rates/exchangeRateService";
 
 /**
  * Calculate financial summary for a day
@@ -18,8 +20,10 @@ export function convertAmount(
 ): Decimal {
   // Convert amount to base currency if needed
   let convertedAmount = amount;
+
   if (currencySymbol !== baseCurrencySymbol && currencySymbol !== "UNKNOWN") {
     const rate = exchangeRates.get(currencySymbol);
+
     if (rate) {
       // Convert using hub-and-spoke model: (amount / rate) * 1
       convertedAmount = new Decimal(
@@ -326,6 +330,7 @@ export function rebuildMonthStatsFromCalendar(
 
     for (const event of dayEvents) {
       const convertedAmount = new Decimal(event.exchangeRate);
+
       if (event.type === "INCOME") {
         dayIncome = dayIncome.plus(convertedAmount);
       } else if (event.type === "EXPENSE") {
@@ -357,11 +362,13 @@ export function rebuildMonthStatsFromCalendar(
 
   for (const day of monthDays) {
     const dayStats = (stats[year][month] as any)[day];
+
     monthIncome = monthIncome.plus(dayStats.totalIncome);
     monthExpenses = monthExpenses.plus(dayStats.totalExpenses);
   }
 
   const monthStats = (stats[year][month] as any).stats;
+
   monthStats.totalIncome = monthIncome.toString();
   monthStats.totalExpenses = monthExpenses.toString();
   monthStats.net = calculateNetFromSummary(
@@ -399,6 +406,7 @@ export function rebuildYearStatsFromMonths(
 
     for (const month of yearMonths) {
       const monthStats = (stats[year][month] as any).stats;
+
       yearIncome = yearIncome.plus(monthStats.totalIncome);
       yearExpenses = yearExpenses.plus(monthStats.totalExpenses);
     }
@@ -450,6 +458,7 @@ export function applyCascadeForwardStats(
 
   // Get previous year's net if cascade doesn't start at first year
   let prevYearNet: string | undefined;
+
   if (startYearIdx > 0) {
     prevYearNet = stats[allYears[startYearIdx - 1]].stats.net;
   }
@@ -483,6 +492,7 @@ export function applyCascadeForwardStats(
       isStartYear && startMonth ? months.indexOf(startMonth) : 0;
 
     let prevMonthNet: string | undefined;
+
     if (startMonthIdx > 0) {
       prevMonthNet = (yearData[months[startMonthIdx - 1]] as any).stats.net;
     }

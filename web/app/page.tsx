@@ -1,11 +1,12 @@
 "use client";
 
+import { DndContext, DragEndEvent } from "@dnd-kit/core";
+import { useState } from "react";
+
 import { DayModalsRenderer } from "@/components/calendar/day-modal/DayModalsRenderer";
 import { EventEditModalRenderer } from "@/components/calendar/event-edit-modal/EventEditModalRenderer";
 import { EventTextInput } from "@/components/event-text-input/EventTextInput";
 import { DayModalContextController } from "@/context/DayModal/DayModalContext";
-import { DndContext, DragEndEvent } from "@dnd-kit/core";
-import { useState } from "react";
 
 export default function Home() {
   const [eventTextInputPosition, setEventTextInputPosition] = useState({

@@ -1,11 +1,13 @@
-import { validateUUID } from "@/lib/validators";
-import { stackServerApp } from "@/stack/server";
 import { Op } from "@expensecal/database";
 import db from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
 import { Event } from "@expensecal/database/models/Event";
 import { NextRequest, NextResponse } from "next/server";
+
 import { GetChildEventsResponse } from "./types";
+
+import { stackServerApp } from "@/stack/server";
+import { validateUUID } from "@/lib/validators";
 
 /**
  * GET /api/v1/events/[id]/children
@@ -21,6 +23,7 @@ export async function GET(
 
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -34,6 +37,7 @@ export async function GET(
 
     // Validate event ID
     const idError = validateUUID(id, "id", true);
+
     if (idError) {
       return NextResponse.json(
         {
@@ -50,6 +54,7 @@ export async function GET(
 
     // Find the parent event
     const event = await Event.findByPk(id);
+
     if (!event) {
       return NextResponse.json(
         {
@@ -104,6 +109,7 @@ export async function GET(
     );
   } catch (error) {
     console.error("Get child events endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,

@@ -1,4 +1,5 @@
 import { EventAttributes } from "@expensecal/database/models/Event";
+
 import { BaseErrorResponse, BaseSuccessResponse } from "../../v1/types";
 
 export type FinancialSummary = {

@@ -1,15 +1,5 @@
 "use client";
 
-import { CalendarEventData } from "@/app/api/v1/calendar/types";
-import { DeleteMode } from "@/app/api/v1/events/[id]/types";
-import { useCurrencyContext } from "@/context/Currency/useCurrencyContext";
-import { useEventEditModalContext } from "@/context/EventEditModal/EventEditModalContext";
-import { useEventsContext } from "@/context/Events/useEventsContext";
-import {
-  formatDateForDisplay,
-  formatDateShort,
-  toDateString,
-} from "@/lib/date";
 import { Button } from "@heroui/button";
 import { Divider } from "@heroui/divider";
 import {
@@ -30,11 +20,24 @@ import { Select, SelectItem } from "@heroui/select";
 import clsx from "clsx";
 import { AlertCircle, Info, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+
 import { EventCategories } from "../event-categories/EventCategories";
+
 import {
   EditableEventField,
   EventEditModalProps,
 } from "./EventEditModal.types";
+
+import {
+  formatDateForDisplay,
+  formatDateShort,
+  toDateString,
+} from "@/lib/date";
+import { useEventsContext } from "@/context/Events/useEventsContext";
+import { useEventEditModalContext } from "@/context/EventEditModal/EventEditModalContext";
+import { useCurrencyContext } from "@/context/Currency/useCurrencyContext";
+import { DeleteMode } from "@/app/api/v1/events/[id]/types";
+import { CalendarEventData } from "@/app/api/v1/calendar/types";
 
 export const EventEditModal: React.FC<EventEditModalProps> = ({
   modalId,
@@ -69,6 +72,7 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
       if (event.parent_event_id || event.recurrence_rule) {
         try {
           const data = await fetchChildEvents(event.id!);
+
           if (data.success) {
             setChildEvents(data.data);
           }
@@ -95,6 +99,7 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
   const handleSave = async () => {
     if (!hasChanges) {
       setEditingField(null);
+
       return;
     }
 
@@ -113,6 +118,7 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
       // Pass the original event date to help the context refresh both old and new cells
       // This avoids the need for an extra GET request in the context
       const originalEventDate = new Date(event.event_date);
+
       await updateEvent(event.id!, updatePayload, originalEventDate);
       setHasChanges(false);
       setEditingField(null);
@@ -169,9 +175,9 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
   const displayDate = formatDateForDisplay(event.event_date);
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={onClose} size="lg">
+    <Modal isOpen={isOpen} size="lg" onOpenChange={onClose}>
       <ModalContent>
-        {(onCloseInternal) => (
+        {(_onCloseInternal) => (
           <>
             <ModalHeader className="flex flex-col gap-1">
               Edit Event
@@ -181,7 +187,7 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
               {/* Error display */}
               {error && (
                 <div className="border-danger bg-danger/10 text-danger flex items-start gap-2 rounded border p-2 text-xs">
-                  <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
+                  <AlertCircle className="mt-0.5 flex-shrink-0" size={14} />
                   <div>{error}</div>
                 </div>
               )}
@@ -193,24 +199,24 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                   <div className="space-y-2">
                     <div className="flex gap-2">
                       <Input
-                        type="number"
+                        className="flex-1"
                         label="Amount"
                         placeholder="0.00"
+                        step="0.01"
+                        type="number"
                         value={formData.amount}
                         onChange={(e) =>
                           handleFieldChange("amount", e.target.value)
                         }
-                        step="0.01"
-                        className="flex-1"
                       />
                       <Select
+                        className="flex-1"
                         label="Currency"
                         placeholder="Select currency"
                         selectedKeys={[formData.currency_id]}
                         onChange={(e) =>
                           handleFieldChange("currency_id", e.target.value)
                         }
-                        className="flex-1"
                       >
                         {currencies.map((currency) => (
                           <SelectItem key={currency.id}>
@@ -221,9 +227,11 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                     </div>
                     <div className="flex gap-2">
                       <Input
-                        type="number"
+                        className="flex-1"
                         label="Quantity"
+                        min="1"
                         placeholder="1"
+                        type="number"
                         value={String(formData.quantity)}
                         onChange={(e) =>
                           handleFieldChange(
@@ -231,16 +239,14 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                             parseInt(e.target.value) || 1,
                           )
                         }
-                        min="1"
-                        className="flex-1"
                       />
                     </div>
                   </div>
                 ) : (
                   <button
-                    onClick={() => setEditingField("amount")}
-                    disabled={loading}
                     className="hover:bg-content2 block w-full rounded p-2 text-left disabled:opacity-50"
+                    disabled={loading}
+                    onClick={() => setEditingField("amount")}
                   >
                     <div className="text-content4 text-xs">
                       Amount & Currency
@@ -264,21 +270,21 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                 {/* Description */}
                 {editingField === "description" ? (
                   <Textarea
+                    description={event.original_text}
                     label="Description"
+                    maxRows={4}
+                    minRows={2}
                     placeholder="Event description"
                     value={formData.description}
                     onChange={(e) =>
                       handleFieldChange("description", e.target.value)
                     }
-                    minRows={2}
-                    maxRows={4}
-                    description={event.original_text}
                   />
                 ) : (
                   <button
-                    onClick={() => setEditingField("description")}
-                    disabled={loading}
                     className="hover:bg-content2 block w-full rounded p-2 text-left disabled:opacity-50"
+                    disabled={loading}
+                    onClick={() => setEditingField("description")}
                   >
                     <div className="text-content4 text-xs">Description</div>
                     <div className="font-medium">{event.description}</div>
@@ -291,8 +297,8 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                 {/* Date */}
                 {editingField === "date" ? (
                   <Input
-                    type="date"
                     label="Date"
+                    type="date"
                     value={formData.event_date}
                     onChange={(e) =>
                       handleFieldChange("event_date", e.target.value)
@@ -300,9 +306,9 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                   />
                 ) : (
                   <button
-                    onClick={() => setEditingField("date")}
-                    disabled={loading}
                     className="hover:bg-content2 block w-full rounded p-2 text-left disabled:opacity-50"
+                    disabled={loading}
+                    onClick={() => setEditingField("date")}
                   >
                     <div className="text-content4 text-xs">Date</div>
                     <div className="font-medium">{displayDate}</div>
@@ -323,18 +329,18 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                       </div>
                     )}
                     <EventCategories
+                      className="w-full"
                       selectedIds={formData.categoryIds}
                       onSelectionChange={(ids) =>
                         handleFieldChange("categoryIds", ids)
                       }
-                      className="w-full"
                     />
                   </div>
                 ) : (
                   <button
-                    onClick={() => setEditingField("categories")}
-                    disabled={loading}
                     className="hover:bg-content2 block w-full rounded p-2 text-left disabled:opacity-50"
+                    disabled={loading}
+                    onClick={() => setEditingField("categories")}
                   >
                     <div className="text-content4 text-xs">
                       Categories
@@ -365,9 +371,9 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                       {childEvents.map((childEvent) => (
                         <button
                           key={childEvent.id}
-                          onClick={(e) => handleOpenChildEvent(childEvent, e)}
-                          disabled={loading}
                           className="bg-content2 hover:bg-content3 block w-full rounded p-2 text-left text-xs disabled:opacity-50"
+                          disabled={loading}
+                          onClick={(e) => handleOpenChildEvent(childEvent, e)}
                         >
                           <div className="flex items-center justify-between">
                             <span className="font-medium">
@@ -403,20 +409,20 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                   {hasChanges && (
                     <>
                       <Button
-                        size="sm"
-                        color="primary"
-                        onPress={handleSave}
-                        isLoading={loading}
                         className="flex-1"
+                        color="primary"
+                        isLoading={loading}
+                        size="sm"
+                        onPress={handleSave}
                       >
                         Save
                       </Button>
                       <Button
+                        className="flex-1"
+                        disabled={loading}
                         size="sm"
                         variant="bordered"
                         onPress={handleDiscard}
-                        disabled={loading}
-                        className="flex-1"
                       >
                         Discard
                       </Button>
@@ -428,12 +434,12 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                 <Dropdown>
                   <DropdownTrigger>
                     <Button
-                      size="sm"
                       color="danger"
-                      variant="bordered"
-                      startContent={<Trash2 size={14} />}
-                      isLoading={loading}
                       disabled={hasChanges}
+                      isLoading={loading}
+                      size="sm"
+                      startContent={<Trash2 size={14} />}
+                      variant="bordered"
                     >
                       Delete
                     </Button>
@@ -441,16 +447,16 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                   <DropdownMenu>
                     <DropdownItem
                       key="single"
-                      onPress={() => handleDelete("single")}
                       className="text-danger"
+                      onPress={() => handleDelete("single")}
                     >
                       Delete this event only
                     </DropdownItem>
                     {childEvents.length > 0 ? (
                       <DropdownItem
                         key="all-future"
-                        onPress={() => handleDelete("all-future")}
                         className="text-danger"
+                        onPress={() => handleDelete("all-future")}
                       >
                         Delete this and all future occurrences
                       </DropdownItem>

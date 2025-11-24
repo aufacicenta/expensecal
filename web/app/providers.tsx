@@ -2,6 +2,12 @@
 
 import type { ThemeProviderProps } from "next-themes";
 
+import { HeroUIProvider } from "@heroui/system";
+import { ToastProvider } from "@heroui/toast";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { useRouter } from "next/navigation";
+import * as React from "react";
+
 import { CommandsModal } from "@/components/commands-modal/CommandsModal";
 import { CalendarV2ContextController } from "@/context/CalendarV2/CalendarV2ContextController";
 import { CurrencyContextController } from "@/context/Currency/CurrencyContextController";
@@ -10,11 +16,6 @@ import { EventEditModalContextController } from "@/context/EventEditModal/EventE
 import { EventsContextController } from "@/context/Events/EventsContextController";
 import { ExchangeRatesContextController } from "@/context/ExchangeRates/ExchangeRatesContextController";
 import { FilteringContextController } from "@/context/Filtering/FilteringContextController";
-import { HeroUIProvider } from "@heroui/system";
-import { ToastProvider } from "@heroui/toast";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
-import { useRouter } from "next/navigation";
-import * as React from "react";
 
 export interface ProvidersProps {
   children: React.ReactNode;

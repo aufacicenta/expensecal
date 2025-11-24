@@ -5,6 +5,7 @@
 
 import { Op } from "@expensecal/database";
 import { Event } from "@expensecal/database/models/Event";
+
 import { DeleteMode } from "./[id]/types";
 
 export interface DeleteEventOptions {
@@ -28,6 +29,7 @@ export async function deleteEventWithValidation(
 
   if (!event) {
     const error = new Error(`No event found with id: ${eventId}`);
+
     (error as any).status = 404;
     (error as any).errorType = "NotFound";
     throw error;
@@ -36,6 +38,7 @@ export async function deleteEventWithValidation(
   // Verify ownership
   if (event.user_id !== userId) {
     const error = new Error("You do not have permission to delete this event");
+
     (error as any).status = 403;
     (error as any).errorType = "Forbidden";
     throw error;

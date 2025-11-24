@@ -3,6 +3,7 @@
 import { createTimeline, stagger, utils } from "animejs";
 import clsx from "clsx";
 import { useEffect, useRef } from "react";
+
 import { StaggerLoadingAnimationProps } from "./StaggerLoadingAnimation.types";
 
 const GRID_SIZE = 17;
@@ -21,8 +22,10 @@ export const StaggerLoadingAnimation: React.FC<
 
     // Create grid elements
     const fragment = document.createDocumentFragment();
+
     for (let i = 0; i < TOTAL_ELEMENTS; i++) {
       const div = document.createElement("div");
+
       div.className = clsx(
         "w-[1rem]",
         "h-[1rem]",
@@ -137,8 +140,8 @@ export const StaggerLoadingAnimation: React.FC<
     >
       <div
         ref={visualizerRef}
-        id="stagger-visualizer"
         className="flex h-[17rem] w-[17rem] flex-wrap items-center justify-center"
+        id="stagger-visualizer"
       />
     </div>
   );

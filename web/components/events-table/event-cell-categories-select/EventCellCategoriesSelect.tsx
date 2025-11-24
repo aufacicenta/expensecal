@@ -1,10 +1,12 @@
-import { EventCategoriesCreateModal } from "@/components/event-categories-create-modal/EventCategoriesCreateModal";
 import { Button } from "@heroui/button";
 import { Select, SelectItem } from "@heroui/select";
 import clsx from "clsx";
 import { CircleCheckBig, CircleX, Plus } from "lucide-react";
 import { useState } from "react";
+
 import { EventCellCategoriesSelectProps } from "./EventCellCategoriesSelect.types";
+
+import { EventCategoriesCreateModal } from "@/components/event-categories-create-modal/EventCategoriesCreateModal";
 
 export const EventCellCategoriesSelect: React.FC<
   EventCellCategoriesSelectProps
@@ -40,8 +42,10 @@ export const EventCellCategoriesSelect: React.FC<
     try {
       setIsLoading(true);
       const categoryIds = Array.from(selectedCategoryIds);
+
       if (!event.id) {
         console.error("Event ID is missing");
+
         return;
       }
       await onUpdate(event.id, categoryIds);
@@ -57,24 +61,24 @@ export const EventCellCategoriesSelect: React.FC<
     <div className={clsx("space-y-2", className)}>
       <Select
         isMultiline
-        selectionMode="multiple"
-        placeholder="Select categories"
-        selectedKeys={selectedCategoryIds}
-        onSelectionChange={handleSelectionChange}
-        isDisabled={isLoading}
-        size="sm"
-        variant="bordered"
         classNames={{
           trigger: "min-h-12",
           listboxWrapper: "max-h-48",
         }}
+        isDisabled={isLoading}
+        placeholder="Select categories"
+        selectedKeys={selectedCategoryIds}
+        selectionMode="multiple"
+        size="sm"
         startContent={null}
+        variant="bordered"
+        onSelectionChange={handleSelectionChange}
       >
         {availableCategories.map((category) => (
           <SelectItem
             key={category.id}
-            textValue={category.name}
             className="flex items-center gap-2"
+            textValue={category.name}
           >
             <div className="flex w-full items-center gap-2">
               <div
@@ -89,33 +93,33 @@ export const EventCellCategoriesSelect: React.FC<
       <div className="flex justify-between gap-2">
         <div>
           <Button
-            size="sm"
-            onPress={() => setIsModalOpen(true)}
-            isDisabled={isLoading}
-            variant="bordered"
             isIconOnly
+            isDisabled={isLoading}
+            size="sm"
             title="Add new category"
+            variant="bordered"
+            onPress={() => setIsModalOpen(true)}
           >
             <Plus size={16} />
           </Button>
         </div>
         <div className="flex gap-1">
           <Button
-            size="sm"
-            onPress={onClose}
-            isDisabled={isLoading}
-            variant="bordered"
             isIconOnly
+            isDisabled={isLoading}
+            size="sm"
+            variant="bordered"
+            onPress={onClose}
           >
             <CircleX size={16} />
           </Button>
           <Button
-            size="sm"
-            color="primary"
-            onPress={handleConfirm}
-            isLoading={isLoading}
-            variant="bordered"
             isIconOnly
+            color="primary"
+            isLoading={isLoading}
+            size="sm"
+            variant="bordered"
+            onPress={handleConfirm}
           >
             <CircleCheckBig size={16} />
           </Button>

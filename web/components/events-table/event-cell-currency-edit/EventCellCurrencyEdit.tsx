@@ -3,6 +3,7 @@ import { Select, SelectItem } from "@heroui/select";
 import clsx from "clsx";
 import { CircleCheckBig, CircleX } from "lucide-react";
 import { useState } from "react";
+
 import { EventCellCurrencyEditProps } from "./EventCellCurrencyEdit.types";
 
 export const EventCellCurrencyEdit: React.FC<EventCellCurrencyEditProps> = ({
@@ -23,6 +24,7 @@ export const EventCellCurrencyEdit: React.FC<EventCellCurrencyEditProps> = ({
     }
 
     const selectedId = Array.from(newSelection as Set<React.Key>)[0];
+
     if (selectedId) {
       setSelectedCurrencyId(String(selectedId));
     }
@@ -34,11 +36,13 @@ export const EventCellCurrencyEdit: React.FC<EventCellCurrencyEditProps> = ({
 
       if (!event.id) {
         console.error("Event ID is missing");
+
         return;
       }
 
       if (!selectedCurrencyId) {
         console.error("Currency ID is missing");
+
         return;
       }
 
@@ -54,26 +58,28 @@ export const EventCellCurrencyEdit: React.FC<EventCellCurrencyEditProps> = ({
   return (
     <div
       className={clsx("space-y-2", className)}
+      role="presentation"
       onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
     >
       <Select
-        selectionMode="single"
-        placeholder="Select currency"
-        selectedKeys={new Set([selectedCurrencyId])}
-        onSelectionChange={handleSelectionChange}
-        isDisabled={isLoading}
-        size="sm"
-        variant="bordered"
         classNames={{
           trigger: "min-h-10",
           listboxWrapper: "max-h-48",
         }}
+        isDisabled={isLoading}
+        placeholder="Select currency"
+        selectedKeys={new Set([selectedCurrencyId])}
+        selectionMode="single"
+        size="sm"
+        variant="bordered"
+        onSelectionChange={handleSelectionChange}
       >
         {availableCurrencies.map((currency) => (
           <SelectItem
             key={currency.id || ""}
-            textValue={currency.name}
             className="flex items-center gap-2"
+            textValue={currency.name}
           >
             <div className="flex w-full items-center gap-2">
               <span className="font-medium">{currency.symbol}</span>
@@ -83,21 +89,21 @@ export const EventCellCurrencyEdit: React.FC<EventCellCurrencyEditProps> = ({
       </Select>
       <div className="flex justify-end gap-2">
         <Button
-          size="sm"
-          onPress={onClose}
-          isDisabled={isLoading}
-          variant="bordered"
           isIconOnly
+          isDisabled={isLoading}
+          size="sm"
+          variant="bordered"
+          onPress={onClose}
         >
           <CircleX size={16} />
         </Button>
         <Button
-          size="sm"
-          color="primary"
-          onPress={handleConfirm}
-          isLoading={isLoading}
-          variant="bordered"
           isIconOnly
+          color="primary"
+          isLoading={isLoading}
+          size="sm"
+          variant="bordered"
+          onPress={handleConfirm}
         >
           <CircleCheckBig size={16} />
         </Button>

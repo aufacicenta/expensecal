@@ -25,9 +25,11 @@ export const extractAvailableMonths = (
   // Iterate through years
   for (const yearStr in calendarData) {
     const yearData = calendarData.calendar[yearStr];
+
     // Iterate through months
     for (const monthStr in yearData) {
       const key = `${yearStr}-${monthStr}`;
+
       if (!monthSet.has(key)) {
         monthSet.add(key);
         const year = parseInt(yearStr, 10);

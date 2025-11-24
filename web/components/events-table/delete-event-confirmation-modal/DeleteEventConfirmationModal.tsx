@@ -6,6 +6,7 @@ import {
   ModalFooter,
   ModalHeader,
 } from "@heroui/modal";
+
 import { DeleteEventConfirmationModalProps } from "./DeleteEventConfirmationModal.types";
 
 export const DeleteEventConfirmationModal: React.FC<
@@ -29,7 +30,7 @@ export const DeleteEventConfirmationModal: React.FC<
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal isOpen={isOpen} size="lg" onClose={onClose}>
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           {isMultiple ? "Delete Multiple Events" : "Delete Event"}

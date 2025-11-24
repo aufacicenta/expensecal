@@ -53,9 +53,11 @@ export class LLMParser {
       });
 
       const parsed = this.parseResponse(response.response, text);
+
       return parsed;
     } catch (error) {
       console.error("LLM Parser Error:", error);
+
       return {
         error: "Failed to parse expense text",
         details: error instanceof Error ? error.message : String(error),
@@ -113,6 +115,7 @@ Output: `;
     try {
       // Extract JSON from response (LLM might add extra text)
       const jsonMatch = response.match(/\{[^}]+\}/);
+
       if (!jsonMatch) {
         return {
           error: "Could not extract structured data from response",

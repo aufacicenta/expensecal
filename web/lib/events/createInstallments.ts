@@ -3,6 +3,7 @@ import { initModels } from "@expensecal/database/models";
 import { Event } from "@expensecal/database/models/Event";
 import { EventInstallment } from "@expensecal/database/models/EventInstallment";
 import Decimal from "decimal.js";
+
 import { generateRecurrenceInstances } from "./generateRecurrenceInstances";
 
 /**
@@ -154,6 +155,7 @@ export async function createInstallments(
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+
     return {
       success: false,
       parentEventId,
@@ -200,6 +202,7 @@ export async function getInstallmentsForParent(
     return installments;
   } catch (error) {
     console.error("Error fetching installments:", error);
+
     return [];
   }
 }
@@ -241,6 +244,7 @@ export async function deleteInstallmentsForParent(
     return true;
   } catch (error) {
     console.error("Error deleting installments:", error);
+
     return false;
   }
 }
@@ -275,6 +279,7 @@ export async function recreateInstallments(
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+
     return {
       success: false,
       parentEventId,
@@ -408,6 +413,7 @@ export async function createRecurringEvents(
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+
     return {
       success: false,
       parentEventId,

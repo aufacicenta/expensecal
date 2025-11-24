@@ -5,6 +5,7 @@ import {
   ExchangeRate,
   ExchangeRateSource,
 } from "@expensecal/database/models/ExchangeRate";
+
 import { fetchExchangeRates } from "./exchangeRateService";
 
 /**
@@ -29,6 +30,7 @@ export async function updateExchangeRates(): Promise<{
     initModels(db);
 
     const apiKey = process.env.EXCHANGERATE_API_KEY;
+
     if (!apiKey) {
       return {
         success: false,
@@ -96,6 +98,7 @@ export async function updateExchangeRates(): Promise<{
 
       // Insert new rates
       const ratesToInsert = [];
+
       for (const rateData of ratesData) {
         const fromCurrencyId = currencyMap.get(rateData.fromSymbol);
         const toCurrencyId = currencyMap.get(rateData.toSymbol);
@@ -139,6 +142,7 @@ export async function updateExchangeRates(): Promise<{
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+
     console.error("Error updating exchange rates:", errorMessage);
 
     return {
@@ -187,6 +191,7 @@ export async function getLatestExchangeRate(
     return rate;
   } catch (error) {
     console.error("Error fetching exchange rate:", error);
+
     return null;
   }
 }
@@ -223,8 +228,10 @@ export async function getLatestRatesFromCurrency(
     });
 
     const rateMap = new Map<string, string>();
+
     for (const rate of rates) {
       const toSymbol = rate.toCurrency?.symbol;
+
       if (toSymbol) {
         rateMap.set(toSymbol, rate.rate);
       }
@@ -233,6 +240,7 @@ export async function getLatestRatesFromCurrency(
     return rateMap;
   } catch (error) {
     console.error("Error fetching exchange rates:", error);
+
     return new Map();
   }
 }

@@ -1,10 +1,13 @@
-import { filterEventsByCategories } from "@/lib/calendar/filterEvents";
-import { isSameDay, toDateString } from "@/lib/date/formatters";
 import { EventAttributes } from "@expensecal/database/models/Event";
 import clsx from "clsx";
 import { useMemo } from "react";
+
 import { CalendarEventCell } from "../../calendar/calendar-event-cell/CalendarEventCell";
+
 import { CalendarDay, MonthGridProps } from "./MonthGrid.types";
+
+import { isSameDay, toDateString } from "@/lib/date/formatters";
+import { filterEventsByCategories } from "@/lib/calendar/filterEvents";
 
 /**
  * Renders a single month's calendar grid (7 columns x 6 rows)
@@ -68,6 +71,7 @@ export const MonthGrid: React.FC<MonthGridProps> = ({
 
     // Add padding days from next month
     const remainingSlots = 42 - days.length;
+
     for (let dayNumber = 1; dayNumber <= remainingSlots; dayNumber++) {
       const nextMonth = month === 11 ? 0 : month + 1;
       const nextYear = month === 11 ? year + 1 : year;

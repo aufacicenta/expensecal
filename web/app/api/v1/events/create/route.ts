@@ -1,3 +1,12 @@
+import db from "@expensecal/database/db";
+import { initModels } from "@expensecal/database/models";
+import { Currency } from "@expensecal/database/models/Currency";
+import { Event, EventType } from "@expensecal/database/models/Event";
+import { NextRequest, NextResponse } from "next/server";
+
+import { CreateEventRequestBody, CreateEventResponse } from "./types";
+
+import { stackServerApp } from "@/stack/server";
 import {
   createValidationErrorResponse,
   validateEnum,
@@ -6,13 +15,6 @@ import {
   validateRequiredString,
   validateUUID,
 } from "@/lib/validators";
-import { stackServerApp } from "@/stack/server";
-import db from "@expensecal/database/db";
-import { initModels } from "@expensecal/database/models";
-import { Currency } from "@expensecal/database/models/Currency";
-import { Event, EventType } from "@expensecal/database/models/Event";
-import { NextRequest, NextResponse } from "next/server";
-import { CreateEventRequestBody, CreateEventResponse } from "./types";
 
 /**
  * POST /api/v1/events/create
@@ -25,6 +27,7 @@ export async function POST(
   try {
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -40,18 +43,21 @@ export async function POST(
 
     // Validate event type
     const typeError = validateEnum(body.type, "type", ["EXPENSE", "INCOME"]);
+
     if (typeError) {
       return createValidationErrorResponse(typeError);
     }
 
     // Validate amount
     const amountResult = validatePositiveNumber(body.amount, "amount");
+
     if (amountResult.error) {
       return createValidationErrorResponse(amountResult.error);
     }
 
     // Validate currency_id
     const currencyIdError = validateUUID(body.currency_id, "currency_id", true);
+
     if (currencyIdError) {
       return createValidationErrorResponse(currencyIdError);
     }
@@ -61,6 +67,7 @@ export async function POST(
       body.description,
       "description",
     );
+
     if (descriptionError) {
       return createValidationErrorResponse(descriptionError);
     }
@@ -71,6 +78,7 @@ export async function POST(
       "event_date",
       true,
     );
+
     if (eventDateResult.error) {
       return createValidationErrorResponse(eventDateResult.error);
     }
@@ -81,6 +89,7 @@ export async function POST(
       minValue: 0,
       isRequired: false,
     });
+
     if (quantityResult.error) {
       return createValidationErrorResponse(quantityResult.error);
     }
@@ -91,6 +100,7 @@ export async function POST(
 
     // Verify currency exists
     const currency = await Currency.findByPk(body.currency_id);
+
     if (!currency) {
       return NextResponse.json(
         {
@@ -108,6 +118,7 @@ export async function POST(
       "recurrence_end_date",
       false,
     );
+
     if (recurrenceEndDateResult.error) {
       return createValidationErrorResponse(recurrenceEndDateResult.error);
     }
@@ -151,6 +162,7 @@ export async function POST(
     );
   } catch (error) {
     console.error("Create event endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,

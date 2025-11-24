@@ -1,5 +1,15 @@
 "use client";
 
+import Decimal from "decimal.js";
+import { useState } from "react";
+
+import { CalendarV2Context } from "./CalendarV2Context";
+import {
+  CalendarV2ContextActionStates,
+  CalendarV2ContextControllerProps,
+  CalendarV2ContextType,
+} from "./CalendarV2Context.types";
+
 import { GetCalendarV2SuccessResponse } from "@/app/api/v2/calendar/types";
 import { useExchangeRatesContext } from "@/context/ExchangeRates/useExchangeRatesContext";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
@@ -13,21 +23,13 @@ import {
   subtractEventFromStats,
 } from "@/lib/calendar/stats";
 import { toDateString } from "@/lib/date";
-import Decimal from "decimal.js";
-import { useState } from "react";
-
-import { CalendarV2Context } from "./CalendarV2Context";
-import {
-  CalendarV2ContextActionStates,
-  CalendarV2ContextControllerProps,
-  CalendarV2ContextType,
-} from "./CalendarV2Context.types";
 
 export const CalendarV2ContextController = ({
   children,
 }: CalendarV2ContextControllerProps) => {
   const routes = useRoutes();
   const exchangeRatesContext = useExchangeRatesContext();
+
   const [calendarV2Data, setCalendarV2Data] = useState<
     GetCalendarV2SuccessResponse["data"] | undefined
   >(undefined);
@@ -62,8 +64,10 @@ export const CalendarV2ContextController = ({
       }
 
       const data = await response.json();
+
       if (data.success) {
         const successResponse = data as GetCalendarV2SuccessResponse;
+
         setCalendarV2Data(successResponse.data);
         setActionStates((prev) => ({
           ...prev,
@@ -74,6 +78,7 @@ export const CalendarV2ContextController = ({
         }));
       } else {
         const errorMsg = data.error || "Failed to load calendar";
+
         setActionStates((prev) => ({
           ...prev,
           loadCalendarV2: {
@@ -85,6 +90,7 @@ export const CalendarV2ContextController = ({
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Unknown error";
+
       setActionStates((prev) => ({
         ...prev,
         loadCalendarV2: {
@@ -129,6 +135,7 @@ export const CalendarV2ContextController = ({
       // If no events left for this day, remove the entire day object
       const dayStillHasEvents =
         newCalendarData.calendar[year][month][day].length > 0;
+
       if (!dayStillHasEvents) {
         delete newCalendarData.calendar[year][month][day];
         delete (newCalendarData.stats[year][month] as any)[day];
@@ -156,6 +163,7 @@ export const CalendarV2ContextController = ({
       );
 
       setCalendarV2Data(newCalendarData);
+
       return true;
     }
 
@@ -186,6 +194,7 @@ export const CalendarV2ContextController = ({
       }
 
       let baseCurrency = "USD";
+
       if (!!exchangeRatesContext.baseCurrency) {
         baseCurrency = exchangeRatesContext.baseCurrency;
       }
@@ -203,15 +212,18 @@ export const CalendarV2ContextController = ({
           baseCurrency,
           ratesMap,
         );
+
         return converted;
       } catch (error) {
         console.warn("Error recalculating converted amount:", error);
+
         return new Decimal(event.exchangeRate || "0");
       }
     };
 
     // Find and get the old event from calendar
     let oldEventIndex = -1;
+
     if (newCalendarData.calendar[oldYear]?.[oldMonth]?.[oldDay]) {
       oldEventIndex = newCalendarData.calendar[oldYear][oldMonth][
         oldDay
@@ -235,6 +247,7 @@ export const CalendarV2ContextController = ({
         // If no events left for this day, remove the entire day object
         const oldDayStillHasEvents =
           newCalendarData.calendar[oldYear][oldMonth][oldDay].length > 0;
+
         if (!oldDayStillHasEvents) {
           delete newCalendarData.calendar[oldYear][oldMonth][oldDay];
           delete (newCalendarData.stats[oldYear][oldMonth] as any)[oldDay];
@@ -354,6 +367,7 @@ export const CalendarV2ContextController = ({
             monthIdx++
           ) {
             const month = months[monthIdx];
+
             rebuildMonthStatsFromCalendar(
               newCalendarData.calendar,
               newCalendarData.stats,
@@ -366,6 +380,7 @@ export const CalendarV2ContextController = ({
 
       // Rebuild year stats from months
       const affectedYears = new Set([oldYear]);
+
       if (oldDateStr !== newDateStr) {
         affectedYears.add(newYear);
       }
@@ -380,13 +395,16 @@ export const CalendarV2ContextController = ({
 
     // Update state
     setCalendarV2Data(newCalendarData);
+
     return true;
   };
 
   const goToPreviousMonth = () => {
     setCurrentMonth((prev) => {
       const newMonth = new Date(prev);
+
       newMonth.setMonth(newMonth.getMonth() - 1);
+
       return newMonth;
     });
   };
@@ -394,13 +412,16 @@ export const CalendarV2ContextController = ({
   const goToNextMonth = () => {
     setCurrentMonth((prev) => {
       const newMonth = new Date(prev);
+
       newMonth.setMonth(newMonth.getMonth() + 1);
+
       return newMonth;
     });
   };
 
   const goToMonth = (date: Date) => {
     const newMonth = new Date(date);
+
     newMonth.setDate(1);
     setCurrentMonth(newMonth);
   };

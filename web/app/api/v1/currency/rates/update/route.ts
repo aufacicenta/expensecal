@@ -1,5 +1,6 @@
-import { updateExchangeRates } from "@/lib/exchange-rates";
 import { NextResponse } from "next/server";
+
+import { updateExchangeRates } from "@/lib/exchange-rates";
 
 /**
  * POST /api/v1/currency/rates/update
@@ -63,6 +64,7 @@ export async function POST() {
     }
   } catch (error) {
     console.error("Exchange rate update endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,

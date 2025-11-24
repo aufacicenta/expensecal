@@ -1,12 +1,3 @@
-import {
-  createValidationErrorResponse,
-  validateEnum,
-  validateISO8601Date,
-  validatePositiveNumber,
-  validateRequiredString,
-  validateUUID,
-} from "@/lib/validators";
-import { stackServerApp } from "@/stack/server";
 import { Op } from "@expensecal/database";
 import db from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
@@ -15,8 +6,20 @@ import { Currency } from "@expensecal/database/models/Currency";
 import { Event } from "@expensecal/database/models/Event";
 import { EventCategories } from "@expensecal/database/models/EventCategories";
 import { NextRequest, NextResponse } from "next/server";
+
 import { deleteEventWithValidation } from "../delete-helpers";
+
 import { UpdateEventRequestBody, UpdateEventResponse } from "./types";
+
+import { stackServerApp } from "@/stack/server";
+import {
+  createValidationErrorResponse,
+  validateEnum,
+  validateISO8601Date,
+  validatePositiveNumber,
+  validateRequiredString,
+  validateUUID,
+} from "@/lib/validators";
 
 /**
  * PUT /api/v1/events/[id]
@@ -32,6 +35,7 @@ export async function PUT(
 
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -45,6 +49,7 @@ export async function PUT(
 
     // Validate event ID
     const idError = validateUUID(id, "id", true);
+
     if (idError) {
       return createValidationErrorResponse(idError);
     }
@@ -83,6 +88,7 @@ export async function PUT(
     // Validate updatable fields if provided
     if (body.type !== undefined) {
       const typeError = validateEnum(body.type, "type", ["EXPENSE", "INCOME"]);
+
       if (typeError) {
         return createValidationErrorResponse(typeError);
       }
@@ -90,6 +96,7 @@ export async function PUT(
 
     if (body.amount !== undefined) {
       const amountResult = validatePositiveNumber(body.amount, "amount");
+
       if (amountResult.error) {
         return createValidationErrorResponse(amountResult.error);
       }
@@ -101,12 +108,14 @@ export async function PUT(
         "currency_id",
         true,
       );
+
       if (currencyIdError) {
         return createValidationErrorResponse(currencyIdError);
       }
 
       // Verify currency exists
       const currency = await Currency.findByPk(body.currency_id);
+
       if (!currency) {
         return NextResponse.json(
           {
@@ -124,6 +133,7 @@ export async function PUT(
         body.description,
         "description",
       );
+
       if (descriptionError) {
         return createValidationErrorResponse(descriptionError);
       }
@@ -135,6 +145,7 @@ export async function PUT(
         "event_date",
         true,
       );
+
       if (eventDateResult.error) {
         return createValidationErrorResponse(eventDateResult.error);
       }
@@ -145,6 +156,7 @@ export async function PUT(
         minValue: 0,
         isRequired: false,
       });
+
       if (quantityResult.error) {
         return createValidationErrorResponse(quantityResult.error);
       }
@@ -156,6 +168,7 @@ export async function PUT(
         "recurrence_end_date",
         false,
       );
+
       if (recurrenceEndDateResult.error) {
         return createValidationErrorResponse(recurrenceEndDateResult.error);
       }
@@ -171,6 +184,7 @@ export async function PUT(
 
       for (const categoryId of body.categoryIds) {
         const categoryIdError = validateUUID(categoryId, "categoryId", true);
+
         if (categoryIdError) {
           return createValidationErrorResponse(categoryIdError);
         }
@@ -182,6 +196,7 @@ export async function PUT(
             user_id: user.id,
           },
         });
+
         if (!category) {
           return NextResponse.json(
             {
@@ -255,6 +270,7 @@ export async function PUT(
             category_id: categoryId,
           })),
         );
+
         await EventCategories.bulkCreate(eventCategoriesData);
       }
     }
@@ -298,6 +314,7 @@ export async function PUT(
     );
   } catch (error) {
     console.error("Update event endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,
@@ -325,6 +342,7 @@ export async function DELETE(
 
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -338,6 +356,7 @@ export async function DELETE(
 
     // Validate event ID
     const idError = validateUUID(id, "id", true);
+
     if (idError) {
       return createValidationErrorResponse(idError);
     }
@@ -345,6 +364,7 @@ export async function DELETE(
     // Get query parameters
     const deleteMode =
       request.nextUrl.searchParams.get("deleteMode") || "single";
+
     if (!["single", "all-future"].includes(deleteMode)) {
       return createValidationErrorResponse(
         new Error("deleteMode must be 'single' or 'all-future'"),
@@ -398,6 +418,7 @@ export async function DELETE(
     }
   } catch (error) {
     console.error("Delete event endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,

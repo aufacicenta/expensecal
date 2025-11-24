@@ -1,14 +1,16 @@
-import { createValidationErrorResponse, validateUUID } from "@/lib/validators";
-import { stackServerApp } from "@/stack/server";
 import db from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
 import { Event } from "@expensecal/database/models/Event";
 import { EventInstallment } from "@expensecal/database/models/EventInstallment";
 import { NextRequest, NextResponse } from "next/server";
+
 import {
   DeleteInstallmentsRequestBody,
   DeleteInstallmentsResponse,
 } from "../types";
+
+import { stackServerApp } from "@/stack/server";
+import { createValidationErrorResponse, validateUUID } from "@/lib/validators";
 
 /**
  * POST /api/v1/events/installments/delete
@@ -39,6 +41,7 @@ export async function POST(
   try {
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -58,6 +61,7 @@ export async function POST(
       "parent_event_id",
       true,
     );
+
     if (parentEventIdError) {
       return createValidationErrorResponse(parentEventIdError);
     }
@@ -67,6 +71,7 @@ export async function POST(
 
     // Verify parent event exists and belongs to the user
     const parentEvent = await Event.findByPk(body.parent_event_id);
+
     if (!parentEvent) {
       return NextResponse.json(
         {
@@ -122,6 +127,7 @@ export async function POST(
     );
   } catch (error) {
     console.error("Delete installments endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,

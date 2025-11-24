@@ -3,12 +3,13 @@
  * Uses LM Studio running on MacOS at http://127.0.0.1:1234 with microsoft/phi-4 model
  */
 
+import { buildPrompt } from "./buildPrompt";
+import { getSystemPrompt } from "./systemPrompt";
+
 import {
   ParsedEventData,
   ParseErrorResponse,
 } from "@/app/api/v1/events/parse/types";
-import { buildPrompt } from "./buildPrompt";
-import { getSystemPrompt } from "./systemPrompt";
 
 export class LocalLMStudioParser {
   private apiBase: string;
@@ -56,6 +57,7 @@ export class LocalLMStudioParser {
 
       if (!response.ok) {
         const error = await response.text();
+
         return {
           error: "LM Studio API error",
           details: `Status ${response.status}: ${error}`,
@@ -77,6 +79,7 @@ export class LocalLMStudioParser {
 
       // Extract JSON from markdown code fences if present
       const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+
       if (jsonMatch) {
         content = jsonMatch[1].trim();
       }
@@ -105,6 +108,7 @@ export class LocalLMStudioParser {
       return result;
     } catch (error) {
       console.error("Local LM Studio Parser Error:", error);
+
       return {
         error: "Failed to parse expense text",
         details: error instanceof Error ? error.message : String(error),

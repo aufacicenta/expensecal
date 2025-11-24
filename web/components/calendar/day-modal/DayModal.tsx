@@ -4,6 +4,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { Divider } from "@heroui/divider";
 import clsx from "clsx";
 import { Grip, X } from "lucide-react";
+
 import { DayModalProps } from "./DayModal.types";
 
 export const DayModal: React.FC<DayModalProps> = ({
@@ -38,11 +39,11 @@ export const DayModal: React.FC<DayModalProps> = ({
   return (
     <div
       ref={setNodeRef}
-      style={style}
       className={clsx(
         "bg-background border-content3 fixed z-40 w-80 rounded border p-3 shadow-lg transition-transform duration-75",
         className,
       )}
+      style={style}
     >
       {/* Header with drag handle and close button */}
       <div className="mb-3 flex items-center justify-between">
@@ -51,13 +52,13 @@ export const DayModal: React.FC<DayModalProps> = ({
           {...attributes}
           className="cursor-grab touch-none active:cursor-grabbing"
         >
-          <Grip size={16} className="[&>circle]:fill-content3" />
+          <Grip className="[&>circle]:fill-content3" size={16} />
         </div>
         <h3 className="flex-1 px-2 text-sm font-semibold">{displayDate}</h3>
         <button
-          onClick={onClose}
-          className="hover:bg-content2 rounded p-1 transition-colors"
           aria-label="Close modal"
+          className="hover:bg-content2 rounded p-1 transition-colors"
+          onClick={onClose}
         >
           <X size={16} />
         </button>
@@ -91,7 +92,7 @@ export const DayModal: React.FC<DayModalProps> = ({
                 <div className="text-content4">{event.description}</div>
                 {event.original_text && (
                   <div className="text-content4 border-content3 border-l-2 pl-2 italic">
-                    "{event.original_text}"
+                    &quot;{event.original_text}&quot;
                   </div>
                 )}
               </div>

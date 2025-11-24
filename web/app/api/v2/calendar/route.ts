@@ -1,3 +1,17 @@
+import db from "@expensecal/database/db";
+import { Category, Currency, initModels } from "@expensecal/database/models";
+import { Event, EventType } from "@expensecal/database/models/Event";
+import Decimal from "decimal.js";
+import { NextResponse } from "next/server";
+
+import {
+  CalendarData,
+  CalendarEvent,
+  CalendarStatsData,
+  FinancialSummary,
+  GetCalendarResponse,
+} from "./types";
+
 import {
   addEventToStats,
   applyCascadeForwardStats,
@@ -8,18 +22,6 @@ import {
 import { toDateString } from "@/lib/date";
 import { getLatestRatesFromCurrency } from "@/lib/exchange-rates";
 import { stackServerApp } from "@/stack/server";
-import db from "@expensecal/database/db";
-import { Category, Currency, initModels } from "@expensecal/database/models";
-import { Event, EventType } from "@expensecal/database/models/Event";
-import Decimal from "decimal.js";
-import { NextResponse } from "next/server";
-import {
-  CalendarData,
-  CalendarEvent,
-  CalendarStatsData,
-  FinancialSummary,
-  GetCalendarResponse,
-} from "./types";
 
 /**
  * GET /api/v2/calendar
@@ -32,6 +34,7 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
   try {
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -158,6 +161,7 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
     // Calculate net for all stats levels
     for (const year in stats) {
       const yearData = stats[year];
+
       yearData.stats.net = calculateNetFromSummary(
         yearData.stats.totalIncome,
         yearData.stats.totalExpenses,
@@ -166,6 +170,7 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
       for (const month in yearData) {
         if (month !== "stats") {
           const monthData = yearData[month] as Record<string, FinancialSummary>;
+
           if ("stats" in monthData) {
             (monthData as any).stats.net = calculateNetFromSummary(
               (monthData as any).stats.totalIncome,
@@ -175,6 +180,7 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
             for (const day in monthData) {
               if (day !== "stats") {
                 const dayStats = monthData[day];
+
                 dayStats.net = calculateNetFromSummary(
                   dayStats.totalIncome,
                   dayStats.totalExpenses,
@@ -188,6 +194,7 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
 
     // Apply carry-forward cascade to propagate net balances
     const sortedYearsForCarryForward = Object.keys(stats).sort();
+
     if (sortedYearsForCarryForward.length > 0) {
       applyCascadeForwardStats(stats, sortedYearsForCarryForward[0]);
     }
@@ -296,6 +303,7 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
     );
   } catch (error) {
     console.error("Calendar endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,

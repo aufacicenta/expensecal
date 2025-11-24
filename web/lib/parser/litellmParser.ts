@@ -4,6 +4,7 @@
  */
 
 import Event, { EventAttributes } from "@expensecal/database/models/Event";
+
 import { buildPrompt } from "./buildPrompt";
 import { getSystemPrompt } from "./systemPrompt";
 
@@ -93,6 +94,7 @@ export class LiteLLMParser {
 
       if (!response.ok) {
         const error = await response.text();
+
         return {
           error: "LiteLLM API error",
           details: `Status ${response.status}: ${error}`,
@@ -137,6 +139,7 @@ export class LiteLLMParser {
       return result;
     } catch (error) {
       console.error("LiteLLM Parser Error:", error);
+
       return {
         error: "Failed to parse expense text",
         details: error instanceof Error ? error.message : String(error),

@@ -1,5 +1,6 @@
-import { CalendarEvent } from "@/app/api/v2/calendar/types";
 import Decimal from "decimal.js";
+
+import { CalendarEvent } from "@/app/api/v2/calendar/types";
 
 export const aggregateChildEventsQuantity = (
   childEvents: CalendarEvent[],
@@ -18,6 +19,7 @@ export const aggregateChildEventsTotalAmount = (
       const eventTotal = new Decimal(event.amount || 0).times(
         new Decimal(event.quantity || 0),
       );
+
       return sum.plus(eventTotal);
     }, new Decimal(0))
     .toString();
@@ -30,7 +32,7 @@ export const aggregateChildEventsExchangeRate = (
   if (childEvents.length === 0 || !parentEvent.exchangeRate) return "0";
 
   return childEvents
-    .reduce((sum, event) => {
+    .reduce((sum, _event) => {
       return sum.plus(new Decimal(parentEvent.exchangeRate));
     }, new Decimal(parentEvent.exchangeRate))
     .toString();
@@ -42,6 +44,7 @@ export const aggregateChildEventsExchangeRate = (
       new Decimal(event.quantity || 0),
     );
     const weightedRate = eventTotal.times(new Decimal(event.exchangeRate || 0));
+
     return sum.plus(weightedRate);
   }, new Decimal(0));
 
@@ -49,6 +52,7 @@ export const aggregateChildEventsExchangeRate = (
     const eventTotal = new Decimal(event.amount || 0).times(
       new Decimal(event.quantity || 0),
     );
+
     return sum.plus(eventTotal);
   }, new Decimal(0));
 

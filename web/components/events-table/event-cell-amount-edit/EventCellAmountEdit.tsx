@@ -1,5 +1,3 @@
-import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
-import { eventAmountSchema } from "@/lib/validators/event";
 import { Input } from "@heroui/input";
 import clsx from "clsx";
 import {
@@ -10,7 +8,11 @@ import {
   useState,
 } from "react";
 import { ZodError } from "zod";
+
 import { EventCellAmountEditProps } from "./EventCellAmountEdit.types";
+
+import { eventAmountSchema } from "@/lib/validators/event";
+import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
 
 export type EventCellAmountEditHandle = {
   save: () => Promise<void>;
@@ -37,6 +39,7 @@ export const EventCellAmountEdit = forwardRef<
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
+
     setValue(newValue);
     setError(""); // Clear error on change
 
@@ -46,6 +49,7 @@ export const EventCellAmountEdit = forwardRef<
         ...event,
         amount: newValue,
       };
+
       updateCalendarCellEvent(updatedEvent, event.event_date);
     }
   };
@@ -66,6 +70,7 @@ export const EventCellAmountEdit = forwardRef<
       if (!event.id) {
         console.error("Event ID is missing");
         setError("Event ID is missing");
+
         return;
       }
 
@@ -84,6 +89,7 @@ export const EventCellAmountEdit = forwardRef<
           uniqueIssues.length > 0
             ? uniqueIssues.join(" • ")
             : "Validation failed";
+
         setError(errorMessage);
       } else if (error instanceof Error) {
         setError(error.message);
@@ -119,23 +125,23 @@ export const EventCellAmountEdit = forwardRef<
   return (
     <Input
       ref={inputRef}
-      type="number"
-      placeholder="Enter amount"
-      value={value}
-      onChange={handleChange}
-      onBlur={handleBlur}
-      onKeyDown={handleKeyDown}
-      isDisabled={isLoading}
-      isInvalid={Boolean(error)}
-      errorMessage={error}
-      size="sm"
-      variant="underlined"
-      min="0"
-      step="0.01"
       className={clsx("w-full", className)}
       classNames={{
         input: "text-right h-full",
       }}
+      errorMessage={error}
+      isDisabled={isLoading}
+      isInvalid={Boolean(error)}
+      min="0"
+      placeholder="Enter amount"
+      size="sm"
+      step="0.01"
+      type="number"
+      value={value}
+      variant="underlined"
+      onBlur={handleBlur}
+      onChange={handleChange}
+      onKeyDown={handleKeyDown}
     />
   );
 });

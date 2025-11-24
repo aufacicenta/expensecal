@@ -1,10 +1,11 @@
 "use client";
 
+import { DndContext, DragEndEvent } from "@dnd-kit/core";
+import { useEffect, useState } from "react";
+
 import { CalendarV2 } from "@/components/calendar-v2/CalendarV2";
 import { EventEditModalRenderer } from "@/components/calendar/event-edit-modal/EventEditModalRenderer";
 import { EventTextInput } from "@/components/event-text-input/EventTextInput";
-import { DndContext, DragEndEvent } from "@dnd-kit/core";
-import { useEffect, useState } from "react";
 
 export default function CalendarPage() {
   const [eventTextInputPosition, setEventTextInputPosition] = useState({

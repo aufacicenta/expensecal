@@ -1,7 +1,9 @@
+import { NextResponse } from "next/server";
+
+import { GetExchangeRatesResponse } from "./types";
+
 import { getLatestRatesFromCurrency } from "@/lib/exchange-rates";
 import { stackServerApp } from "@/stack/server";
-import { NextResponse } from "next/server";
-import { GetExchangeRatesResponse } from "./types";
 
 /**
  * GET /api/v1/exchange-rates
@@ -14,6 +16,7 @@ export async function GET(): Promise<NextResponse<GetExchangeRatesResponse>> {
   try {
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -31,6 +34,7 @@ export async function GET(): Promise<NextResponse<GetExchangeRatesResponse>> {
 
     // Convert Map to plain object for JSON serialization
     const rates: Record<string, string> = {};
+
     ratesMap.forEach((rate, symbol) => {
       rates[symbol] = rate;
     });
@@ -48,6 +52,7 @@ export async function GET(): Promise<NextResponse<GetExchangeRatesResponse>> {
     );
   } catch (error) {
     console.error("Exchange rates endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,

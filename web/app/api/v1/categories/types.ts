@@ -4,6 +4,7 @@
  */
 
 import { CategoryAttributes } from "@expensecal/database/models/Category";
+
 import { BaseErrorResponse, BaseSuccessResponse } from "../types";
 
 export type CategoryData = CategoryAttributes;

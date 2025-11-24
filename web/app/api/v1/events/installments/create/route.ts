@@ -1,18 +1,20 @@
-import { createInstallments } from "@/lib/events/createInstallments";
+import db from "@expensecal/database/db";
+import { initModels } from "@expensecal/database/models";
+import { Event } from "@expensecal/database/models/Event";
+import { NextRequest, NextResponse } from "next/server";
+
+import {
+  CreateInstallmentsRequestBody,
+  CreateInstallmentsResponse,
+} from "../types";
+
+import { stackServerApp } from "@/stack/server";
 import {
   createValidationErrorResponse,
   validateISO8601Date,
   validateUUID,
 } from "@/lib/validators";
-import { stackServerApp } from "@/stack/server";
-import db from "@expensecal/database/db";
-import { initModels } from "@expensecal/database/models";
-import { Event } from "@expensecal/database/models/Event";
-import { NextRequest, NextResponse } from "next/server";
-import {
-  CreateInstallmentsRequestBody,
-  CreateInstallmentsResponse,
-} from "../types";
+import { createInstallments } from "@/lib/events/createInstallments";
 
 /**
  * POST /api/v1/events/installments/create
@@ -46,6 +48,7 @@ export async function POST(
   try {
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -65,12 +68,14 @@ export async function POST(
       "parent_event_id",
       true,
     );
+
     if (parentEventIdError) {
       return createValidationErrorResponse(parentEventIdError);
     }
 
     // Validate end_date if provided
     const endDateResult = validateISO8601Date(body.end_date, "end_date", false);
+
     if (endDateResult.error) {
       return createValidationErrorResponse(endDateResult.error);
     }
@@ -81,6 +86,7 @@ export async function POST(
 
     // Verify parent event exists and belongs to the user
     const parentEvent = await Event.findByPk(body.parent_event_id);
+
     if (!parentEvent) {
       return NextResponse.json(
         {
@@ -136,6 +142,7 @@ export async function POST(
 
     // Fetch the parent event again with fresh data
     const updatedParent = await Event.findByPk(body.parent_event_id);
+
     if (!updatedParent) {
       return NextResponse.json(
         {
@@ -174,6 +181,7 @@ export async function POST(
     );
   } catch (error) {
     console.error("Create installments endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,

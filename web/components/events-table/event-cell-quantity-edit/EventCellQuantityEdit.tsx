@@ -1,5 +1,3 @@
-import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
-import { eventQuantitySchema } from "@/lib/validators/event";
 import { Input } from "@heroui/input";
 import clsx from "clsx";
 import {
@@ -10,7 +8,11 @@ import {
   useState,
 } from "react";
 import { ZodError } from "zod";
+
 import { EventCellQuantityEditProps } from "./EventCellQuantityEdit.types";
+
+import { eventQuantitySchema } from "@/lib/validators/event";
+import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
 
 export type EventCellQuantityEditHandle = {
   save: () => Promise<void>;
@@ -37,6 +39,7 @@ export const EventCellQuantityEdit = forwardRef<
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
+
     setValue(newValue);
     setError(""); // Clear error on change
 
@@ -46,6 +49,7 @@ export const EventCellQuantityEdit = forwardRef<
         ...event,
         quantity: Number(newValue),
       };
+
       updateCalendarCellEvent(updatedEvent, event.event_date);
     }
   };
@@ -66,6 +70,7 @@ export const EventCellQuantityEdit = forwardRef<
       if (!event.id) {
         console.error("Event ID is missing");
         setError("Event ID is missing");
+
         return;
       }
 
@@ -80,6 +85,7 @@ export const EventCellQuantityEdit = forwardRef<
           uniqueIssues.length > 0
             ? uniqueIssues.join(" • ")
             : "Validation failed";
+
         setError(errorMessage);
       } else if (error instanceof Error) {
         setError(error.message);
@@ -115,23 +121,23 @@ export const EventCellQuantityEdit = forwardRef<
   return (
     <Input
       ref={inputRef}
-      type="number"
-      placeholder="Enter quantity"
-      value={value}
-      onChange={handleChange}
-      onBlur={handleBlur}
-      onKeyDown={handleKeyDown}
-      isDisabled={isLoading}
-      isInvalid={Boolean(error)}
-      errorMessage={error}
-      size="sm"
-      variant="underlined"
-      min="0"
-      step="0.01"
       className={clsx("w-full", className)}
       classNames={{
         input: "text-right h-full",
       }}
+      errorMessage={error}
+      isDisabled={isLoading}
+      isInvalid={Boolean(error)}
+      min="0"
+      placeholder="Enter quantity"
+      size="sm"
+      step="0.01"
+      type="number"
+      value={value}
+      variant="underlined"
+      onBlur={handleBlur}
+      onChange={handleChange}
+      onKeyDown={handleKeyDown}
     />
   );
 });

@@ -2,6 +2,7 @@
 
 import { Modal, ModalBody, ModalContent, ModalHeader } from "@heroui/modal";
 import { useCallback, useEffect, useState } from "react";
+
 import { CommandsModalProps } from "./CommandsModal.types";
 import { EventsMultiLineInput } from "./events-multi-line-input/EventsMultiLineInput";
 
@@ -42,11 +43,11 @@ export const CommandsModal: React.FC<CommandsModalProps> = ({ className }) => {
 
   return (
     <Modal
-      isOpen={isOpen}
-      onOpenChange={setIsOpen}
-      size="2xl"
-      scrollBehavior="inside"
       className={className}
+      isOpen={isOpen}
+      scrollBehavior="inside"
+      size="2xl"
+      onOpenChange={setIsOpen}
     >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">

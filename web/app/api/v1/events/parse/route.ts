@@ -1,14 +1,16 @@
-import { getLocalLMStudioParser } from "@/lib/parser/localLMStudioParser";
+import db from "@expensecal/database/db";
+import { initModels } from "@expensecal/database/models";
+import { Currency } from "@expensecal/database/models/Currency";
+import { NextRequest, NextResponse } from "next/server";
+
+import { ParseRequestBody, ParseResponse } from "./types";
+
 import {
   createValidationErrorResponse,
   validateISO8601Date,
   validateRequiredString,
 } from "@/lib/validators";
-import db from "@expensecal/database/db";
-import { initModels } from "@expensecal/database/models";
-import { Currency } from "@expensecal/database/models/Currency";
-import { NextRequest, NextResponse } from "next/server";
-import { ParseRequestBody, ParseResponse } from "./types";
+import { getLocalLMStudioParser } from "@/lib/parser/localLMStudioParser";
 
 /**
  * POST /api/v1/events/parse
@@ -23,6 +25,7 @@ export async function POST(
 
     // Validate text
     const textError = validateRequiredString(body.text, "text");
+
     if (textError) {
       return createValidationErrorResponse(textError);
     }
@@ -33,6 +36,7 @@ export async function POST(
       "current_date",
       false,
     );
+
     if (currentDateResult.error) {
       return createValidationErrorResponse(currentDateResult.error);
     }
@@ -42,6 +46,7 @@ export async function POST(
 
     // Check if LM Studio is available
     const health = await parser.checkHealth();
+
     if (!health.available) {
       return NextResponse.json(
         {
@@ -101,6 +106,7 @@ export async function POST(
     );
   } catch (error) {
     console.error("Parse endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,
