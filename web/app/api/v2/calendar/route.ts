@@ -52,7 +52,17 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
         user_id: user.id,
       },
       include: [
-        "childEvents",
+        {
+          model: Event,
+          as: "childEvents",
+          include: [
+            {
+              model: Currency,
+              as: "currency",
+              attributes: ["id", "symbol", "name"],
+            },
+          ],
+        },
         {
           model: Currency,
           as: "currency",

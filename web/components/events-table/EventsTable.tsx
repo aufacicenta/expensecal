@@ -11,7 +11,16 @@ import {
   MonthStats,
 } from "@/app/api/v2/calendar/types";
 import { formatCurrency } from "@/lib/currency/formatter";
-import { formatDayShort, formatMonthShort } from "@/lib/date/formatters";
+import {
+  formatDayShort,
+  formatMonthShort,
+  toDateString,
+} from "@/lib/date/formatters";
+import {
+  aggregateChildEventsExchangeRate,
+  aggregateChildEventsQuantity,
+  aggregateChildEventsTotalAmount,
+} from "@/lib/events/aggregators";
 import { getStructureType } from "@/lib/events/getStructureType";
 import { EventAttributes } from "@expensecal/database/models/Event";
 import { Checkbox } from "@heroui/checkbox";
@@ -83,6 +92,9 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     Map<string, Set<"quantity" | "amount">>
   >(new Map());
   const [loadingEventIds, setLoadingEventIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [expandedEventIds, setExpandedEventIds] = useState<Set<string>>(
     new Set(),
   );
   const amountEditRefs = useRef<Map<string, EventCellAmountEditHandle>>(
@@ -323,6 +335,18 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     }
   };
 
+  const handleToggleEventExpansion = (eventId: string) => {
+    setExpandedEventIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(eventId)) {
+        newSet.delete(eventId);
+      } else {
+        newSet.add(eventId);
+      }
+      return newSet;
+    });
+  };
+
   const handleToggleDaySelection = (events: CalendarEvent[]) => {
     const dayEventIds = events
       .map((event) => event.id)
@@ -456,8 +480,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
   return (
     <section className="relative w-fit overflow-x-auto pt-[33px]">
       {/* Loading State Over Existing Calendar*/}
-      {(calendarV2ContextActionStates.loadCalendarV2.isLoading ||
-        eventsContextActionStates.deleteEvent.isLoading ||
+      {(eventsContextActionStates.deleteEvent.isLoading ||
         eventsContextActionStates.deleteEventMultiple.isLoading) &&
         getLoadingStateComponent()}
 
@@ -571,358 +594,159 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                   <span>{day}</span>
                                 </div>
                                 <div className="">
+                                  {/* Event Rows */}
                                   {events.map((eventObj) => (
                                     <div
-                                      className={clsx(
-                                        "hover:bg-content2 last-of-type:border-b-content2 flex flex-1 text-xs last-of-type:border-b-[0.5px] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:border-[0.5px] [&>div]:border-b-0 [&>div]:p-1",
-                                        events.length === 1 && "h-full",
-                                      )}
                                       key={eventObj.id}
+                                      className={clsx(
+                                        expandedEventIds.has(
+                                          eventObj.id || "",
+                                        ) && "border-primary border-[0.5px]",
+                                      )}
                                     >
                                       <div
-                                        className="border-content2 group hover:bg-content1 relative w-[70px] cursor-pointer items-center transition-colors"
-                                        data-cell-name="event-day-row-checkbox"
-                                      >
-                                        <Checkbox
-                                          isSelected={selectedEventIds.has(
-                                            eventObj.id || "",
-                                          )}
-                                          onChange={() =>
-                                            handleToggleEventSelection(
-                                              eventObj.id || "",
-                                            )
-                                          }
-                                          color="default"
-                                          size="md"
-                                          classNames={{
-                                            wrapper: "me-0",
-                                            base: "p-0",
-                                          }}
-                                        />
-                                      </div>
-                                      <div
-                                        className="border-content2 group hover:bg-content1 relative w-[120px] cursor-pointer text-right transition-colors"
-                                        data-cell-name="event-quantity"
-                                        onClick={() => {
-                                          setSelectedEventForQuantity(eventObj);
-                                          markEventAsDirty(
-                                            eventObj.id || "",
-                                            "quantity",
-                                          );
-                                        }}
-                                      >
-                                        {(selectedEventForQuantity?.id ===
-                                          eventObj.id && (
-                                          <EventCellQuantityEdit
-                                            ref={(ref) => {
-                                              if (ref) {
-                                                registerQuantityEditRef(
-                                                  eventObj.id || "",
-                                                  ref,
-                                                );
-                                              }
-                                              // Ignore null - keep the ref alive for save()
-                                            }}
-                                            event={eventObj}
-                                            onUpdate={handleEventQuantityUpdate}
-                                            onLoadingChange={(isLoading) =>
-                                              handleQuantityLoadingChange(
-                                                eventObj.id || "",
-                                                isLoading,
-                                              )
-                                            }
-                                            onClose={() => {
-                                              setSelectedEventForQuantity(null);
-                                            }}
-                                          />
-                                        )) ||
-                                          eventObj.quantity}
-                                      </div>
-                                      <div
-                                        className="border-content2 group hover:bg-content1 relative w-[120px] cursor-pointer text-right transition-colors"
-                                        data-cell-name="event-amount"
-                                        onClick={() => {
-                                          setSelectedEventForAmount(eventObj);
-                                          markEventAsDirty(
-                                            eventObj.id || "",
-                                            "amount",
-                                          );
-                                        }}
-                                      >
-                                        {(selectedEventForAmount?.id ===
-                                          eventObj.id && (
-                                          <EventCellAmountEdit
-                                            ref={(ref) => {
-                                              if (ref) {
-                                                registerAmountEditRef(
-                                                  eventObj.id || "",
-                                                  ref,
-                                                );
-                                              }
-                                              // Ignore null - keep the ref alive for save()
-                                            }}
-                                            event={eventObj}
-                                            onUpdate={handleEventAmountUpdate}
-                                            onLoadingChange={(isLoading) =>
-                                              handleAmountLoadingChange(
-                                                eventObj.id || "",
-                                                isLoading,
-                                              )
-                                            }
-                                            onClose={() => {
-                                              setSelectedEventForAmount(null);
-                                            }}
-                                          />
-                                        )) ||
-                                          formatCurrency(eventObj.amount)}
-                                      </div>
-                                      <div
                                         className={clsx(
-                                          "border-content2 w-[120px] cursor-no-drop text-right",
+                                          "hover:bg-content2 last-of-type:border-b-content2 group-hover:bg-content2 flex flex-1 text-xs last-of-type:border-b-[0.5px] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:border-[0.5px] [&>div]:border-b-0 [&>div]:p-1",
+                                          events.length === 1 && "h-full",
                                         )}
+                                        data-cell-name="event-row"
                                       >
-                                        {formatCurrency(
-                                          Number(eventObj.amount) *
-                                            Number(eventObj.quantity),
-                                        )}
-                                      </div>
-                                      <div
-                                        className="border-content2 group hover:bg-content1 relative w-[90px]"
-                                        data-cell-name="event-currency"
-                                      >
-                                        <Dropdown>
-                                          <DropdownTrigger>
-                                            <span className="cursor-pointer">
-                                              {eventObj.currency?.symbol}
-                                            </span>
-                                          </DropdownTrigger>
-                                          <DropdownMenu variant="light">
-                                            <DropdownItem
-                                              key="edit-currency"
-                                              isReadOnly
-                                            >
-                                              <EventCellCurrencyEdit
-                                                event={eventObj}
-                                                availableCurrencies={currencies}
-                                                onUpdate={
-                                                  handleEventCurrencyUpdate
-                                                }
-                                                onClose={() => {
-                                                  // Dropdown will close automatically
-                                                }}
-                                              />
-                                            </DropdownItem>
-                                          </DropdownMenu>
-                                        </Dropdown>
-                                      </div>
-                                      <div
-                                        className={clsx(
-                                          "border-content2 w-[120px] cursor-no-drop text-right",
-                                          eventObj.type === "EXPENSE" &&
-                                            "text-danger",
-                                          eventObj.type === "INCOME" &&
-                                            "text-success",
-                                        )}
-                                      >
-                                        {formatCurrency(eventObj.exchangeRate)}
-                                      </div>
-                                      <div className="border-content2 w-[90px] !flex-row items-center">
-                                        <Chip
-                                          variant="bordered"
-                                          size="sm"
-                                          className="capitalize"
-                                        >
-                                          {getStructureType(eventObj)}
-                                        </Chip>
-                                      </div>
-                                      <div className="border-content2 w-[210px]">
-                                        <span>
-                                          {showOriginalText &&
-                                          eventObj.original_text
-                                            ? eventObj.original_text
-                                            : eventObj.description}
-                                        </span>
-                                      </div>
-                                      <div
-                                        className="border-content2 group relative w-[180px] cursor-pointer"
-                                        data-cell-name="event-categories"
-                                      >
-                                        <Dropdown>
-                                          <DropdownTrigger>
-                                            <div className="flex h-full flex-wrap items-center gap-1">
-                                              {eventObj.categories &&
-                                              eventObj.categories.length > 0 ? (
-                                                eventObj.categories.map(
-                                                  (category) => (
-                                                    <Chip
-                                                      key={category.id}
-                                                      size="sm"
-                                                      variant="dot"
-                                                      startContent={
-                                                        <Circle
-                                                          stroke={
-                                                            category.color
-                                                          }
-                                                          size={12}
-                                                          className="mr-1"
-                                                        />
-                                                      }
-                                                      classNames={{
-                                                        content: `text-xs`,
-                                                      }}
-                                                    >
-                                                      {category.name}
-                                                    </Chip>
-                                                  ),
-                                                )
-                                              ) : (
-                                                <div className="w-full"></div>
-                                              )}
-                                            </div>
-                                          </DropdownTrigger>
-                                          <DropdownMenu variant="light">
-                                            <DropdownItem
-                                              key="edit-categories"
-                                              isReadOnly
-                                            >
-                                              <EventCellCategoriesSelect
-                                                event={eventObj}
-                                                availableCategories={categories}
-                                                onUpdate={(
-                                                  eventId,
-                                                  categoryIds,
-                                                ) =>
-                                                  handleEventCategoryUpdate(
-                                                    eventId,
-                                                    categoryIds,
-                                                    eventObj.event_date,
-                                                  )
-                                                }
-                                                onClose={() => {
-                                                  // Dropdown will close automatically
-                                                }}
-                                              />
-                                            </DropdownItem>
-                                          </DropdownMenu>
-                                        </Dropdown>
-                                      </div>
-                                      <div className="border-content2 w-[120px]">
                                         <div
-                                          className="flex justify-end gap-1"
-                                          data-cell-name="event-actions"
+                                          className="border-content2 group hover:bg-content1 relative w-[70px] cursor-pointer items-center transition-colors"
+                                          data-cell-name="event-day-row-checkbox"
                                         >
-                                          {/* Event Update Confirm Actions - Show for any dirty event */}
-                                          {dirtyEventIds.has(
-                                            eventObj.id || "",
-                                          ) && (
-                                            <>
-                                              <div
-                                                className="cursor-pointer"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleSaveAllDirtyFields(
+                                          <Checkbox
+                                            isSelected={selectedEventIds.has(
+                                              eventObj.id || "",
+                                            )}
+                                            onChange={() =>
+                                              handleToggleEventSelection(
+                                                eventObj.id || "",
+                                              )
+                                            }
+                                            color="default"
+                                            size="md"
+                                            classNames={{
+                                              wrapper: "me-0",
+                                              base: "p-0",
+                                            }}
+                                          />
+                                        </div>
+                                        <div
+                                          className="border-content2 group hover:bg-content1 relative w-[120px] cursor-pointer text-right transition-colors"
+                                          data-cell-name="event-quantity"
+                                          onClick={() => {
+                                            setSelectedEventForQuantity(
+                                              eventObj,
+                                            );
+                                            markEventAsDirty(
+                                              eventObj.id || "",
+                                              "quantity",
+                                            );
+                                          }}
+                                        >
+                                          {(selectedEventForQuantity?.id ===
+                                            eventObj.id && (
+                                            <EventCellQuantityEdit
+                                              ref={(ref) => {
+                                                if (ref) {
+                                                  registerQuantityEditRef(
                                                     eventObj.id || "",
+                                                    ref,
                                                   );
-                                                }}
-                                              >
-                                                {isAnyFieldLoading(
+                                                }
+                                                // Ignore null - keep the ref alive for save()
+                                              }}
+                                              event={eventObj}
+                                              onUpdate={
+                                                handleEventQuantityUpdate
+                                              }
+                                              onLoadingChange={(isLoading) =>
+                                                handleQuantityLoadingChange(
                                                   eventObj.id || "",
-                                                ) ? (
-                                                  <Loader2
-                                                    className="stroke-primary animate-spin"
-                                                    size={16}
-                                                  />
-                                                ) : (
-                                                  <CircleCheckBig
-                                                    className="stroke-primary hover:stroke-default"
-                                                    size={16}
-                                                  />
-                                                )}
-                                              </div>
-                                              <div
-                                                className="cursor-pointer"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  if (
-                                                    selectedEventForQuantity?.id ===
-                                                    eventObj.id
-                                                  ) {
-                                                    registerQuantityEditRef(
-                                                      eventObj.id || "",
-                                                      null,
-                                                    );
-                                                    clearEventDirty(
-                                                      eventObj.id || "",
-                                                      "quantity",
-                                                    );
-                                                    setSelectedEventForQuantity(
-                                                      null,
-                                                    );
-                                                  } else if (
-                                                    selectedEventForAmount?.id ===
-                                                    eventObj.id
-                                                  ) {
-                                                    registerAmountEditRef(
-                                                      eventObj.id || "",
-                                                      null,
-                                                    );
-                                                    clearEventDirty(
-                                                      eventObj.id || "",
-                                                      "amount",
-                                                    );
-                                                    setSelectedEventForAmount(
-                                                      null,
-                                                    );
-                                                  }
-                                                }}
-                                              >
-                                                <CircleX
-                                                  className="stroke-content3 hover:stroke-danger"
-                                                  size={16}
-                                                />
-                                              </div>
-                                              <Divider orientation="vertical" />
-                                            </>
+                                                  isLoading,
+                                                )
+                                              }
+                                              onClose={() => {
+                                                setSelectedEventForQuantity(
+                                                  null,
+                                                );
+                                              }}
+                                            />
+                                          )) ||
+                                            eventObj.quantity}
+                                        </div>
+                                        <div
+                                          className="border-content2 group hover:bg-content1 relative w-[120px] cursor-pointer text-right transition-colors"
+                                          data-cell-name="event-amount"
+                                          onClick={() => {
+                                            setSelectedEventForAmount(eventObj);
+                                            markEventAsDirty(
+                                              eventObj.id || "",
+                                              "amount",
+                                            );
+                                          }}
+                                        >
+                                          {(selectedEventForAmount?.id ===
+                                            eventObj.id && (
+                                            <EventCellAmountEdit
+                                              ref={(ref) => {
+                                                if (ref) {
+                                                  registerAmountEditRef(
+                                                    eventObj.id || "",
+                                                    ref,
+                                                  );
+                                                }
+                                                // Ignore null - keep the ref alive for save()
+                                              }}
+                                              event={eventObj}
+                                              onUpdate={handleEventAmountUpdate}
+                                              onLoadingChange={(isLoading) =>
+                                                handleAmountLoadingChange(
+                                                  eventObj.id || "",
+                                                  isLoading,
+                                                )
+                                              }
+                                              onClose={() => {
+                                                setSelectedEventForAmount(null);
+                                              }}
+                                            />
+                                          )) ||
+                                            formatCurrency(eventObj.amount)}
+                                        </div>
+                                        <div
+                                          className={clsx(
+                                            "border-content2 w-[120px] cursor-no-drop text-right",
                                           )}
-                                          {/* Event Update Confirm Actions End */}
-                                          {/* @TODO make a single event recurring or in installments */}
-                                          {getStructureType(eventObj) ===
-                                            "single" && (
-                                            <div>
-                                              <CalendarSync
-                                                className="stroke-content3 hover:stroke-primary cursor-pointer"
-                                                size={16}
-                                              />
-                                            </div>
+                                          data-cell-name="event-total-amount"
+                                        >
+                                          {formatCurrency(
+                                            Number(eventObj.amount) *
+                                              Number(eventObj.quantity),
                                           )}
-                                          {/* @TODO List a recurring|installment event childs or siblings */}
-                                          {(getStructureType(eventObj) ===
-                                            "recurring" ||
-                                            getStructureType(eventObj) ===
-                                              "installment") && (
-                                            <div>
-                                              <ListChevronsUpDown
-                                                className="stroke-content3 hover:stroke-primary cursor-pointer"
-                                                size={16}
-                                              />
-                                            </div>
-                                          )}
+                                        </div>
+                                        <div
+                                          className="border-content2 group hover:bg-content1 relative w-[90px]"
+                                          data-cell-name="event-currency"
+                                        >
                                           <Dropdown>
                                             <DropdownTrigger>
-                                              <CalendarFold
-                                                className="stroke-content3 hover:stroke-primary cursor-pointer"
-                                                size={16}
-                                              />
+                                              <span className="cursor-pointer">
+                                                {eventObj.currency?.symbol}
+                                              </span>
                                             </DropdownTrigger>
-                                            <DropdownMenu>
+                                            <DropdownMenu variant="light">
                                               <DropdownItem
-                                                key="edit-date"
+                                                key="edit-currency"
                                                 isReadOnly
                                               >
-                                                <EventCellDateEdit
+                                                <EventCellCurrencyEdit
                                                   event={eventObj}
+                                                  availableCurrencies={
+                                                    currencies
+                                                  }
                                                   onUpdate={
-                                                    handleEventDateUpdate
+                                                    handleEventCurrencyUpdate
                                                   }
                                                   onClose={() => {
                                                     // Dropdown will close automatically
@@ -931,30 +755,475 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                               </DropdownItem>
                                             </DropdownMenu>
                                           </Dropdown>
-                                          <div>
-                                            <Trash
-                                              className="stroke-content3 hover:stroke-danger cursor-pointer"
-                                              size={16}
-                                              onClick={() => {
-                                                if (
-                                                  selectedEventIds.size > 0 &&
-                                                  selectedEventIds.has(
-                                                    eventObj.id || "",
+                                        </div>
+                                        <div
+                                          className={clsx(
+                                            "border-content2 w-[120px] cursor-no-drop text-right",
+                                            eventObj.type === "EXPENSE" &&
+                                              "text-danger",
+                                            eventObj.type === "INCOME" &&
+                                              "text-success",
+                                          )}
+                                          data-cell-name="event-exchange-rate"
+                                        >
+                                          {formatCurrency(
+                                            eventObj.exchangeRate,
+                                          )}
+                                        </div>
+                                        <div
+                                          className="border-content2 w-[90px] !flex-row items-center"
+                                          data-cell-name="event-structure-type"
+                                        >
+                                          <Chip
+                                            variant="bordered"
+                                            size="sm"
+                                            className="capitalize"
+                                          >
+                                            {getStructureType(eventObj)}
+                                          </Chip>
+                                        </div>
+                                        <div
+                                          className="border-content2 w-[210px]"
+                                          data-cell-name="event-description"
+                                        >
+                                          <span>
+                                            {showOriginalText &&
+                                            eventObj.original_text
+                                              ? eventObj.original_text
+                                              : eventObj.description}
+                                          </span>
+                                        </div>
+                                        <div
+                                          className="border-content2 group relative w-[180px] cursor-pointer"
+                                          data-cell-name="event-categories"
+                                        >
+                                          <Dropdown>
+                                            <DropdownTrigger>
+                                              <div className="flex h-full flex-wrap items-center gap-1">
+                                                {eventObj.categories &&
+                                                eventObj.categories.length >
+                                                  0 ? (
+                                                  eventObj.categories.map(
+                                                    (category) => (
+                                                      <Chip
+                                                        key={category.id}
+                                                        size="sm"
+                                                        variant="dot"
+                                                        startContent={
+                                                          <Circle
+                                                            stroke={
+                                                              category.color
+                                                            }
+                                                            size={12}
+                                                            className="mr-1"
+                                                          />
+                                                        }
+                                                        classNames={{
+                                                          content: `text-xs`,
+                                                        }}
+                                                      >
+                                                        {category.name}
+                                                      </Chip>
+                                                    ),
                                                   )
-                                                ) {
-                                                  // Delete only if this event is part of the selected set
-                                                  handleEventDelete(eventObj);
-                                                } else if (
-                                                  selectedEventIds.size === 0
-                                                ) {
-                                                  // Single delete when no events are selected
-                                                  handleEventDelete(eventObj);
-                                                }
-                                              }}
-                                            />
+                                                ) : (
+                                                  <div className="w-full"></div>
+                                                )}
+                                              </div>
+                                            </DropdownTrigger>
+                                            <DropdownMenu variant="light">
+                                              <DropdownItem
+                                                key="edit-categories"
+                                                isReadOnly
+                                              >
+                                                <EventCellCategoriesSelect
+                                                  event={eventObj}
+                                                  availableCategories={
+                                                    categories
+                                                  }
+                                                  onUpdate={(
+                                                    eventId,
+                                                    categoryIds,
+                                                  ) =>
+                                                    handleEventCategoryUpdate(
+                                                      eventId,
+                                                      categoryIds,
+                                                      eventObj.event_date,
+                                                    )
+                                                  }
+                                                  onClose={() => {
+                                                    // Dropdown will close automatically
+                                                  }}
+                                                />
+                                              </DropdownItem>
+                                            </DropdownMenu>
+                                          </Dropdown>
+                                        </div>
+                                        <div className="border-content2 w-[120px]">
+                                          <div
+                                            className="flex justify-end gap-1"
+                                            data-cell-name="event-actions"
+                                          >
+                                            {/* Event Update Confirm Actions - Show for any dirty event */}
+                                            {dirtyEventIds.has(
+                                              eventObj.id || "",
+                                            ) && (
+                                              <>
+                                                <div
+                                                  className="cursor-pointer"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleSaveAllDirtyFields(
+                                                      eventObj.id || "",
+                                                    );
+                                                  }}
+                                                >
+                                                  {isAnyFieldLoading(
+                                                    eventObj.id || "",
+                                                  ) ? (
+                                                    <Loader2
+                                                      className="stroke-primary animate-spin"
+                                                      size={16}
+                                                    />
+                                                  ) : (
+                                                    <CircleCheckBig
+                                                      className="stroke-primary hover:stroke-default"
+                                                      size={16}
+                                                    />
+                                                  )}
+                                                </div>
+                                                <div
+                                                  className="cursor-pointer"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (
+                                                      selectedEventForQuantity?.id ===
+                                                      eventObj.id
+                                                    ) {
+                                                      registerQuantityEditRef(
+                                                        eventObj.id || "",
+                                                        null,
+                                                      );
+                                                      clearEventDirty(
+                                                        eventObj.id || "",
+                                                        "quantity",
+                                                      );
+                                                      setSelectedEventForQuantity(
+                                                        null,
+                                                      );
+                                                    } else if (
+                                                      selectedEventForAmount?.id ===
+                                                      eventObj.id
+                                                    ) {
+                                                      registerAmountEditRef(
+                                                        eventObj.id || "",
+                                                        null,
+                                                      );
+                                                      clearEventDirty(
+                                                        eventObj.id || "",
+                                                        "amount",
+                                                      );
+                                                      setSelectedEventForAmount(
+                                                        null,
+                                                      );
+                                                    }
+                                                  }}
+                                                >
+                                                  <CircleX
+                                                    className="stroke-content3 hover:stroke-danger"
+                                                    size={16}
+                                                  />
+                                                </div>
+                                                <Divider orientation="vertical" />
+                                              </>
+                                            )}
+                                            {/* Event Update Confirm Actions End */}
+                                            {/* @TODO make a single event recurring or in installments */}
+                                            {getStructureType(eventObj) ===
+                                              "single" && (
+                                              <div>
+                                                <CalendarSync
+                                                  className="stroke-content3 hover:stroke-primary cursor-pointer"
+                                                  size={16}
+                                                />
+                                              </div>
+                                            )}
+                                            {!eventObj.parent_event_id &&
+                                              (getStructureType(eventObj) ===
+                                                "recurring" ||
+                                                getStructureType(eventObj) ===
+                                                  "installment") && (
+                                                <div
+                                                  onClick={() =>
+                                                    handleToggleEventExpansion(
+                                                      eventObj.id || "",
+                                                    )
+                                                  }
+                                                >
+                                                  <ListChevronsUpDown
+                                                    className="stroke-content3 hover:stroke-primary cursor-pointer"
+                                                    size={16}
+                                                  />
+                                                </div>
+                                              )}
+                                            <Dropdown>
+                                              <DropdownTrigger>
+                                                <CalendarFold
+                                                  className="stroke-content3 hover:stroke-primary cursor-pointer"
+                                                  size={16}
+                                                />
+                                              </DropdownTrigger>
+                                              <DropdownMenu>
+                                                <DropdownItem
+                                                  key="edit-date"
+                                                  isReadOnly
+                                                >
+                                                  <EventCellDateEdit
+                                                    event={eventObj}
+                                                    onUpdate={
+                                                      handleEventDateUpdate
+                                                    }
+                                                    onClose={() => {
+                                                      // Dropdown will close automatically
+                                                    }}
+                                                  />
+                                                </DropdownItem>
+                                              </DropdownMenu>
+                                            </Dropdown>
+                                            <div>
+                                              <Trash
+                                                className="stroke-content3 hover:stroke-danger cursor-pointer"
+                                                size={16}
+                                                onClick={() => {
+                                                  if (
+                                                    selectedEventIds.size > 0 &&
+                                                    selectedEventIds.has(
+                                                      eventObj.id || "",
+                                                    )
+                                                  ) {
+                                                    // Delete only if this event is part of the selected set
+                                                    handleEventDelete(eventObj);
+                                                  } else if (
+                                                    selectedEventIds.size === 0
+                                                  ) {
+                                                    // Single delete when no events are selected
+                                                    handleEventDelete(eventObj);
+                                                  }
+                                                }}
+                                              />
+                                            </div>
                                           </div>
                                         </div>
                                       </div>
+
+                                      {/* Child Events */}
+                                      {expandedEventIds.has(
+                                        eventObj.id || "",
+                                      ) &&
+                                        eventObj.childEvents !== undefined &&
+                                        !!eventObj.childEvents.length &&
+                                        eventObj.childEvents.length > 0 && (
+                                          <>
+                                            <div className="p-1 text-center text-xs">
+                                              <span>Recurring Instances</span>
+                                            </div>
+                                            {eventObj.childEvents
+                                              .sort(
+                                                (a, b) =>
+                                                  new Date(
+                                                    a.event_date,
+                                                  ).getTime() -
+                                                  new Date(
+                                                    b.event_date,
+                                                  ).getTime(),
+                                              )
+                                              .map((childEvent) => (
+                                                <div
+                                                  className="hover:bg-content2 last-of-type:border-b-content2 [&>div]:border-content2 flex flex-1 text-xs last-of-type:border-b-[0.5px] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:border-[0.5px] [&>div]:border-b-0 [&>div]:p-1"
+                                                  data-cell-name="child-event-row"
+                                                  key={`child-event-${childEvent.id}`}
+                                                >
+                                                  <div
+                                                    data-cell-name="child-event-checkbox"
+                                                    className="w-[70px]"
+                                                  >
+                                                    {/* @TODO add a checkbox and allow selecting child events directly */}
+                                                  </div>
+                                                  <div
+                                                    data-cell-name="child-event-quantity"
+                                                    className="w-[120px] text-right"
+                                                  >
+                                                    {/* @TODO allow editing the quantity directly */}
+                                                    {childEvent.quantity}
+                                                  </div>
+                                                  <div
+                                                    className="w-[120px] text-right"
+                                                    data-cell-name="child-event-amount"
+                                                  >
+                                                    {/* @TODO allow editing the amount directly */}
+                                                    {formatCurrency(
+                                                      childEvent.amount,
+                                                    )}
+                                                  </div>
+                                                  <div
+                                                    className="w-[120px] text-right"
+                                                    data-cell-name="child-event-total-amount"
+                                                  >
+                                                    {formatCurrency(
+                                                      new Decimal(
+                                                        childEvent.amount,
+                                                      )
+                                                        .times(
+                                                          new Decimal(
+                                                            childEvent.quantity,
+                                                          ),
+                                                        )
+                                                        .toString(),
+                                                    )}
+                                                  </div>
+                                                  <div
+                                                    className="w-[90px]"
+                                                    data-cell-name="child-event-currency"
+                                                  >
+                                                    {
+                                                      childEvent?.currency
+                                                        ?.symbol
+                                                    }
+                                                  </div>
+                                                  <div
+                                                    className={clsx(
+                                                      "w-[120px] cursor-no-drop text-right",
+                                                      eventObj.type ===
+                                                        "EXPENSE" &&
+                                                        "text-danger",
+                                                      eventObj.type ===
+                                                        "INCOME" &&
+                                                        "text-success",
+                                                    )}
+                                                    data-cell-name="child-event-exchange-rate"
+                                                  >
+                                                    {formatCurrency(
+                                                      eventObj.exchangeRate,
+                                                    )}
+                                                  </div>
+                                                  <div
+                                                    className="w-[90px] !flex-row items-center"
+                                                    data-cell-name="child-event-structure-type"
+                                                  ></div>
+                                                  <div
+                                                    className="flex w-[210px] !flex-row flex-wrap !justify-start gap-1"
+                                                    data-cell-name="child-event-description"
+                                                  >
+                                                    <span>
+                                                      {childEvent.description}
+                                                    </span>
+                                                    <span>-</span>
+                                                    <span className="underline">
+                                                      {toDateString(
+                                                        childEvent.event_date,
+                                                      )}
+                                                    </span>
+                                                  </div>
+                                                  <div
+                                                    className="w-[180px]"
+                                                    data-cell-name="child-event-categories"
+                                                  ></div>
+                                                  <div
+                                                    className="w-[120px]"
+                                                    data-cell-name="child-event-actions"
+                                                  ></div>
+                                                </div>
+                                              ))}
+
+                                            {/* Child Event Calcs Row */}
+                                            <div
+                                              className="hover:bg-content2 last-of-type:border-b-content2 [&>div]:border-content2 border-t-success flex flex-1 border-[0.5px] border-x-0 text-xs last-of-type:border-b-[0.5px] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:border-[0.5px] [&>div]:border-b-0 [&>div]:p-1"
+                                              data-cell-name="child-event-calc-row"
+                                            >
+                                              <div
+                                                data-cell-name="child-event-calc-checkbox"
+                                                className="w-[70px]"
+                                              ></div>
+                                              <div
+                                                data-cell-name="child-event-calc-quantity"
+                                                className="w-[120px] text-right"
+                                              >
+                                                {aggregateChildEventsQuantity(
+                                                  (eventObj.childEvents as CalendarEvent[]) ||
+                                                    [],
+                                                ) + eventObj.quantity}
+                                              </div>
+                                              <div
+                                                className="w-[120px] text-right"
+                                                data-cell-name="child-event-calc-amount"
+                                              ></div>
+                                              <div
+                                                className="w-[120px] text-right"
+                                                data-cell-name="child-event-calc-total-amount"
+                                              >
+                                                {formatCurrency(
+                                                  new Decimal(
+                                                    aggregateChildEventsTotalAmount(
+                                                      (eventObj.childEvents as CalendarEvent[]) ||
+                                                        [],
+                                                    ),
+                                                  )
+                                                    .plus(
+                                                      new Decimal(
+                                                        eventObj.amount || 0,
+                                                      ).times(
+                                                        new Decimal(
+                                                          eventObj.quantity ||
+                                                            0,
+                                                        ),
+                                                      ),
+                                                    )
+                                                    .toString(),
+                                                )}
+                                              </div>
+                                              <div
+                                                className="w-[90px]"
+                                                data-cell-name="child-event-calc-currency"
+                                              ></div>
+                                              <div
+                                                className={clsx(
+                                                  "w-[120px] cursor-no-drop text-right",
+                                                  eventObj.type === "EXPENSE" &&
+                                                    "text-danger",
+                                                  eventObj.type === "INCOME" &&
+                                                    "text-success",
+                                                )}
+                                                data-cell-name="child-event-calc-exchange-rate"
+                                              >
+                                                {formatCurrency(
+                                                  aggregateChildEventsExchangeRate(
+                                                    (eventObj.childEvents as CalendarEvent[]) ||
+                                                      [],
+                                                    eventObj,
+                                                  ),
+                                                )}
+                                              </div>
+                                              <div
+                                                className="w-[90px] !flex-row items-center"
+                                                data-cell-name="child-event-calc-structure-type"
+                                              ></div>
+                                              <div
+                                                className="flex w-[210px] !flex-row flex-wrap !justify-start gap-1"
+                                                data-cell-name="child-event-calc-description"
+                                              ></div>
+                                              <div
+                                                className="w-[180px]"
+                                                data-cell-name="child-event-calc-categories"
+                                              ></div>
+                                              <div
+                                                className="w-[120px]"
+                                                data-cell-name="child-event-calc-actions"
+                                              >
+                                                {/* @TODO allow deleting or changing the date of a child event directly */}
+                                              </div>
+                                            </div>
+                                          </>
+                                        )}
                                     </div>
                                   ))}
                                 </div>

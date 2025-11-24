@@ -102,11 +102,19 @@ export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
       <Button
         color="primary"
         onPress={handleSubmit}
-        isLoading={loading}
+        isLoading={
+          loading ||
+          eventsController.actionStates.createEventFromText.isLoading ||
+          calendarContext.actionStates.loadCalendarV2.isLoading
+        }
         variant="bordered"
         endContent={loading ? undefined : <Send size={16} />}
       >
-        {loading ? "Creating..." : "Create Events"}
+        {loading
+          ? "Creating..."
+          : calendarContext.actionStates.loadCalendarV2.isLoading
+            ? "Refreshing Calendar"
+            : "Create Events"}
       </Button>
     </div>
   );
