@@ -50,6 +50,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { StaggerLoadingAnimation } from "../stagger-loading-animation/StaggerLoadingAnimation";
+import { ThemeSwitch } from "../theme-switch";
 import { DeleteEventConfirmationModal } from "./delete-event-confirmation-modal/DeleteEventConfirmationModal";
 import {
   EventCellAmountEdit,
@@ -478,79 +479,94 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
   if (!calendarV2Data) return getLoadingStateComponent();
 
   return (
-    <section className="relative w-fit overflow-x-auto pt-[33px]">
+    <section className="relative w-fit overflow-x-auto pt-[58px]">
       {/* Loading State Over Existing Calendar*/}
       {(eventsContextActionStates.deleteEvent.isLoading ||
         eventsContextActionStates.deleteEventMultiple.isLoading) &&
         getLoadingStateComponent()}
 
       {/* Fixed Table Nav */}
-      <nav className="[&>div]:border-content3 text-content4 bg-background fixed top-0 left-0 flex w-fit items-center text-xs font-semibold [&>div]:flex [&>div]:h-[25px] [&>div]:items-center [&>div]:gap-1 [&>div]:border-[0.5px] [&>div]:p-1">
-        <div className="hover:text-content4-foreground w-[180px] cursor-pointer justify-center">
-          <span>Year</span>
-          <ListFilter size={12} />
+      <nav className="bg-background fixed top-0 left-0 z-50 text-xs">
+        {/* App Top Bar */}
+        <div className="flex w-screen items-center justify-between px-2 [&>div]:p-1">
+          <div className="flex gap-1 font-mono">
+            <span className="">ExpenseCal</span>
+            <span className="text-default-400">v0.0.2</span>
+          </div>
+          <div className="text-right">
+            <ThemeSwitch />
+          </div>
         </div>
-        <div className="hover:text-content4-foreground w-[120px] cursor-pointer justify-center">
-          <span>Month</span>
-          <ListFilter size={12} />
-        </div>
-        <div className="w-[120px] justify-center">
-          <span>Day</span>
-        </div>
-        <div className="w-[70px] justify-center">
-          <Checkbox
-            isSelected={
-              selectedEventIds.size > 0 &&
-              selectedEventIds.size === getAllEventIds().length
-            }
-            isIndeterminate={
-              selectedEventIds.size > 0 &&
-              selectedEventIds.size < getAllEventIds().length
-            }
-            onChange={handleToggleAllSelection}
-            size="sm"
-            classNames={{ wrapper: "me-0", base: "p-0" }}
-          />
-        </div>
-        <div className="w-[120px] justify-end">
-          <span>Qty</span>
-        </div>
-        <div className="w-[120px] justify-end">
-          <span>Amount</span>
-        </div>
-        <div className="w-[120px] justify-end">
-          <span>Total Amount</span>
-        </div>
-        <div className="hover:text-content4-foreground w-[90px] cursor-pointer">
-          <span>Currency</span>
-          <ListFilter size={12} />
-        </div>
-        <div className="w-[120px] justify-end">
-          <span>Ex. Rate (USD)</span>
-        </div>
-        <div className="w-[90px] justify-center">
-          <span>Type</span>
-        </div>
-        <div
-          className="hover:text-content4-foreground w-[210px] cursor-pointer"
-          onClick={() => setShowOriginalText(!showOriginalText)}
-        >
-          <span>{showOriginalText ? "Original Text" : "Description"}</span>
-          <ArrowLeftRight size={12} />
-        </div>
-        <div className="hover:text-content4-foreground w-[180px] cursor-pointer">
-          <span>Categories</span>
-          <ListFilter size={12} />
-        </div>
-        <div className="w-[120px] justify-end">
-          <span>Actions</span>
+
+        {/* Table Columns */}
+        <div className="text-default-400 [&>div]:border-default-300 flex w-fit items-center font-semibold [&>div]:flex [&>div]:h-[25px] [&>div]:items-center [&>div]:gap-1 [&>div]:border-[0.5px] [&>div]:p-1">
+          <div className="hover:text-default-400-foreground w-[180px] cursor-pointer justify-center">
+            <span>Year</span>
+            <ListFilter size={12} />
+          </div>
+          <div className="hover:text-default-400-foreground w-[120px] cursor-pointer justify-center">
+            <span>Month</span>
+            <ListFilter size={12} />
+          </div>
+          <div className="w-[120px] justify-center">
+            <span>Day</span>
+          </div>
+          <div className="w-[70px] justify-center">
+            <Checkbox
+              isSelected={
+                selectedEventIds.size > 0 &&
+                selectedEventIds.size === getAllEventIds().length
+              }
+              isIndeterminate={
+                selectedEventIds.size > 0 &&
+                selectedEventIds.size < getAllEventIds().length
+              }
+              onChange={handleToggleAllSelection}
+              size="sm"
+              classNames={{ wrapper: "me-0", base: "p-0" }}
+            />
+          </div>
+          <div className="w-[120px] justify-end">
+            <span>Qty</span>
+          </div>
+          <div className="w-[120px] justify-end">
+            <span>Amount</span>
+          </div>
+          <div className="w-[120px] justify-end">
+            <span>Total Amount</span>
+          </div>
+          <div className="hover:text-default-400-foreground w-[90px] cursor-pointer">
+            <span>Currency</span>
+            <ListFilter size={12} />
+          </div>
+          <div className="w-[120px] justify-end">
+            <span>Ex. Rate (USD)</span>
+          </div>
+          <div className="w-[90px] justify-center">
+            <span>Type</span>
+          </div>
+          <div
+            className="hover:text-default-400-foreground w-[210px] cursor-pointer"
+            onClick={() => setShowOriginalText(!showOriginalText)}
+          >
+            <span>{showOriginalText ? "Original Text" : "Description"}</span>
+            <ArrowLeftRight size={12} />
+          </div>
+          <div className="hover:text-default-400-foreground w-[180px] cursor-pointer">
+            <span>Categories</span>
+            <ListFilter size={12} />
+          </div>
+          <div className="w-[120px] justify-end">
+            <span>Actions</span>
+          </div>
         </div>
       </nav>
+
       {Object.entries(calendarV2Data.calendar || {}).map(([year, yearObj]) => (
-        <div className="border-content4 border-b" key={year}>
+        <div className="border-default-300 border-b" key={year}>
           <div className="flex">
             <div
-              className="border-content2 group hover:bg-content1 flex w-[180px] cursor-pointer flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0 p-1 transition-colors"
+              className="border-default-300 group hover:bg-content1 flex w-[180px] cursor-pointer flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0 p-1 transition-colors"
               data-cell-name="event-year"
               onClick={() => handleToggleYearSelection(yearObj)}
             >
@@ -560,13 +576,10 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
               {Object.entries(yearObj)
                 .sort(([monthA], [monthB]) => Number(monthA) - Number(monthB))
                 .map(([month, monthObj]) => (
-                  <div
-                    className="border-content4 border-b-[0.5px] [&:not(:last-child)]:border-b"
-                    key={`${year}-${month}`}
-                  >
+                  <div className="border-default-300" key={`${year}-${month}`}>
                     <div className="flex">
                       <div
-                        className="border-content2 group hover:bg-content1 flex w-[120px] cursor-pointer flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0 p-1 transition-colors"
+                        className="border-default-300 group hover:bg-content1 flex w-[120px] cursor-pointer flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0 p-1 transition-colors"
                         data-cell-name="event-month"
                         onClick={() => handleToggleMonthSelection(monthObj)}
                       >
@@ -577,12 +590,12 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                           .sort(([dayA], [dayB]) => Number(dayA) - Number(dayB))
                           .map(([day, events]) => (
                             <div
-                              className="group border-b-content2 last-of-type:border-b"
+                              className="group border-b-default-300 last-of-type:border-b-0"
                               key={`${year}-${month}-${day}`}
                             >
                               <div className="flex">
                                 <div
-                                  className="border-content2 group-hover:bg-content2 hover:bg-content1 flex w-[120px] cursor-pointer flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0 p-1 transition-colors"
+                                  className="border-default-300 group-hover:bg-content2 hover:bg-content1 flex w-[120px] cursor-pointer flex-col items-center justify-center border-[0.5px] border-r-0 border-b-0 p-1 transition-colors"
                                   data-cell-name="event-day"
                                   onClick={() =>
                                     handleToggleDaySelection(events)
@@ -606,13 +619,13 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                     >
                                       <div
                                         className={clsx(
-                                          "hover:bg-content2 last-of-type:border-b-content2 group-hover:bg-content2 flex flex-1 text-xs last-of-type:border-b-[0.5px] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:border-[0.5px] [&>div]:border-b-0 [&>div]:p-1",
+                                          "hover:bg-content2 last-of-type:border-b-default-300 group-hover:bg-content2 [&>div]:border-default-300 flex flex-1 text-xs last-of-type:border-b-[0.5px] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:border-[0.5px] [&>div]:border-b-0 [&>div]:p-1",
                                           events.length === 1 && "h-full",
                                         )}
                                         data-cell-name="event-row"
                                       >
                                         <div
-                                          className="border-content2 group hover:bg-content1 relative w-[70px] cursor-pointer items-center transition-colors"
+                                          className="group hover:bg-content1 relative w-[70px] cursor-pointer items-center transition-colors"
                                           data-cell-name="event-day-row-checkbox"
                                         >
                                           <Checkbox
@@ -633,7 +646,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                           />
                                         </div>
                                         <div
-                                          className="border-content2 group hover:bg-content1 relative w-[120px] cursor-pointer text-right transition-colors"
+                                          className="group hover:bg-content1 relative w-[120px] cursor-pointer text-right transition-colors"
                                           data-cell-name="event-quantity"
                                           onClick={() => {
                                             setSelectedEventForQuantity(
@@ -677,7 +690,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                             eventObj.quantity}
                                         </div>
                                         <div
-                                          className="border-content2 group hover:bg-content1 relative w-[120px] cursor-pointer text-right transition-colors"
+                                          className="group hover:bg-content1 relative w-[120px] cursor-pointer text-right transition-colors"
                                           data-cell-name="event-amount"
                                           onClick={() => {
                                             setSelectedEventForAmount(eventObj);
@@ -716,7 +729,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                         </div>
                                         <div
                                           className={clsx(
-                                            "border-content2 w-[120px] cursor-no-drop text-right",
+                                            "w-[120px] cursor-no-drop text-right",
                                           )}
                                           data-cell-name="event-total-amount"
                                         >
@@ -726,7 +739,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                           )}
                                         </div>
                                         <div
-                                          className="border-content2 group hover:bg-content1 relative w-[90px]"
+                                          className="group hover:bg-content1 relative w-[90px]"
                                           data-cell-name="event-currency"
                                         >
                                           <Dropdown>
@@ -758,7 +771,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                         </div>
                                         <div
                                           className={clsx(
-                                            "border-content2 w-[120px] cursor-no-drop text-right",
+                                            "w-[120px] cursor-no-drop text-right font-bold",
                                             eventObj.type === "EXPENSE" &&
                                               "text-danger",
                                             eventObj.type === "INCOME" &&
@@ -771,7 +784,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                           )}
                                         </div>
                                         <div
-                                          className="border-content2 w-[90px] !flex-row items-center"
+                                          className="w-[90px] !flex-row items-center"
                                           data-cell-name="event-structure-type"
                                         >
                                           <Chip
@@ -783,7 +796,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                           </Chip>
                                         </div>
                                         <div
-                                          className="border-content2 w-[210px]"
+                                          className="w-[210px]"
                                           data-cell-name="event-description"
                                         >
                                           <span>
@@ -794,7 +807,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                           </span>
                                         </div>
                                         <div
-                                          className="border-content2 group relative w-[180px] cursor-pointer"
+                                          className="group relative w-[180px] cursor-pointer"
                                           data-cell-name="event-categories"
                                         >
                                           <Dropdown>
@@ -859,7 +872,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                             </DropdownMenu>
                                           </Dropdown>
                                         </div>
-                                        <div className="border-content2 w-[120px]">
+                                        <div className="w-[120px]">
                                           <div
                                             className="flex justify-end gap-1"
                                             data-cell-name="event-actions"
@@ -930,7 +943,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                                   }}
                                                 >
                                                   <CircleX
-                                                    className="stroke-content3 hover:stroke-danger"
+                                                    className="stroke-default-400 hover:stroke-danger"
                                                     size={16}
                                                   />
                                                 </div>
@@ -943,7 +956,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                               "single" && (
                                               <div>
                                                 <CalendarSync
-                                                  className="stroke-content3 hover:stroke-primary cursor-pointer"
+                                                  className="stroke-default-400 hover:stroke-primary cursor-pointer"
                                                   size={16}
                                                 />
                                               </div>
@@ -961,7 +974,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                                   }
                                                 >
                                                   <ListChevronsUpDown
-                                                    className="stroke-content3 hover:stroke-primary cursor-pointer"
+                                                    className="stroke-default-400 hover:stroke-primary cursor-pointer"
                                                     size={16}
                                                   />
                                                 </div>
@@ -969,7 +982,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                             <Dropdown>
                                               <DropdownTrigger>
                                                 <CalendarFold
-                                                  className="stroke-content3 hover:stroke-primary cursor-pointer"
+                                                  className="stroke-default-400 hover:stroke-primary cursor-pointer"
                                                   size={16}
                                                 />
                                               </DropdownTrigger>
@@ -992,7 +1005,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                             </Dropdown>
                                             <div>
                                               <Trash
-                                                className="stroke-content3 hover:stroke-danger cursor-pointer"
+                                                className="stroke-default-400 hover:stroke-danger cursor-pointer"
                                                 size={16}
                                                 onClick={() => {
                                                   if (
@@ -1039,7 +1052,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                               )
                                               .map((childEvent) => (
                                                 <div
-                                                  className="hover:bg-content2 last-of-type:border-b-content2 [&>div]:border-content2 flex flex-1 text-xs last-of-type:border-b-[0.5px] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:border-[0.5px] [&>div]:border-b-0 [&>div]:p-1"
+                                                  className="hover:bg-content2 last-of-type:border-b-default-300 [&>div]:border-default-300 flex flex-1 text-xs last-of-type:border-b-[0.5px] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:border-[0.5px] [&>div]:border-b-0 [&>div]:p-1"
                                                   data-cell-name="child-event-row"
                                                   key={`child-event-${childEvent.id}`}
                                                 >
@@ -1137,7 +1150,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
 
                                             {/* Child Event Calcs Row */}
                                             <div
-                                              className="hover:bg-content2 last-of-type:border-b-content2 [&>div]:border-content2 border-t-success flex flex-1 border-[0.5px] border-x-0 text-xs last-of-type:border-b-[0.5px] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:border-[0.5px] [&>div]:border-b-0 [&>div]:p-1"
+                                              className="hover:bg-content2 last-of-type:border-b-default-300 [&>div]:border-default-300 border-t-success flex flex-1 border-[0.5px] border-x-0 text-xs last-of-type:border-b-[0.5px] [&>div]:flex [&>div]:flex-col [&>div]:justify-center [&>div]:border-[0.5px] [&>div]:border-b-0 [&>div]:p-1"
                                               data-cell-name="child-event-calc-row"
                                             >
                                               <div
@@ -1230,7 +1243,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                               </div>
 
                               {/* Day Stats */}
-                              <div className="border-content2 [&>div]:border-b-content2 w-[120px] border-r-[0.5px] border-l-[0.5px] text-right text-xs [&>div]:px-1 [&>div]:not-[:last-child]:border-b-[0.5px]">
+                              <div className="border-default-300 [&>div]:border-b-default-300 w-[120px] border-x-[0.5px] text-right text-xs font-bold [&>div]:border-b-[0.5px] [&>div]:px-1">
                                 <div className="text-success">
                                   <span>
                                     {formatCurrency(
@@ -1295,7 +1308,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                     </div>
 
                     {/* Month Stats */}
-                    <div className="border-content2 [&>div]:border-b-content2 w-[120px] border-r-[0.5px] border-l-[0.5px] text-right text-xs [&>div]:px-1 [&>div]:not-[:last-child]:border-b-[0.5px]">
+                    <div className="border-default-300 [&>div]:border-b-default-300 w-[120px] border-r-[0.5px] border-l-[0.5px] text-right text-xs font-bold [&>div]:border-b-[0.5px] [&>div]:px-1">
                       <div className="text-success">
                         <span>
                           {formatCurrency(
@@ -1341,8 +1354,8 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
           </div>
 
           {/* Year Stats */}
-          <div className="border-content2 [&>div]:border-b-content2 w-[180px] border-r-[0.5px] border-l-[0.5px] text-right text-xs [&>div]:px-1 [&>div]:not-[:last-child]:border-b-[0.5px]">
-            <span className="text-content4 mb-1 block text-center">
+          <div className="border-default-300 [&>div]:border-b-default-300 w-[180px] border-r-[0.5px] border-l-[0.5px] text-right text-xs font-bold [&>div]:px-1 [&>div]:not-[:last-child]:border-b-[0.5px]">
+            <span className="text-default-400 mb-1 block text-center">
               {year} Income - Expenses
             </span>
             <div className="text-success flex items-center justify-between gap-1">
