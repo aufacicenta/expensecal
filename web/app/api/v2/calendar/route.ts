@@ -8,16 +8,14 @@ import {
   CalendarData,
   CalendarEvent,
   CalendarStatsData,
-  FinancialSummary,
   GetCalendarResponse,
 } from "./types";
 
 import {
   addEventToStats,
-  applyCascadeForwardStats,
-  calculateNetFromSummary,
-  calculatePercentChange,
+  applyCarryForwardAndRecalculate,
   convertAmount,
+  recalculateNetsAfterUpdate,
 } from "@/lib/calendar/stats";
 import { toDateString } from "@/lib/date";
 import { getLatestRatesFromCurrency } from "@/lib/exchange-rates";
@@ -86,13 +84,19 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
     const baseCurrencySymbol = "USD"; // TODO: Pull from user.base_currency once implemented
     const exchangeRates = await getLatestRatesFromCurrency(baseCurrencySymbol);
 
-    // Group events by year/month/day and calculate stats in single pass
+    // Group events by year/month/day and calculate stats with carry-forward in single pass
     const calendarData: CalendarData = {};
     const stats: CalendarStatsData = {};
+
+    // Track previous periods for boundary detection and carry-forward
+    let prevDayDate: string | undefined;
+    let prevMonthDate: string | undefined;
+    let prevYearDate: string | undefined;
 
     for (const event of events) {
       const dateStr = toDateString(event.event_date);
       const [year, month, day] = dateStr.split("-");
+      const currentMonth = `${year}-${month}`;
 
       // Initialize year structure if not exists
       if (!calendarData[year]) {
@@ -126,6 +130,53 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
           totalExpenses: "0",
           net: "0",
         };
+
+        // Detect year boundary and apply carry-forward
+        if (prevYearDate && prevYearDate !== year) {
+          const prevYearNet = stats[prevYearDate].stats.net;
+
+          applyCarryForwardAndRecalculate(
+            stats,
+            year,
+            month,
+            day,
+            prevYearNet,
+            undefined,
+            undefined,
+          );
+        }
+
+        // Detect month boundary and apply carry-forward
+        if (prevMonthDate && prevMonthDate !== currentMonth) {
+          const [prevYear, prevMonth] = prevMonthDate.split("-");
+          const prevMonthNet = (stats[prevYear][prevMonth] as any).stats.net;
+
+          applyCarryForwardAndRecalculate(
+            stats,
+            year,
+            month,
+            day,
+            undefined,
+            prevMonthNet,
+            undefined,
+          );
+        }
+
+        // Detect day boundary and apply carry-forward
+        if (prevDayDate && prevDayDate !== dateStr) {
+          const [prevYear, prevMonth, prevDay] = prevDayDate.split("-");
+          const prevDayNet = (stats[prevYear][prevMonth] as any)[prevDay].net;
+
+          applyCarryForwardAndRecalculate(
+            stats,
+            year,
+            month,
+            day,
+            undefined,
+            undefined,
+            prevDayNet,
+          );
+        }
       }
 
       // Convert amount once
@@ -147,7 +198,7 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
       // Add event to the day
       calendarData[year][month][day].push(calendarEvent);
 
-      // Use helper to add event to stats at all levels
+      // Add event to stats at all levels
       addEventToStats(
         stats,
         convertedAmount,
@@ -156,139 +207,14 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
         month,
         day,
       );
-    }
 
-    // Calculate net for all stats levels
-    for (const year in stats) {
-      const yearData = stats[year];
+      // Recalculate nets after adding event
+      recalculateNetsAfterUpdate(stats, year, month, day);
 
-      yearData.stats.net = calculateNetFromSummary(
-        yearData.stats.totalIncome,
-        yearData.stats.totalExpenses,
-      );
-
-      for (const month in yearData) {
-        if (month !== "stats") {
-          const monthData = yearData[month] as Record<string, FinancialSummary>;
-
-          if ("stats" in monthData) {
-            (monthData as any).stats.net = calculateNetFromSummary(
-              (monthData as any).stats.totalIncome,
-              (monthData as any).stats.totalExpenses,
-            );
-
-            for (const day in monthData) {
-              if (day !== "stats") {
-                const dayStats = monthData[day];
-
-                dayStats.net = calculateNetFromSummary(
-                  dayStats.totalIncome,
-                  dayStats.totalExpenses,
-                );
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Apply carry-forward cascade to propagate net balances
-    const sortedYearsForCarryForward = Object.keys(stats).sort();
-
-    if (sortedYearsForCarryForward.length > 0) {
-      applyCascadeForwardStats(stats, sortedYearsForCarryForward[0]);
-    }
-
-    // Calculate percentage changes for all stats levels
-    const sortedYears = Object.keys(stats).sort();
-    let prevYearStats: FinancialSummary | undefined;
-
-    for (const year of sortedYears) {
-      const yearData = stats[year];
-
-      // Calculate year-level percentage changes
-      (yearData.stats as any).totalIncomePercentChange = calculatePercentChange(
-        yearData.stats.totalIncome,
-        prevYearStats?.totalIncome,
-      );
-      (yearData.stats as any).totalExpensesPercentChange =
-        calculatePercentChange(
-          yearData.stats.totalExpenses,
-          prevYearStats?.totalExpenses,
-        );
-      (yearData.stats as any).netPercentChange = calculatePercentChange(
-        yearData.stats.net,
-        prevYearStats?.net,
-      );
-
-      // Track previous year for next iteration
-      prevYearStats = {
-        totalIncome: yearData.stats.totalIncome,
-        totalExpenses: yearData.stats.totalExpenses,
-        net: yearData.stats.net,
-      };
-
-      // Process months within this year
-      const sortedMonths = Object.keys(yearData)
-        .filter((key) => key !== "stats")
-        .sort();
-      let prevMonthStats: FinancialSummary | undefined;
-
-      for (const month of sortedMonths) {
-        const monthData = yearData[month] as any;
-
-        // Calculate month-level percentage changes
-        monthData.stats.totalIncomePercentChange = calculatePercentChange(
-          monthData.stats.totalIncome,
-          prevMonthStats?.totalIncome,
-        );
-        monthData.stats.totalExpensesPercentChange = calculatePercentChange(
-          monthData.stats.totalExpenses,
-          prevMonthStats?.totalExpenses,
-        );
-        monthData.stats.netPercentChange = calculatePercentChange(
-          monthData.stats.net,
-          prevMonthStats?.net,
-        );
-
-        // Track previous month for next iteration
-        prevMonthStats = {
-          totalIncome: monthData.stats.totalIncome,
-          totalExpenses: monthData.stats.totalExpenses,
-          net: monthData.stats.net,
-        };
-
-        // Process days within this month
-        const sortedDays = Object.keys(monthData)
-          .filter((key) => key !== "stats")
-          .sort();
-        let prevDayStats: FinancialSummary | undefined;
-
-        for (const day of sortedDays) {
-          const dayStats = monthData[day];
-
-          // Calculate day-level percentage changes
-          dayStats.totalIncomePercentChange = calculatePercentChange(
-            dayStats.totalIncome,
-            prevDayStats?.totalIncome,
-          );
-          dayStats.totalExpensesPercentChange = calculatePercentChange(
-            dayStats.totalExpenses,
-            prevDayStats?.totalExpenses,
-          );
-          dayStats.netPercentChange = calculatePercentChange(
-            dayStats.net,
-            prevDayStats?.net,
-          );
-
-          // Track previous day for next iteration
-          prevDayStats = {
-            totalIncome: dayStats.totalIncome,
-            totalExpenses: dayStats.totalExpenses,
-            net: dayStats.net,
-          };
-        }
-      }
+      // Track previous dates for boundary detection
+      prevDayDate = dateStr;
+      prevMonthDate = currentMonth;
+      prevYearDate = year;
     }
 
     return NextResponse.json(

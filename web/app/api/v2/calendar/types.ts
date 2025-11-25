@@ -25,7 +25,7 @@ export type MonthStats = {
   [day: string]: DayStats;
 };
 
-type YearStats = {
+export type YearStats = {
   stats: FinancialSummary;
   [month: string]: MonthStats | FinancialSummary;
 };

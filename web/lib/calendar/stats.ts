@@ -6,6 +6,8 @@ import {
   CalendarData,
   CalendarStatsData,
   FinancialSummary,
+  MonthStats,
+  YearStats,
 } from "@/app/api/v2/calendar/types";
 
 /**
@@ -222,9 +224,9 @@ export function addEventToStats(
   year: string,
   month: string,
   day: string,
-): void {
-  const dayStats = (stats[year][month] as any)[day];
-  const monthStats = (stats[year][month] as any).stats;
+) {
+  const dayStats = (stats[year][month] as MonthStats)[day];
+  const monthStats = (stats[year][month] as YearStats).stats;
   const yearStats = stats[year].stats;
 
   if (eventType === "INCOME") {
@@ -272,8 +274,8 @@ export function recalculateNetsAfterUpdate(
   month: string,
   day: string,
 ): void {
-  const dayStats = (stats[year][month] as any)[day];
-  const monthStats = (stats[year][month] as any).stats;
+  const dayStats = (stats[year][month] as MonthStats)[day];
+  const monthStats = (stats[year][month] as YearStats).stats;
   const yearStats = stats[year].stats;
 
   // Recalculate day net
@@ -295,6 +297,60 @@ export function recalculateNetsAfterUpdate(
     yearStats.totalIncome,
     yearStats.totalExpenses,
   );
+}
+
+/**
+ * Apply carry-forward from previous periods and recalculate nets
+ * Called when transitioning to a new day/month/year to apply running balance
+ * Mutates the stats object in place
+ *
+ * @param stats - CalendarStatsData to update
+ * @param year - Year key (string, e.g., "2025")
+ * @param month - Month key (string, e.g., "01")
+ * @param day - Day key (string, e.g., "15")
+ * @param prevYearNet - Previous year's net to carry forward, if any
+ * @param prevMonthNet - Previous month's net to carry forward, if any
+ * @param prevDayNet - Previous day's net to carry forward, if any
+ *
+ * @example
+ * applyCarryForwardAndRecalculate(stats, "2025", "01", "15", "1000", undefined, undefined);
+ */
+export function applyCarryForwardAndRecalculate(
+  stats: CalendarStatsData,
+  year: string,
+  month: string,
+  day: string,
+  prevYearNet?: string,
+  prevMonthNet?: string,
+  prevDayNet?: string,
+): void {
+  const dayStats = (stats[year][month] as MonthStats)[day];
+  const monthStats = (stats[year][month] as YearStats).stats;
+  const yearStats = stats[year].stats;
+
+  // Apply day-level carry-forward (previous day's net -> current day's income)
+  if (dayStats && prevDayNet !== undefined) {
+    dayStats.totalIncome = new Decimal(dayStats.totalIncome)
+      .plus(prevDayNet)
+      .toString();
+  }
+
+  // Apply month-level carry-forward (previous month's net -> current month's income)
+  if (prevMonthNet !== undefined) {
+    monthStats.totalIncome = new Decimal(monthStats.totalIncome)
+      .plus(prevMonthNet)
+      .toString();
+  }
+
+  // Apply year-level carry-forward (previous year's net -> current year's income)
+  if (prevYearNet !== undefined) {
+    yearStats.totalIncome = new Decimal(yearStats.totalIncome)
+      .plus(prevYearNet)
+      .toString();
+  }
+
+  // Now recalculate nets with carried-forward values
+  recalculateNetsAfterUpdate(stats, year, month, day);
 }
 
 /**
@@ -552,6 +608,26 @@ export function applyCascadeForwardStats(
 
           prevDayNet = dayStats.net;
         }
+
+        // Recalculate month stats from updated day stats
+        let monthIncome = new Decimal(0);
+        let monthExpenses = new Decimal(0);
+
+        for (const day of days) {
+          const dayStats = monthData[day];
+
+          if (dayStats) {
+            monthIncome = monthIncome.plus(dayStats.totalIncome);
+            monthExpenses = monthExpenses.plus(dayStats.totalExpenses);
+          }
+        }
+
+        monthData.stats.totalIncome = monthIncome.toString();
+        monthData.stats.totalExpenses = monthExpenses.toString();
+        monthData.stats.net = calculateNetFromSummary(
+          monthIncome.toString(),
+          monthExpenses.toString(),
+        );
       } else if (!startDay && isStartYear && monthIdx === startMonthIdx) {
         // If no specific day, cascade through all days in month
         const days = Object.keys(monthData)
@@ -582,6 +658,26 @@ export function applyCascadeForwardStats(
 
           prevDayNet = dayStats.net;
         }
+
+        // Recalculate month stats from updated day stats
+        let monthIncome = new Decimal(0);
+        let monthExpenses = new Decimal(0);
+
+        for (const day of days) {
+          const dayStats = monthData[day];
+
+          if (dayStats) {
+            monthIncome = monthIncome.plus(dayStats.totalIncome);
+            monthExpenses = monthExpenses.plus(dayStats.totalExpenses);
+          }
+        }
+
+        monthData.stats.totalIncome = monthIncome.toString();
+        monthData.stats.totalExpenses = monthExpenses.toString();
+        monthData.stats.net = calculateNetFromSummary(
+          monthIncome.toString(),
+          monthExpenses.toString(),
+        );
       } else if (!isStartYear || monthIdx > startMonthIdx) {
         // Cascade through all days in month for non-start months
         const days = Object.keys(monthData)
@@ -612,6 +708,26 @@ export function applyCascadeForwardStats(
 
           prevDayNet = dayStats.net;
         }
+
+        // Recalculate month stats from updated day stats
+        let monthIncome = new Decimal(0);
+        let monthExpenses = new Decimal(0);
+
+        for (const day of days) {
+          const dayStats = monthData[day];
+
+          if (dayStats) {
+            monthIncome = monthIncome.plus(dayStats.totalIncome);
+            monthExpenses = monthExpenses.plus(dayStats.totalExpenses);
+          }
+        }
+
+        monthData.stats.totalIncome = monthIncome.toString();
+        monthData.stats.totalExpenses = monthExpenses.toString();
+        monthData.stats.net = calculateNetFromSummary(
+          monthIncome.toString(),
+          monthExpenses.toString(),
+        );
       }
     }
   }

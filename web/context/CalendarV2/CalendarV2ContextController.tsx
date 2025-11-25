@@ -10,7 +10,10 @@ import {
   CalendarV2ContextType,
 } from "./CalendarV2Context.types";
 
-import { GetCalendarV2SuccessResponse } from "@/app/api/v2/calendar/types";
+import {
+  CalendarEvent,
+  GetCalendarV2SuccessResponse,
+} from "@/app/api/v2/calendar/types";
 import { useExchangeRatesContext } from "@/context/ExchangeRates/useExchangeRatesContext";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 import {
@@ -175,7 +178,10 @@ export const CalendarV2ContextController = ({
    * Handles event updates, date changes, and stats recalculation
    * Uses latest exchange rates to recalculate converted amounts
    */
-  const updateCalendarCellEvent = (updatedEvent: any, oldEventDate: Date) => {
+  const updateCalendarCellEvent = (
+    updatedEvent: CalendarEvent,
+    oldEventDate: Date,
+  ) => {
     if (!calendarV2Data) return false;
 
     // Create a deep copy to avoid direct state mutations
