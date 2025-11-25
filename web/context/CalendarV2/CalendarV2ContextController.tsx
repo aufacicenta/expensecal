@@ -18,12 +18,9 @@ import { useExchangeRatesContext } from "@/context/ExchangeRates/useExchangeRate
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 import {
   addEventToStats,
-  applyCascadeForwardStats,
+  applyCarryForwardAndRecalculate,
   convertAmount,
-  rebuildMonthStatsFromCalendar,
-  rebuildYearStatsFromMonths,
   recalculateNetsAfterUpdate,
-  subtractEventFromStats,
 } from "@/lib/calendar/stats";
 import { toDateString } from "@/lib/date";
 
@@ -119,64 +116,13 @@ export const CalendarV2ContextController = ({
     const eventDateStr = toDateString(eventDate);
     const [year, month, day] = eventDateStr.split("-");
 
-    // Find and remove the event from the calendar
-    if (newCalendarData.calendar[year]?.[month]?.[day]) {
-      const eventIndex = newCalendarData.calendar[year][month][day].findIndex(
-        (e: any) => e.id === deletedEvent.id,
-      );
-
-      if (eventIndex === -1) return false;
-
-      // Get the deleted event's converted amount for stats recalculation
-      const deletedConvertedAmount = new Decimal(
-        deletedEvent.exchangeRate || "0",
-      );
-
-      // Remove event from calendar
-      newCalendarData.calendar[year][month][day].splice(eventIndex, 1);
-
-      // If no events left for this day, remove the entire day object
-      const dayStillHasEvents =
-        newCalendarData.calendar[year][month][day].length > 0;
-
-      if (!dayStillHasEvents) {
-        delete newCalendarData.calendar[year][month][day];
-        delete (newCalendarData.stats[year][month] as any)[day];
-      }
-
-      // Subtract event from stats at all levels
-      subtractEventFromStats(
-        newCalendarData.stats,
-        deletedConvertedAmount,
-        deletedEvent.type === "INCOME" ? "INCOME" : "EXPENSE",
-        year,
-        month,
-        day,
-      );
-
-      // Recalculate net values at all levels
-      recalculateNetsAfterUpdate(newCalendarData.stats, year, month, day);
-
-      // Apply carry-forward cascade from the affected year onwards
-      applyCascadeForwardStats(
-        newCalendarData.stats,
-        year,
-        month,
-        dayStillHasEvents ? day : undefined,
-      );
-
-      setCalendarV2Data(newCalendarData);
-
-      return true;
-    }
-
     return false;
   };
 
   /**
    * Update a calendar event in-place without reloading the entire calendar
-   * Handles event updates, date changes, and stats recalculation
-   * Uses latest exchange rates to recalculate converted amounts
+   * Handles event updates, date changes, and stats recalculation with proper carry-forward
+   * Processes events in chronological order to ensure correct cascade calculations
    */
   const updateCalendarCellEvent = (
     updatedEvent: CalendarEvent,
@@ -194,32 +140,22 @@ export const CalendarV2ContextController = ({
 
     // Helper function to recalculate converted amount using latest exchange rates
     const recalculateConvertedAmount = (event: any): Decimal => {
-      // Fall back to old exchangeRate if rates aren't available
       if (!exchangeRatesContext.rates) {
         return new Decimal(event.exchangeRate || "0");
       }
 
       let baseCurrency = "USD";
 
-      if (!!exchangeRatesContext.baseCurrency) {
+      if (exchangeRatesContext.baseCurrency) {
         baseCurrency = exchangeRatesContext.baseCurrency;
       }
 
       const amount = new Decimal(event.amount).times(event.quantity || 1);
       const currencySymbol = event.currency?.symbol || "UNKNOWN";
-
-      // Convert rates object to Map for convertAmount function
       const ratesMap = new Map(Object.entries(exchangeRatesContext.rates));
 
       try {
-        const converted = convertAmount(
-          amount,
-          currencySymbol,
-          baseCurrency,
-          ratesMap,
-        );
-
-        return converted;
+        return convertAmount(amount, currencySymbol, baseCurrency, ratesMap);
       } catch (error) {
         console.warn("Error recalculating converted amount:", error);
 
@@ -227,179 +163,213 @@ export const CalendarV2ContextController = ({
       }
     };
 
-    // Find and get the old event from calendar
-    let oldEventIndex = -1;
+    // Find and remove the old event
+    let oldEventFound = false;
 
     if (newCalendarData.calendar[oldYear]?.[oldMonth]?.[oldDay]) {
-      oldEventIndex = newCalendarData.calendar[oldYear][oldMonth][
+      const oldEventIndex = newCalendarData.calendar[oldYear][oldMonth][
         oldDay
       ].findIndex((e: any) => e.id === updatedEvent.id);
 
-      if (oldEventIndex === -1) return false;
-
-      const oldEvent =
-        newCalendarData.calendar[oldYear][oldMonth][oldDay][oldEventIndex];
-      const oldConvertedAmount = recalculateConvertedAmount(oldEvent);
-      const newConvertedAmount = recalculateConvertedAmount(updatedEvent);
-
-      // Handle date change
-      if (oldDateStr !== newDateStr) {
-        // Remove event from old location
+      if (oldEventIndex !== -1) {
         newCalendarData.calendar[oldYear][oldMonth][oldDay].splice(
           oldEventIndex,
           1,
         );
+        oldEventFound = true;
 
-        // If no events left for this day, remove the entire day object
-        const oldDayStillHasEvents =
-          newCalendarData.calendar[oldYear][oldMonth][oldDay].length > 0;
-
-        if (!oldDayStillHasEvents) {
+        if (newCalendarData.calendar[oldYear][oldMonth][oldDay].length === 0) {
           delete newCalendarData.calendar[oldYear][oldMonth][oldDay];
-          delete (newCalendarData.stats[oldYear][oldMonth] as any)[oldDay];
         }
+      }
+    }
 
-        // Subtract old event from old stats
-        subtractEventFromStats(
-          newCalendarData.stats,
-          oldConvertedAmount,
-          oldEvent.type === "INCOME" ? "INCOME" : "EXPENSE",
-          oldYear,
-          oldMonth,
-          oldDay,
+    if (!oldEventFound) return false;
+
+    // Update event with new exchange rate
+    const newConvertedAmount = recalculateConvertedAmount(updatedEvent);
+
+    updatedEvent.exchangeRate = newConvertedAmount.toString();
+
+    // Initialize new date structure if needed
+    if (!newCalendarData.calendar[newYear]) {
+      newCalendarData.calendar[newYear] = {};
+    }
+
+    if (!newCalendarData.calendar[newYear][newMonth]) {
+      newCalendarData.calendar[newYear][newMonth] = {};
+    }
+
+    if (!newCalendarData.calendar[newYear][newMonth][newDay]) {
+      newCalendarData.calendar[newYear][newMonth][newDay] = [];
+    }
+
+    // Add updated event to new location
+    newCalendarData.calendar[newYear][newMonth][newDay].push(updatedEvent);
+
+    // Collect all events in chronological order from earliest affected period
+    interface EventWithDate {
+      year: string;
+      month: string;
+      day: string;
+      event: CalendarEvent;
+    }
+
+    const allEvents: EventWithDate[] = [];
+    const allYears = Object.keys(newCalendarData.calendar).sort();
+
+    for (const year of allYears) {
+      const months = Object.keys(newCalendarData.calendar[year])
+        .filter((k) => k !== "stats")
+        .sort();
+
+      for (const month of months) {
+        const days = Object.keys(newCalendarData.calendar[year][month]).sort(
+          (a, b) => parseInt(a) - parseInt(b),
         );
 
-        // Initialize new day structures if needed
-        if (!newCalendarData.calendar[newYear]) {
-          newCalendarData.calendar[newYear] = {};
-          newCalendarData.stats[newYear] = {
-            stats: {
-              totalIncome: "0",
-              totalExpenses: "0",
-              net: "0",
-            },
-          };
-        }
+        for (const day of days) {
+          const dayEvents = newCalendarData.calendar[year][month][day] || [];
 
-        if (!newCalendarData.calendar[newYear][newMonth]) {
-          newCalendarData.calendar[newYear][newMonth] = {};
-          newCalendarData.stats[newYear][newMonth] = {
-            stats: {
-              totalIncome: "0",
-              totalExpenses: "0",
-              net: "0",
-            },
-          };
+          for (const event of dayEvents) {
+            allEvents.push({ year, month, day, event });
+          }
         }
+      }
+    }
 
-        if (!newCalendarData.calendar[newYear][newMonth][newDay]) {
-          newCalendarData.calendar[newYear][newMonth][newDay] = [];
-          (newCalendarData.stats[newYear][newMonth] as any)[newDay] = {
+    // Clear all stats
+    for (const year of allYears) {
+      if (!newCalendarData.stats[year]) {
+        newCalendarData.stats[year] = {
+          stats: { totalIncome: "0", totalExpenses: "0", net: "0" },
+        };
+      }
+
+      const months = Object.keys(newCalendarData.calendar[year])
+        .filter((k) => k !== "stats")
+        .sort();
+
+      for (const month of months) {
+        if (!newCalendarData.stats[year][month]) {
+          newCalendarData.stats[year][month] = {
+            stats: { totalIncome: "0", totalExpenses: "0", net: "0" },
+          };
+        } else {
+          // Clear day stats while preserving month structure
+          const monthStats = newCalendarData.stats[year][month];
+
+          for (const key of Object.keys(monthStats)) {
+            if (key !== "stats") {
+              delete monthStats[key];
+            }
+          }
+
+          monthStats.stats = {
             totalIncome: "0",
             totalExpenses: "0",
             net: "0",
           };
         }
-
-        // Add event to new location
-        updatedEvent.exchangeRate = newConvertedAmount.toString();
-        newCalendarData.calendar[newYear][newMonth][newDay].push(updatedEvent);
-
-        // Add event to new stats
-        addEventToStats(
-          newCalendarData.stats,
-          newConvertedAmount,
-          updatedEvent.type === "INCOME" ? "INCOME" : "EXPENSE",
-          newYear,
-          newMonth,
-          newDay,
-        );
-      } else {
-        // Same day - update event in place
-        updatedEvent.exchangeRate = newConvertedAmount.toString();
-        newCalendarData.calendar[oldYear][oldMonth][oldDay][oldEventIndex] =
-          updatedEvent;
-
-        // Subtract old and add new using helper
-        subtractEventFromStats(
-          newCalendarData.stats,
-          oldConvertedAmount,
-          oldEvent.type === "INCOME" ? "INCOME" : "EXPENSE",
-          oldYear,
-          oldMonth,
-          oldDay,
-        );
-        addEventToStats(
-          newCalendarData.stats,
-          newConvertedAmount,
-          updatedEvent.type === "INCOME" ? "INCOME" : "EXPENSE",
-          oldYear,
-          oldMonth,
-          oldDay,
-        );
       }
 
-      // Determine cascade start point
-      const cascadeStartYear =
-        oldDateStr !== newDateStr && newYear < oldYear ? newYear : oldYear;
-      const cascadeStartMonth =
-        cascadeStartYear === oldYear ? oldMonth : undefined;
+      newCalendarData.stats[year].stats = {
+        totalIncome: "0",
+        totalExpenses: "0",
+        net: "0",
+      };
+    }
 
-      // Rebuild stats from calendar for affected months and all subsequent months
-      // This removes the old cascade so we can reapply it cleanly
-      const allYears = Object.keys(newCalendarData.calendar).sort();
-      const cascadeStartYearIdx = allYears.indexOf(cascadeStartYear);
+    // Rebuild stats by processing events in order (same as route.ts)
+    let prevDayDate: string | undefined;
+    let prevMonthDate: string | undefined;
+    let prevYearDate: string | undefined;
 
-      if (cascadeStartYearIdx !== -1) {
-        // Rebuild all months from cascade start year onwards
-        for (
-          let yearIdx = cascadeStartYearIdx;
-          yearIdx < allYears.length;
-          yearIdx++
-        ) {
-          const year = allYears[yearIdx];
-          const months = Object.keys(newCalendarData.stats[year])
-            .filter((k) => k !== "stats")
-            .sort();
+    for (const { year, month, day, event } of allEvents) {
+      const dateStr = `${year}-${month}-${day}`;
+      const currentMonthKey = `${year}-${month}`;
 
-          const startMonthIdx =
-            yearIdx === cascadeStartYearIdx && cascadeStartMonth
-              ? months.indexOf(cascadeStartMonth)
-              : 0;
+      // Initialize day stats if first event for this day
+      if (!(newCalendarData.stats[year][month] as any)[day]) {
+        (newCalendarData.stats[year][month] as any)[day] = {
+          totalIncome: "0",
+          totalExpenses: "0",
+          net: "0",
+        };
 
-          for (
-            let monthIdx = startMonthIdx;
-            monthIdx < months.length;
-            monthIdx++
-          ) {
-            const month = months[monthIdx];
+        // Detect year boundary and apply carry-forward
+        if (prevYearDate && prevYearDate !== year) {
+          const prevYearNet = newCalendarData.stats[prevYearDate].stats.net;
 
-            rebuildMonthStatsFromCalendar(
-              newCalendarData.calendar,
-              newCalendarData.stats,
-              year,
-              month,
-            );
-          }
+          applyCarryForwardAndRecalculate(
+            newCalendarData.stats,
+            year,
+            month,
+            day,
+            prevYearNet,
+            undefined,
+            undefined,
+          );
+        }
+
+        // Detect month boundary and apply carry-forward
+        if (prevMonthDate && prevMonthDate !== currentMonthKey) {
+          const [prevYear, prevMonth] = prevMonthDate.split("-");
+          const prevMonthNet = (
+            newCalendarData.stats[prevYear][prevMonth] as any
+          ).stats.net;
+
+          applyCarryForwardAndRecalculate(
+            newCalendarData.stats,
+            year,
+            month,
+            day,
+            undefined,
+            prevMonthNet,
+            undefined,
+          );
+        }
+
+        // Detect day boundary and apply carry-forward
+        if (prevDayDate && prevDayDate !== dateStr) {
+          const [prevYear, prevMonth, prevDay] = prevDayDate.split("-");
+          const prevDayNet = (
+            newCalendarData.stats[prevYear][prevMonth] as any
+          )[prevDay].net;
+
+          applyCarryForwardAndRecalculate(
+            newCalendarData.stats,
+            year,
+            month,
+            day,
+            undefined,
+            undefined,
+            prevDayNet,
+          );
         }
       }
 
-      // Rebuild year stats from months
-      const affectedYears = new Set([oldYear]);
+      // Add event to stats at all levels
+      const convertedAmount = new Decimal(event.exchangeRate);
 
-      if (oldDateStr !== newDateStr) {
-        affectedYears.add(newYear);
-      }
-      rebuildYearStatsFromMonths(
+      addEventToStats(
         newCalendarData.stats,
-        Array.from(affectedYears),
+        convertedAmount,
+        event.type === "INCOME" ? "INCOME" : "EXPENSE",
+        year,
+        month,
+        day,
       );
 
-      // Apply carry-forward cascade from the affected year onwards
-      applyCascadeForwardStats(newCalendarData.stats, cascadeStartYear);
+      // Recalculate nets after adding event
+      recalculateNetsAfterUpdate(newCalendarData.stats, year, month, day);
+
+      // Track previous dates for boundary detection
+      prevDayDate = dateStr;
+      prevMonthDate = currentMonthKey;
+      prevYearDate = year;
     }
 
-    // Update state
     setCalendarV2Data(newCalendarData);
 
     return true;
