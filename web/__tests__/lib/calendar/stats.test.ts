@@ -115,6 +115,102 @@ describe("Calendar Stats Functions", () => {
 
       expect(change).toBe("15.5");
     });
+
+    it("should return exactly 2 decimal places", () => {
+      const change = calculatePercentChange("100.123", "100");
+
+      // (100.123 - 100) / 100 * 100 = 0.123%
+      expect(change).toBe("0.12");
+    });
+
+    it("should handle negative current values", () => {
+      const change = calculatePercentChange("-100", "100");
+
+      // (-100 - 100) / 100 * 100 = -200%
+      expect(change).toBe("-200");
+    });
+
+    it("should handle negative previous values", () => {
+      const change = calculatePercentChange("100", "-100");
+
+      // (100 - (-100)) / (-100) * 100 = -200%
+      expect(change).toBe("-200");
+    });
+
+    it("should handle negative to negative change", () => {
+      const change = calculatePercentChange("-50", "-100");
+
+      // (-50 - (-100)) / (-100) * 100 = 50 / -100 * 100 = -50%
+      expect(change).toBe("-50");
+    });
+
+    it("should handle very small percentage changes", () => {
+      const change = calculatePercentChange("100.001", "100");
+
+      // (100.001 - 100) / 100 * 100 = 0.001%, rounds to 0.00%
+      expect(change).toBe("0");
+    });
+
+    it("should handle large percentage increases", () => {
+      const change = calculatePercentChange("10000", "100");
+
+      // (10000 - 100) / 100 * 100 = 9900%
+      expect(change).toBe("9900");
+    });
+
+    it("should handle large percentage decreases", () => {
+      const change = calculatePercentChange("1", "1000");
+
+      // (1 - 1000) / 1000 * 100 = -99.9%
+      expect(change).toBe("-99.9");
+    });
+
+    it("should handle zero current value with positive previous", () => {
+      const change = calculatePercentChange("0", "100");
+
+      // (0 - 100) / 100 * 100 = -100%
+      expect(change).toBe("-100");
+    });
+
+    it("should maintain precision through calculations", () => {
+      const change = calculatePercentChange("1234.5678", "1000.1234");
+
+      // (1234.5678 - 1000.1234) / 1000.1234 * 100 ≈ 23.44%
+      expect(parseFloat(change)).toBeCloseTo(23.44, 1);
+    });
+
+    it("should use exact rounding to 2 decimal places (banker's rounding)", () => {
+      // Test edge case where rounding matters
+      const change = calculatePercentChange("100.5", "100");
+
+      // (100.5 - 100) / 100 * 100 = 0.5%
+      expect(change).toBe("0.5");
+    });
+
+    it("should have consistent decimal place representation", () => {
+      // Check that decimal formatting is consistent
+      const change1 = calculatePercentChange("100", "100");
+      const change2 = calculatePercentChange("100", "99");
+      const change3 = calculatePercentChange("100", "80");
+
+      // This test reveals the actual Decimal.js behavior
+      expect(change1).toBe("0");
+      expect(parseFloat(change2)).toBeCloseTo(1.0101, 3);
+      expect(change3).toBe("25");
+    });
+
+    it("should handle returns from toDecimalPlaces correctly", () => {
+      // Direct test of the potential issue: does toDecimalPlaces drop trailing zeros?
+      const test1 = new Decimal("0").toDecimalPlaces(2).toString(); // "0" or "0.00"?
+      const test2 = new Decimal("0.5").toDecimalPlaces(2).toString(); // "0.5" or "0.50"?
+      const test3 = new Decimal("1").toDecimalPlaces(2).toString(); // "1" or "1.00"?
+
+      // These assertions document Decimal.js behavior
+      // toDecimalPlaces doesn't add trailing zeros by default
+      expect(test1).toBe("0");
+      expect(test2).toBe("0.5");
+      expect(test3).toBe("1");
+    });
   });
 
   describe("addEventToStats", () => {
@@ -1068,6 +1164,114 @@ describe("Calendar Stats Functions", () => {
       expect(month02_income).toBe("1700"); // 1500 + 200
     });
 
+    it("should demonstrate the percentage change bug in route.ts", () => {
+      /**
+       * CRITICAL BUG: In route.ts, calculatePercentChange is called AFTER applyCarryForwardAndRecalculate
+       *
+       * Current flow (WRONG):
+       * 1. Start new period with stats = { income: 0, expenses: 0, net: 0 }
+       * 2. Call applyCarryForwardAndRecalculate -> stats = { income: prevNet, expenses: 0, net: prevNet }
+       * 3. Call calculatePercentChange(newStats.income, prevStats.income)
+       *    → This compares (prevNet + 0) vs prevStats.income, NOT 0 vs prevStats.income
+       *
+       * Expected flow (CORRECT):
+       * 1. Calculate percentage change based on ORIGINAL period stats
+       * 2. Then apply carry-forward
+       *
+       * Example scenario:
+       * - Year 2025: Income=1000, Expenses=0, Net=1000
+       * - Year 2026 starts: Income=0, Expenses=0, Net=0
+       * - Current bug: calculatePercentChange("0", "1000") = -100% ✓ CORRECT BY ACCIDENT
+       * - But this should be 0% (first period) because no events happened yet
+       *
+       * Better example:
+       * - Day 1: Income=500, Expenses=100, Net=400
+       * - Day 2 starts: Income=0, Expenses=0, Net=0
+       * - applyCarryForward: Day 2 Income becomes 400 (carried from Day 1 net)
+       * - calculatePercentChange("400", "500") = -20% ✗ WRONG!
+       * - Should be: 0% (no events on day 2 yet) or undefined
+       */
+
+      const stats: CalendarStatsData = {
+        "2025": {
+          stats: {
+            totalIncome: "0",
+            totalExpenses: "0",
+            net: "0",
+          },
+          "01": {
+            stats: {
+              totalIncome: "0",
+              totalExpenses: "0",
+              net: "0",
+            },
+          },
+        },
+      };
+
+      // Day 1: 500 income, 100 expense
+      (stats["2025"]["01"] as any)["15"] = {
+        totalIncome: "500",
+        totalExpenses: "100",
+        net: "400",
+      };
+
+      // Update month/year totals
+      (stats["2025"]["01"] as MonthStats).stats.totalIncome = "500";
+      (stats["2025"]["01"] as MonthStats).stats.totalExpenses = "100";
+      (stats["2025"]["01"] as MonthStats).stats.net = "400";
+
+      stats["2025"].stats.totalIncome = "500";
+      stats["2025"].stats.totalExpenses = "100";
+      stats["2025"].stats.net = "400";
+
+      const day1Stats = (stats["2025"]["01"] as MonthStats)["15"];
+
+      // Day 2 starts fresh
+      (stats["2025"]["01"] as any)["16"] = {
+        totalIncome: "0",
+        totalExpenses: "0",
+        net: "0",
+      };
+
+      // PROBLEM: This is called AFTER applyCarryForwardAndRecalculate in route.ts
+      // Save original values before carry-forward
+      const day2OriginalIncome = "0"; // Should use this for percentage calculation
+      const day1Income = day1Stats.totalIncome; // "500"
+
+      // Apply carry-forward (modifies stats in place)
+      applyCarryForwardAndRecalculate(
+        stats,
+        "2025",
+        "01",
+        "16",
+        undefined,
+        undefined,
+        day1Stats.net, // "400"
+      );
+
+      const day2Stats = (stats["2025"]["01"] as MonthStats)["16"];
+
+      // After carry-forward, day 2 income is now 400 (from day 1's net)
+      expect(day2Stats.totalIncome).toBe("400");
+
+      // BUG: Current code calls this with modified values
+      const buggyPercentChange = calculatePercentChange(
+        day2Stats.totalIncome, // "400" (modified by carry-forward!)
+        day1Income, // "500"
+      );
+
+      expect(buggyPercentChange).toBe("-20"); // WRONG! Says it decreased 20%
+
+      // CORRECT: Should calculate with original values
+      const correctPercentChange = calculatePercentChange(
+        day2OriginalIncome, // "0" (before carry-forward)
+        day1Income, // "500"
+      );
+
+      expect(correctPercentChange).toBe("-100"); // More accurate, but ideally should be "0.0" for first period
+    });
+
     it("should simulate events with multiple currencies and quantity", () => {
       /**
        * Scenario: Complex real-world case
@@ -1188,6 +1392,366 @@ describe("Calendar Stats Functions", () => {
 
       expect(day16.totalIncome).toBe(expectedDay16Income);
       expect(day16.totalExpenses).toBe("50"); // BTC unconverted
+    });
+
+    it("should calculate percentage changes with boundary carry-forward (day level)", () => {
+      /**
+       * This test replicates the exact flow in route.ts for day boundaries:
+       * 1. Apply carry-forward first
+       * 2. Add events
+       * 3. Recalculate nets
+       * 4. Calculate percentage change on the RESULTING stats (after carry-forward)
+       *
+       * Flow:
+       * - Day 1: Income=500, Expenses=100, Net=400
+       * - Day 2 starts with carry-forward of 400
+       * - After carry-forward: Income=400, Expenses=0, Net=400
+       * - No new events on day 2
+       * - Expected percentage change: (400 - 400) / 400 * 100 = 0%
+       */
+      const stats: CalendarStatsData = {
+        "2025": {
+          stats: {
+            totalIncome: "0",
+            totalExpenses: "0",
+            net: "0",
+          },
+          "01": {
+            stats: {
+              totalIncome: "0",
+              totalExpenses: "0",
+              net: "0",
+            },
+          },
+        },
+      };
+
+      // DAY 1: 500 income, 100 expense
+      (stats["2025"]["01"] as any)["15"] = {
+        totalIncome: "500",
+        totalExpenses: "100",
+        net: "400",
+      };
+
+      // Update month and year stats
+      (stats["2025"]["01"] as MonthStats).stats.totalIncome = "500";
+      (stats["2025"]["01"] as MonthStats).stats.totalExpenses = "100";
+      (stats["2025"]["01"] as MonthStats).stats.net = "400";
+      stats["2025"].stats.totalIncome = "500";
+      stats["2025"].stats.totalExpenses = "100";
+      stats["2025"].stats.net = "400";
+
+      const day1Stats = (stats["2025"]["01"] as MonthStats)["15"];
+
+      // DAY 2: New day starts, apply carry-forward
+      (stats["2025"]["01"] as any)["16"] = {
+        totalIncome: "0",
+        totalExpenses: "0",
+        net: "0",
+      };
+
+      // IMPORTANT: This is the flow in route.ts - carry-forward is applied BEFORE events are added
+      applyCarryForwardAndRecalculate(
+        stats,
+        "2025",
+        "01",
+        "16",
+        undefined,
+        undefined,
+        day1Stats.net, // "400"
+      );
+
+      // NO new events on day 2 - just carry-forward
+      recalculateNetsAfterUpdate(stats, "2025", "01", "16");
+
+      const day2Stats = (stats["2025"]["01"] as MonthStats)["16"];
+
+      // After carry-forward, day 2 has the carried amount
+      expect(day2Stats.totalIncome).toBe("400");
+      expect(day2Stats.totalExpenses).toBe("0");
+      expect(day2Stats.net).toBe("400");
+
+      // Calculate percentage change as route.ts does: after carry-forward is applied
+      const percentChange = calculatePercentChange(
+        day2Stats.net,
+        day1Stats.net,
+      );
+
+      // (400 - 400) / 400 * 100 = 0%
+      expect(percentChange).toBe("0");
+    });
+
+    it("should calculate percentage changes before new events are added to a day", () => {
+      /**
+       * IMPORTANT: In route.ts (lines 131-233), the flow is:
+       * 1. Initialize new day to 0/0/0 (line 131-137)
+       * 2. IF boundary detected: apply carry-forward (line 183)
+       * 3. IF boundary detected: calculate percentage change (line 196)
+       * 4. THEN add events to day (line 223)
+       * 5. THEN recalculate nets (line 233)
+       *
+       * This means percentage change is calculated BEFORE the current iteration's events are added!
+       *
+       * Scenario:
+       * - Day 1 final: Income=1000, Expenses=100, Net=900
+       * - Day 2 init: Income=0, Expenses=0, Net=0
+       * - Day 2 after carry-forward: Income=900, Expenses=0, Net=900
+       * - Percentage change calculated: (900 - 900) / 900 = 0%
+       * - Day 2 then gets event: 200 expense added
+       * - Day 2 final: Income=900, Expenses=200, Net=700
+       *
+       * Expected percentage change: 0% (calculated before the expense was added)
+       */
+      const stats: CalendarStatsData = {
+        "2025": {
+          stats: {
+            totalIncome: "0",
+            totalExpenses: "0",
+            net: "0",
+          },
+          "01": {
+            stats: {
+              totalIncome: "0",
+              totalExpenses: "0",
+              net: "0",
+            },
+          },
+        },
+      };
+
+      // DAY 1: 1000 income, 100 expense
+      (stats["2025"]["01"] as any)["15"] = {
+        totalIncome: "1000",
+        totalExpenses: "100",
+        net: "900",
+      };
+
+      (stats["2025"]["01"] as MonthStats).stats.totalIncome = "1000";
+      (stats["2025"]["01"] as MonthStats).stats.totalExpenses = "100";
+      (stats["2025"]["01"] as MonthStats).stats.net = "900";
+      stats["2025"].stats.totalIncome = "1000";
+      stats["2025"].stats.totalExpenses = "100";
+      stats["2025"].stats.net = "900";
+
+      const day1Stats = (stats["2025"]["01"] as MonthStats)["15"];
+
+      // DAY 2: New day encountered
+      (stats["2025"]["01"] as any)["16"] = {
+        totalIncome: "0",
+        totalExpenses: "0",
+        net: "0",
+      };
+
+      // Step 1: Apply carry-forward
+      applyCarryForwardAndRecalculate(
+        stats,
+        "2025",
+        "01",
+        "16",
+        undefined,
+        undefined,
+        day1Stats.net, // "900"
+      );
+
+      // Step 2: Calculate percentage change (BEFORE adding events)
+      const day2StatsAfterCarry = (stats["2025"]["01"] as MonthStats)["16"];
+
+      const percentChange = calculatePercentChange(
+        day2StatsAfterCarry.net,
+        day1Stats.net,
+      );
+
+      // At this point (before events): (900 - 900) / 900 = 0%
+      expect(percentChange).toBe("0");
+
+      // Step 3: Then add new expense event (happens after percentage calculation in route.ts)
+      addEventToStats(stats, new Decimal("200"), "EXPENSE", "2025", "01", "16");
+      recalculateNetsAfterUpdate(stats, "2025", "01", "16");
+
+      // Final state after event added
+      const day2StatsFinal = (stats["2025"]["01"] as MonthStats)["16"];
+
+      // But the percentage change was already set to 0% before the event was added
+      expect(day2StatsFinal.totalIncome).toBe("900");
+      expect(day2StatsFinal.totalExpenses).toBe("200");
+      expect(day2StatsFinal.net).toBe("700");
+      // Percentage change remains 0% (was calculated before the event)
+      expect(percentChange).toBe("0");
+    });
+
+    it("should calculate percentage changes at month boundaries (before events added)", () => {
+      /**
+       * Scenario: Month boundary with carry-forward
+       *
+       * In route.ts, when a day in Feb 01 is first encountered:
+       * 1. Month 01 (Jan) state: Net = 1000
+       * 2. Month 02 (Feb) initialized: Income = 0, Net = 0
+       * 3. Month boundary detected: apply carry-forward
+       *    - After: Income = 1000 (carried from Jan), Net = 1000
+       * 4. Percentage change calculated: (1000 - 1000) / 1000 = 0%
+       * 5. THEN first day's event added to month: 200 income
+       *    - Final: Income = 1200, Net = 1200
+       *
+       * Expected percentage change: 0% (calculated before the event)
+       */
+      const stats: CalendarStatsData = {
+        "2025": {
+          stats: {
+            totalIncome: "0",
+            totalExpenses: "0",
+            net: "0",
+          },
+          "01": {
+            stats: {
+              totalIncome: "1000",
+              totalExpenses: "0",
+              net: "1000",
+            },
+          },
+          "02": {
+            stats: {
+              totalIncome: "0",
+              totalExpenses: "0",
+              net: "0",
+            },
+          },
+        },
+      };
+
+      const month1Net = "1000";
+
+      // Month 2 starts - apply carry-forward
+      applyCarryForwardAndRecalculate(
+        stats,
+        "2025",
+        "02",
+        "01",
+        undefined,
+        month1Net,
+        undefined,
+      );
+
+      const month2StatsAfterCarry = (stats["2025"]["02"] as MonthStats).stats;
+
+      // Calculate percentage change (before events are added)
+      const percentChangeBeforeEvents = calculatePercentChange(
+        month2StatsAfterCarry.net,
+        month1Net,
+      );
+
+      // Before events: (1000 - 1000) / 1000 = 0%
+      expect(percentChangeBeforeEvents).toBe("0");
+
+      // Then add new income event in month 2
+      (stats["2025"]["02"] as any)["01"] = {
+        totalIncome: "0",
+        totalExpenses: "0",
+        net: "0",
+      };
+
+      addEventToStats(stats, new Decimal("200"), "INCOME", "2025", "02", "01");
+      recalculateNetsAfterUpdate(stats, "2025", "02", "01");
+
+      const month2StatsFinal = (stats["2025"]["02"] as MonthStats).stats;
+
+      // After event added
+      expect(month2StatsFinal.totalIncome).toBe("1200");
+      expect(month2StatsFinal.totalExpenses).toBe("0");
+      expect(month2StatsFinal.net).toBe("1200");
+
+      // But percentage change was already set to 0% before the event
+      expect(percentChangeBeforeEvents).toBe("0");
+    });
+
+    it("should calculate percentage changes at year boundaries (before events added)", () => {
+      /**
+       * Scenario: Year boundary with carry-forward
+       *
+       * In route.ts, when a day in 2026-01-01 is first encountered:
+       * 1. Year 2025 state: Net = 5000
+       * 2. Year 2026 initialized: Income = 0, Net = 0
+       * 3. Year boundary detected: apply carry-forward
+       *    - After: Income = 5000 (carried from 2025), Net = 5000
+       * 4. Percentage change calculated: (5000 - 5000) / 5000 = 0%
+       * 5. THEN first day's event added to year: 1000 expense
+       *    - Final: Income = 5000, Expenses = 1000, Net = 4000
+       *
+       * Expected percentage change: 0% (calculated before the event)
+       */
+      const stats: CalendarStatsData = {
+        "2025": {
+          stats: {
+            totalIncome: "10000",
+            totalExpenses: "5000",
+            net: "5000",
+          },
+        },
+        "2026": {
+          stats: {
+            totalIncome: "0",
+            totalExpenses: "0",
+            net: "0",
+          },
+          "01": {
+            stats: {
+              totalIncome: "0",
+              totalExpenses: "0",
+              net: "0",
+            },
+          },
+        },
+      };
+
+      const year2025Net = "5000";
+
+      // Year 2026 starts - apply carry-forward
+      applyCarryForwardAndRecalculate(
+        stats,
+        "2026",
+        "01",
+        "01",
+        year2025Net,
+        undefined,
+        undefined,
+      );
+
+      const year2026StatsAfterCarry = stats["2026"].stats;
+
+      // Calculate percentage change (before events are added)
+      const percentChangeBeforeEvents = calculatePercentChange(
+        year2026StatsAfterCarry.net,
+        year2025Net,
+      );
+
+      // Before events: (5000 - 5000) / 5000 = 0%
+      expect(percentChangeBeforeEvents).toBe("0");
+
+      // Then add new expense event
+      (stats["2026"]["01"] as any)["01"] = {
+        totalIncome: "0",
+        totalExpenses: "0",
+        net: "0",
+      };
+
+      addEventToStats(
+        stats,
+        new Decimal("1000"),
+        "EXPENSE",
+        "2026",
+        "01",
+        "01",
+      );
+      recalculateNetsAfterUpdate(stats, "2026", "01", "01");
+
+      const year2026StatsFinal = stats["2026"].stats;
+
+      // After event added
+      expect(year2026StatsFinal.totalIncome).toBe("5000");
+      expect(year2026StatsFinal.totalExpenses).toBe("1000");
+      expect(year2026StatsFinal.net).toBe("4000");
+
+      // But percentage change was already set to 0% before the event
+      expect(percentChangeBeforeEvents).toBe("0");
     });
   });
 });

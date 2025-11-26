@@ -9,11 +9,13 @@ import {
   CalendarEvent,
   CalendarStatsData,
   GetCalendarResponse,
+  MonthStats,
 } from "./types";
 
 import {
   addEventToStats,
   applyCarryForwardAndRecalculate,
+  calculatePercentChange,
   convertAmount,
   recalculateNetsAfterUpdate,
 } from "@/lib/calendar/stats";
@@ -88,10 +90,18 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
     const calendarData: CalendarData = {};
     const stats: CalendarStatsData = {};
 
-    // Track previous periods for boundary detection and carry-forward
+    // Track previous periods for boundary detection, carry-forward, and percentage calculations
     let prevDayDate: string | undefined;
     let prevMonthDate: string | undefined;
     let prevYearDate: string | undefined;
+    let prevDayNet: string | undefined;
+    let prevMonthNet: string | undefined;
+    let prevYearNet: string | undefined;
+
+    // Track last closed period's nets for percentage change calculation
+    let lastClosedDayNet: string | undefined;
+    let lastClosedMonthNet: string | undefined;
+    let lastClosedYearNet: string | undefined;
 
     for (const event of events) {
       const dateStr = toDateString(event.event_date);
@@ -125,16 +135,25 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
       // Initialize day structure if not exists
       if (!calendarData[year][month][day]) {
         calendarData[year][month][day] = [];
-        (stats[year][month] as any)[day] = {
+        (stats[year][month] as MonthStats)[day] = {
           totalIncome: "0",
           totalExpenses: "0",
           net: "0",
         };
 
-        // Detect year boundary and apply carry-forward
+        // Detect year boundary
         if (prevYearDate && prevYearDate !== year) {
-          const prevYearNet = stats[prevYearDate].stats.net;
+          // Calculate % change for year we're leaving (after all events added to it)
+          const prevYearStats = stats[prevYearDate!].stats;
 
+          prevYearStats.netPercentChange = calculatePercentChange(
+            prevYearStats.net,
+            lastClosedYearNet,
+          );
+
+          lastClosedYearNet = prevYearStats.net;
+
+          // Apply carry-forward for new year
           applyCarryForwardAndRecalculate(
             stats,
             year,
@@ -146,11 +165,21 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
           );
         }
 
-        // Detect month boundary and apply carry-forward
+        // Detect month boundary
         if (prevMonthDate && prevMonthDate !== currentMonth) {
+          // Calculate % change for month we're leaving (after all events added to it)
           const [prevYear, prevMonth] = prevMonthDate.split("-");
-          const prevMonthNet = (stats[prevYear][prevMonth] as any).stats.net;
+          const prevMonthStats = (stats[prevYear][prevMonth] as MonthStats)
+            .stats;
 
+          prevMonthStats.netPercentChange = calculatePercentChange(
+            prevMonthStats.net,
+            lastClosedMonthNet,
+          );
+
+          lastClosedMonthNet = prevMonthStats.net;
+
+          // Apply carry-forward for new month
           applyCarryForwardAndRecalculate(
             stats,
             year,
@@ -162,11 +191,24 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
           );
         }
 
-        // Detect day boundary and apply carry-forward
+        // Detect day boundary
         if (prevDayDate && prevDayDate !== dateStr) {
-          const [prevYear, prevMonth, prevDay] = prevDayDate.split("-");
-          const prevDayNet = (stats[prevYear][prevMonth] as any)[prevDay].net;
+          // Calculate % change for day we're leaving (after all events added to it)
+          const prevDayComponent = prevDayDate!.split("-")[2];
+          const prevDayStats = (
+            stats[prevYearDate!][prevMonthDate!.split("-")[1]] as MonthStats
+          )[prevDayComponent];
 
+          if (prevDayStats) {
+            prevDayStats.netPercentChange = calculatePercentChange(
+              prevDayStats.net,
+              lastClosedDayNet,
+            );
+
+            lastClosedDayNet = prevDayStats.net;
+          }
+
+          // Apply carry-forward for new day
           applyCarryForwardAndRecalculate(
             stats,
             year,
@@ -211,10 +253,47 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
       // Recalculate nets after adding event
       recalculateNetsAfterUpdate(stats, year, month, day);
 
-      // Track previous dates for boundary detection
+      // Track previous dates and net values for boundary detection
       prevDayDate = dateStr;
       prevMonthDate = currentMonth;
       prevYearDate = year;
+      prevDayNet = (stats[year][month] as MonthStats)[day].net;
+      prevMonthNet = (stats[year][month] as MonthStats).stats.net;
+      prevYearNet = stats[year].stats.net;
+    }
+
+    // Calculate % change for final day/month/year (after all events processed)
+    if (prevDayDate && prevYearDate && prevMonthDate) {
+      const prevDayComponent = prevDayDate.split("-")[2];
+      const lastDayStats = (
+        stats[prevYearDate][prevMonthDate.split("-")[1]] as MonthStats
+      )[prevDayComponent];
+
+      if (lastDayStats) {
+        lastDayStats.netPercentChange = calculatePercentChange(
+          lastDayStats.net,
+          lastClosedDayNet,
+        );
+      }
+    }
+
+    if (prevMonthDate && prevYearDate) {
+      const [prevYear, prevMonth] = prevMonthDate.split("-");
+      const lastMonthStats = (stats[prevYear][prevMonth] as MonthStats).stats;
+
+      lastMonthStats.netPercentChange = calculatePercentChange(
+        lastMonthStats.net,
+        lastClosedMonthNet,
+      );
+    }
+
+    if (prevYearDate) {
+      const lastYearStats = stats[prevYearDate].stats;
+
+      lastYearStats.netPercentChange = calculatePercentChange(
+        lastYearStats.net,
+        lastClosedYearNet,
+      );
     }
 
     return NextResponse.json(

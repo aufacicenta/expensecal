@@ -19,6 +19,7 @@ import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 import {
   addEventToStats,
   applyCarryForwardAndRecalculate,
+  calculatePercentChange,
   convertAmount,
   recalculateNetsAfterUpdate,
 } from "@/lib/calendar/stats";
@@ -284,6 +285,14 @@ export const CalendarV2ContextController = ({
     let prevDayDate: string | undefined;
     let prevMonthDate: string | undefined;
     let prevYearDate: string | undefined;
+    let prevDayNet: string | undefined;
+    let prevMonthNet: string | undefined;
+    let prevYearNet: string | undefined;
+
+    // Track last closed period's nets for percentage change calculation
+    let lastClosedDayNet: string | undefined;
+    let lastClosedMonthNet: string | undefined;
+    let lastClosedYearNet: string | undefined;
 
     for (const { year, month, day, event } of allEvents) {
       const dateStr = `${year}-${month}-${day}`;
@@ -297,10 +306,19 @@ export const CalendarV2ContextController = ({
           net: "0",
         };
 
-        // Detect year boundary and apply carry-forward
+        // Detect year boundary
         if (prevYearDate && prevYearDate !== year) {
-          const prevYearNet = newCalendarData.stats[prevYearDate].stats.net;
+          // Calculate % change for year we're leaving (after all events added to it)
+          const prevYearStats = newCalendarData.stats[prevYearDate].stats;
 
+          prevYearStats.netPercentChange = calculatePercentChange(
+            prevYearStats.net,
+            lastClosedYearNet,
+          );
+
+          lastClosedYearNet = prevYearStats.net;
+
+          // Apply carry-forward for new year
           applyCarryForwardAndRecalculate(
             newCalendarData.stats,
             year,
@@ -312,13 +330,22 @@ export const CalendarV2ContextController = ({
           );
         }
 
-        // Detect month boundary and apply carry-forward
+        // Detect month boundary
         if (prevMonthDate && prevMonthDate !== currentMonthKey) {
+          // Calculate % change for month we're leaving (after all events added to it)
           const [prevYear, prevMonth] = prevMonthDate.split("-");
-          const prevMonthNet = (
+          const prevMonthStats = (
             newCalendarData.stats[prevYear][prevMonth] as any
-          ).stats.net;
+          ).stats;
 
+          prevMonthStats.netPercentChange = calculatePercentChange(
+            prevMonthStats.net,
+            lastClosedMonthNet,
+          );
+
+          lastClosedMonthNet = prevMonthStats.net;
+
+          // Apply carry-forward for new month
           applyCarryForwardAndRecalculate(
             newCalendarData.stats,
             year,
@@ -330,13 +357,26 @@ export const CalendarV2ContextController = ({
           );
         }
 
-        // Detect day boundary and apply carry-forward
+        // Detect day boundary
         if (prevDayDate && prevDayDate !== dateStr) {
-          const [prevYear, prevMonth, prevDay] = prevDayDate.split("-");
-          const prevDayNet = (
-            newCalendarData.stats[prevYear][prevMonth] as any
-          )[prevDay].net;
+          // Calculate % change for day we're leaving (after all events added to it)
+          const prevDayComponent = prevDayDate.split("-")[2];
+          const prevDayStats = (
+            newCalendarData.stats[prevYearDate!][
+              prevMonthDate!.split("-")[1]
+            ] as any
+          )[prevDayComponent];
 
+          if (prevDayStats) {
+            prevDayStats.netPercentChange = calculatePercentChange(
+              prevDayStats.net,
+              lastClosedDayNet,
+            );
+
+            lastClosedDayNet = prevDayStats.net;
+          }
+
+          // Apply carry-forward for new day
           applyCarryForwardAndRecalculate(
             newCalendarData.stats,
             year,
@@ -364,10 +404,48 @@ export const CalendarV2ContextController = ({
       // Recalculate nets after adding event
       recalculateNetsAfterUpdate(newCalendarData.stats, year, month, day);
 
-      // Track previous dates for boundary detection
+      // Track previous dates and net values for boundary detection
       prevDayDate = dateStr;
       prevMonthDate = currentMonthKey;
       prevYearDate = year;
+      prevDayNet = (newCalendarData.stats[year][month] as any)[day].net;
+      prevMonthNet = (newCalendarData.stats[year][month] as any).stats.net;
+      prevYearNet = newCalendarData.stats[year].stats.net;
+    }
+
+    // Calculate % change for final day/month/year (after all events processed)
+    if (prevDayDate && prevYearDate && prevMonthDate) {
+      const prevDayComponent = prevDayDate.split("-")[2];
+      const lastDayStats = (
+        newCalendarData.stats[prevYearDate][prevMonthDate.split("-")[1]] as any
+      )[prevDayComponent];
+
+      if (lastDayStats) {
+        lastDayStats.netPercentChange = calculatePercentChange(
+          lastDayStats.net,
+          lastClosedDayNet,
+        );
+      }
+    }
+
+    if (prevMonthDate && prevYearDate) {
+      const [prevYear, prevMonth] = prevMonthDate.split("-");
+      const lastMonthStats = (newCalendarData.stats[prevYear][prevMonth] as any)
+        .stats;
+
+      lastMonthStats.netPercentChange = calculatePercentChange(
+        lastMonthStats.net,
+        lastClosedMonthNet,
+      );
+    }
+
+    if (prevYearDate) {
+      const lastYearStats = newCalendarData.stats[prevYearDate].stats;
+
+      lastYearStats.netPercentChange = calculatePercentChange(
+        lastYearStats.net,
+        lastClosedYearNet,
+      );
     }
 
     setCalendarV2Data(newCalendarData);

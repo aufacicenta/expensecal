@@ -1416,9 +1416,12 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                               </div>
 
                               {/* Day Stats */}
-                              <div className="border-default-300 [&>div]:border-b-default-300 w-[120px] border-x-[0.5px] text-right text-xs font-bold [&>div]:border-b-[0.5px] [&>div]:px-1">
-                                <div className="text-success">
-                                  <span>
+                              <div
+                                className="border-default-300 [&>div]:border-b-default-300 w-[120px] border-x-[0.5px] text-right text-xs font-bold [&>div]:border-b-[0.5px] [&>div]:px-1"
+                                data-cell-name="day-stats"
+                              >
+                                <div className="text-success flex items-center justify-end">
+                                  <span className="w-6/12">
                                     {formatCurrency(
                                       (
                                         (
@@ -1430,8 +1433,8 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                     )}
                                   </span>
                                 </div>
-                                <div className="text-danger">
-                                  <span>
+                                <div className="text-danger flex items-center justify-end">
+                                  <span className="w-6/12">
                                     {formatCurrency(
                                       (
                                         (
@@ -1445,7 +1448,16 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                 </div>
                                 <div
                                   className={clsx(
-                                    "flex items-center justify-end",
+                                    "flex items-center",
+                                    !!(
+                                      (
+                                        calendarV2Data.stats[year][
+                                          month
+                                        ] as MonthStats
+                                      )[day] as DayStats
+                                    ).netPercentChange
+                                      ? "justify-between gap-1"
+                                      : "justify-end",
                                     Number(
                                       (
                                         (
@@ -1459,21 +1471,62 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                       : "text-danger",
                                   )}
                                 >
-                                  <span>
-                                    {(() => {
-                                      const net = new Decimal(
-                                        (
+                                  {!!(
+                                    (
+                                      calendarV2Data.stats[year][
+                                        month
+                                      ] as MonthStats
+                                    )[day] as DayStats
+                                  ).netPercentChange && (
+                                    <>
+                                      <div className="flex items-center gap-1">
+                                        {Number(
                                           (
-                                            calendarV2Data.stats[year][
-                                              month
-                                            ] as MonthStats
-                                          )[day] as DayStats
-                                        ).net,
-                                      );
+                                            (
+                                              calendarV2Data.stats[year][
+                                                month
+                                              ] as MonthStats
+                                            )[day] as DayStats
+                                          ).netPercentChange,
+                                        ) >= 0 ? (
+                                          <TrendingUp size={12} />
+                                        ) : (
+                                          <TrendingDown size={12} />
+                                        )}
+                                        {
+                                          (
+                                            (
+                                              calendarV2Data.stats[year][
+                                                month
+                                              ] as MonthStats
+                                            )[day] as DayStats
+                                          ).netPercentChange
+                                        }
+                                        %
+                                      </div>
+                                      <Divider
+                                        className="h-3"
+                                        orientation="vertical"
+                                      />
+                                    </>
+                                  )}
+                                  <div className="flex w-6/12 items-center justify-end">
+                                    <span>
+                                      {(() => {
+                                        const net = new Decimal(
+                                          (
+                                            (
+                                              calendarV2Data.stats[year][
+                                                month
+                                              ] as MonthStats
+                                            )[day] as DayStats
+                                          ).net,
+                                        );
 
-                                      return formatCurrency(net.toString());
-                                    })()}
-                                  </span>
+                                        return formatCurrency(net.toString());
+                                      })()}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -1482,17 +1535,20 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                     </div>
 
                     {/* Month Stats */}
-                    <div className="border-default-300 [&>div]:border-b-default-300 w-[120px] border-r-[0.5px] border-l-[0.5px] text-right text-xs font-bold [&>div]:border-b-[0.5px] [&>div]:px-1">
-                      <div className="text-success">
-                        <span>
+                    <div
+                      className="border-default-300 [&>div]:border-b-default-300 w-[120px] border-r-[0.5px] border-l-[0.5px] text-right text-xs font-bold [&>div]:border-b-[0.5px] [&>div]:px-1"
+                      data-cell-name="month-stats"
+                    >
+                      <div className="text-success flex items-center justify-end">
+                        <span className="w-6/12">
                           {formatCurrency(
                             (calendarV2Data.stats[year][month] as MonthStats)
                               .stats.totalIncome,
                           )}
                         </span>
                       </div>
-                      <div className="text-danger">
-                        <span>
+                      <div className="text-danger flex items-center justify-end">
+                        <span className="w-6/12">
                           {formatCurrency(
                             (calendarV2Data.stats[year][month] as MonthStats)
                               .stats.totalExpenses,
@@ -1501,7 +1557,11 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                       </div>
                       <div
                         className={clsx(
-                          "flex items-center justify-end",
+                          "flex items-center",
+                          !!(calendarV2Data.stats[year][month] as MonthStats)
+                            .stats?.netPercentChange
+                            ? "justify-between gap-1"
+                            : "justify-end",
                           Number(
                             (calendarV2Data.stats[year][month] as MonthStats)
                               .stats.net,
@@ -1510,17 +1570,48 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                             : "text-danger",
                         )}
                       >
-                        <span>
-                          {(() => {
-                            const net = new Decimal(
-                              (
-                                calendarV2Data.stats[year][month] as MonthStats
-                              ).stats.net,
-                            );
+                        {!!(calendarV2Data.stats[year][month] as MonthStats)
+                          .stats?.netPercentChange && (
+                          <>
+                            <div className="flex items-center gap-1">
+                              {Number(
+                                (
+                                  calendarV2Data.stats[year][
+                                    month
+                                  ] as MonthStats
+                                ).stats?.netPercentChange,
+                              ) >= 0 ? (
+                                <TrendingUp size={12} />
+                              ) : (
+                                <TrendingDown size={12} />
+                              )}
+                              {
+                                (
+                                  calendarV2Data.stats[year][
+                                    month
+                                  ] as MonthStats
+                                ).stats?.netPercentChange
+                              }
+                              %
+                            </div>
+                            <Divider className="h-3" orientation="vertical" />
+                          </>
+                        )}
+                        <div className="flex w-6/12 items-center justify-end">
+                          <span>
+                            {(() => {
+                              const net = new Decimal(
+                                (
+                                  calendarV2Data.stats[year][
+                                    month
+                                  ] as MonthStats
+                                ).stats.net,
+                              );
 
-                            return formatCurrency(net.toString());
-                          })()}
-                        </span>
+                              return formatCurrency(net.toString());
+                            })()}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1529,60 +1620,49 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
           </div>
 
           {/* Year Stats */}
-          <div className="border-default-300 [&>div]:border-b-default-300 w-[180px] border-r-[0.5px] border-l-[0.5px] text-right text-xs font-bold [&>div]:px-1 [&>div]:not-[:last-child]:border-b-[0.5px]">
+          <div
+            className="border-default-300 [&>div]:border-b-default-300 w-[180px] border-r-[0.5px] border-l-[0.5px] text-right text-xs font-bold [&>div]:px-1 [&>div]:not-[:last-child]:border-b-[0.5px]"
+            data-cell-name="year-stats"
+          >
             <span className="text-default-400 mb-1 block text-center">
               {year} Income - Expenses
             </span>
-            <div className="text-success flex items-center justify-between gap-1">
-              <div className="flex items-center gap-1">
-                {Number(
-                  calendarV2Data.stats[year].stats?.totalIncomePercentChange,
-                ) >= 0 ? (
-                  <TrendingUp size={12} />
-                ) : (
-                  <TrendingDown size={12} />
-                )}
-                {calendarV2Data.stats[year].stats?.totalIncomePercentChange}%
-              </div>
-              <Divider className="h-3" orientation="vertical" />
+            <div className="text-success flex items-center justify-end">
               <span className="w-6/12">
                 {formatCurrency(calendarV2Data.stats[year].stats.totalIncome)}
               </span>
             </div>
-            <div className="text-danger flex items-center justify-between gap-1">
-              <div className="flex items-center gap-1">
-                {Number(
-                  calendarV2Data.stats[year].stats?.totalExpensesPercentChange,
-                ) >= 0 ? (
-                  <TrendingUp size={12} />
-                ) : (
-                  <TrendingDown size={12} />
-                )}
-                {calendarV2Data.stats[year].stats?.totalExpensesPercentChange}%
-              </div>
-              <Divider className="h-3" orientation="vertical" />
+            <div className="text-danger flex items-center justify-end">
               <span className="w-6/12">
                 {formatCurrency(calendarV2Data.stats[year].stats.totalExpenses)}
               </span>
             </div>
             <div
               className={clsx(
-                "flex items-center justify-between gap-1",
+                "flex items-center",
+                !!calendarV2Data.stats[year].stats?.netPercentChange
+                  ? "justify-between gap-1"
+                  : "justify-end",
                 Number(calendarV2Data.stats[year].stats.net) > 0
                   ? "text-success"
                   : "text-danger",
               )}
             >
-              <div className="flex items-center gap-1">
-                {Number(calendarV2Data.stats[year].stats?.netPercentChange) >=
-                0 ? (
-                  <TrendingUp size={12} />
-                ) : (
-                  <TrendingDown size={12} />
-                )}
-                {calendarV2Data.stats[year].stats?.netPercentChange}%
-              </div>
-              <Divider className="h-3" orientation="vertical" />
+              {!!calendarV2Data.stats[year].stats?.netPercentChange && (
+                <>
+                  <div className="flex items-center gap-1">
+                    {Number(
+                      calendarV2Data.stats[year].stats?.netPercentChange,
+                    ) >= 0 ? (
+                      <TrendingUp size={12} />
+                    ) : (
+                      <TrendingDown size={12} />
+                    )}
+                    {calendarV2Data.stats[year].stats?.netPercentChange}%
+                  </div>
+                  <Divider className="h-3" orientation="vertical" />
+                </>
+              )}
               <div className="flex w-6/12 items-center justify-end">
                 <span>
                   {(() => {
