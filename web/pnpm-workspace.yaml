@@ -1,5 +1,3 @@
 packages:
-  - web
-# overrides:
-#   "@expensecal/database": link:../../../../Library/pnpm/global/5/node_modules/@expensecal/database
+  - .
 
