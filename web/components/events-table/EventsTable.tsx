@@ -512,7 +512,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
         </div>
 
         {/* Table Columns */}
-        <div className="text-default-400 [&>div]:border-default-300 flex w-fit items-center font-semibold [&>div]:flex [&>div]:h-[25px] [&>div]:items-center [&>div]:gap-1 [&>div]:border-[0.5px] [&>div]:p-1">
+        <div className="text-default-900 [&>div]:border-default-300 flex w-fit items-center font-semibold [&>div]:flex [&>div]:h-[25px] [&>div]:items-center [&>div]:gap-1 [&>div]:border-[0.5px] [&>div]:p-1">
           <div className="hover:text-default-400-foreground w-[180px] cursor-pointer justify-center">
             <span>Year</span>
             <ListFilter size={12} />
