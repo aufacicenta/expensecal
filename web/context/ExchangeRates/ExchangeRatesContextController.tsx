@@ -1,17 +1,18 @@
 "use client";
 
-import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 import { useEffect, useState } from "react";
 
-import {
-  GetExchangeRatesResponse,
-  GetExchangeRatesSuccessResponse,
-} from "@/app/api/v1/exchange-rates/types";
 import { ExchangeRatesContext } from "./ExchangeRatesContext";
 import {
   ExchangeRatesContextControllerProps,
   ExchangeRatesContextType,
 } from "./ExchangeRatesContext.types";
+
+import {
+  GetExchangeRatesResponse,
+  GetExchangeRatesSuccessResponse,
+} from "@/app/api/v1/exchange-rates/types";
+import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 
 export const ExchangeRatesContextController = ({
   children,
@@ -44,18 +45,22 @@ export const ExchangeRatesContextController = ({
       }
 
       const data: GetExchangeRatesResponse = await response.json();
+
       if (data.success) {
         const successResponse = data as typeof data & { data: any };
+
         setRates(successResponse.data.rates);
         setBaseCurrency(successResponse.data.baseCurrency);
         setLastUpdated(new Date());
       } else {
         const errorMsg = data.error || "Failed to load exchange rates";
+
         setError(errorMsg);
         console.error("Failed to load exchange rates:", errorMsg);
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Unknown error";
+
       setError(errorMsg);
       console.error("Error loading exchange rates:", err);
     } finally {

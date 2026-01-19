@@ -1,9 +1,11 @@
-import { stackServerApp } from "@/stack/server";
 import db from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
 import { Category } from "@expensecal/database/models/Category";
 import { NextRequest, NextResponse } from "next/server";
+
 import { GetCategoriesResponse } from "./types";
+
+import { stackServerApp } from "@/stack/server";
 
 /**
  * GET /api/v1/categories
@@ -16,6 +18,7 @@ export async function GET(
   try {
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -48,6 +51,7 @@ export async function GET(
     );
   } catch (error) {
     console.error("Get categories endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,

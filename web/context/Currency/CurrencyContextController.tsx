@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 
-import { CurrencyData } from "@/app/api/v1/currencies/types";
-import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 import { CurrencyContext } from "./CurrencyContext";
 import {
   CurrencyContextControllerProps,
   CurrencyContextType,
 } from "./CurrencyContext.types";
+
+import { CurrencyData } from "@/app/api/v1/currencies/types";
+import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 
 export const CurrencyContextController = ({
   children,
@@ -25,6 +26,7 @@ export const CurrencyContextController = ({
     try {
       const response = await fetch(routes.api.v1.currencies.get());
       const data = await response.json();
+
       if (data.success) {
         setCurrencies(data.data);
       }

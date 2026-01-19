@@ -1,6 +1,7 @@
+import { ReactNode } from "react";
+
 import { CreatedCategoryData } from "@/app/api/v1/categories/create/types";
 import { CategoryData } from "@/app/api/v1/categories/types";
-import { ReactNode } from "react";
 
 export type EventCategoriesContextControllerProps = {
   children: ReactNode;

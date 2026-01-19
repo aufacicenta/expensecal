@@ -1,5 +1,6 @@
-import { GetExchangeRatesSuccessResponse } from "@/app/api/v1/exchange-rates/types";
 import { ReactNode } from "react";
+
+import { GetExchangeRatesSuccessResponse } from "@/app/api/v1/exchange-rates/types";
 
 export type ExchangeRatesContextControllerProps = {
   children: ReactNode;

@@ -1,10 +1,5 @@
 "use client";
 
-import { CalendarEventData } from "@/app/api/v1/calendar/types";
-import {
-  EventEditModalContextType,
-  OpenEventModal,
-} from "@/components/calendar/event-edit-modal/EventEditModal.types";
 import {
   createContext,
   ReactNode,
@@ -12,6 +7,12 @@ import {
   useContext,
   useState,
 } from "react";
+
+import { CalendarEventData } from "@/app/api/v1/calendar/types";
+import {
+  EventEditModalContextType,
+  OpenEventModal,
+} from "@/components/calendar/event-edit-modal/EventEditModal.types";
 
 export const EventEditModalContext =
   createContext<EventEditModalContextType | null>(null);
@@ -56,10 +57,12 @@ export const EventEditModalContextController: React.FC<{
 
 export const useEventEditModalContext = (): EventEditModalContextType => {
   const context = useContext(EventEditModalContext);
+
   if (!context) {
     throw new Error(
       "useEventEditModalContext must be used within EventEditModalContextController",
     );
   }
+
   return context;
 };

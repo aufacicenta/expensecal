@@ -1,5 +1,6 @@
-import { GetCalendarV2SuccessResponse } from "@/app/api/v2/calendar/types";
 import { ReactNode } from "react";
+
+import { GetCalendarV2SuccessResponse } from "@/app/api/v2/calendar/types";
 
 export type CalendarV2ContextControllerProps = {
   children: ReactNode;

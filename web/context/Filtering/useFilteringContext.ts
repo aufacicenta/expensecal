@@ -1,4 +1,5 @@
 import { useContext } from "react";
+
 import { FilteringContext } from "./FilteringContext";
 
 export const useFilteringContext = () => {

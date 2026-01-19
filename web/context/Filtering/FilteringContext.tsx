@@ -1,4 +1,5 @@
 import { createContext } from "react";
+
 import { FilteringContextType } from "./FilteringContextController.types";
 
 const defaultValue: FilteringContextType = {

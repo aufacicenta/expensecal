@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 import { GetChildEventsResponse } from "@/app/api/v1/events/[id]/children/types";
 import {
   DeleteMode,
@@ -23,7 +25,6 @@ import {
   ParseRequestBody,
   ParseResponse,
 } from "@/app/api/v1/events/parse/types";
-import { ReactNode } from "react";
 
 export type EventsContextControllerProps = {
   children: ReactNode;
