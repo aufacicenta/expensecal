@@ -14,4 +14,6 @@ export type StatsCellProps = {
   variant: StatsCellVariant;
   label?: ReactNode;
   className?: string;
+  onIncomeClick?: () => void;
+  onExpenseClick?: () => void;
 };

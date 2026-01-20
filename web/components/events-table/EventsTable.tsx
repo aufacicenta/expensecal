@@ -31,6 +31,12 @@ import { EventsTableHeader } from "./events-table-header/EventsTableHeader";
 import { MakeRecurringModal } from "./make-recurring-modal/MakeRecurringModal";
 import { ChildEventsPanel } from "./child-events-panel/ChildEventsPanel";
 import { StatsCell } from "./stats-cell/StatsCell";
+import { StatsDetailsDrawer } from "./stats-cell/StatsDetailsDrawer";
+import {
+  StatsDetailsPeriod,
+  StatsDetailsType,
+} from "./stats-cell/StatsDetailsDrawer.types";
+import { StatsCellVariant } from "./stats-cell/StatsCell.types";
 import { useEventSelection } from "./hooks/useEventSelection";
 import { useEventEditState } from "./hooks/useEventEditState";
 import { MakeRecurringParams } from "./make-recurring-modal/MakeRecurringModal.types";
@@ -77,6 +83,12 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     useState<CalendarEvent | null>(null);
   const [selectedEventForRecurring, setSelectedEventForRecurring] =
     useState<CalendarEvent | null>(null);
+  const [statsDetailsDrawer, setStatsDetailsDrawer] = useState<{
+    isOpen: boolean;
+    variant: StatsCellVariant;
+    period: StatsDetailsPeriod;
+    type: StatsDetailsType;
+  } | null>(null);
   const {
     selectedEventIds,
     getAllEventIds,
@@ -979,6 +991,22 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                   )[day] as DayStats
                                 }
                                 variant="day"
+                                onExpenseClick={() =>
+                                  setStatsDetailsDrawer({
+                                    isOpen: true,
+                                    variant: "day",
+                                    period: { year, month, day },
+                                    type: "expense",
+                                  })
+                                }
+                                onIncomeClick={() =>
+                                  setStatsDetailsDrawer({
+                                    isOpen: true,
+                                    variant: "day",
+                                    period: { year, month, day },
+                                    type: "income",
+                                  })
+                                }
                               />
                             </div>
                           ))}
@@ -991,6 +1019,22 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                         (calendarV2Data.stats[year][month] as MonthStats).stats
                       }
                       variant="month"
+                      onExpenseClick={() =>
+                        setStatsDetailsDrawer({
+                          isOpen: true,
+                          variant: "month",
+                          period: { year, month },
+                          type: "expense",
+                        })
+                      }
+                      onIncomeClick={() =>
+                        setStatsDetailsDrawer({
+                          isOpen: true,
+                          variant: "month",
+                          period: { year, month },
+                          type: "income",
+                        })
+                      }
                     />
                   </div>
                 ))}
@@ -1002,6 +1046,22 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
             label={<>{year} Income - Expenses</>}
             stats={calendarV2Data.stats[year].stats}
             variant="year"
+            onExpenseClick={() =>
+              setStatsDetailsDrawer({
+                isOpen: true,
+                variant: "year",
+                period: { year },
+                type: "expense",
+              })
+            }
+            onIncomeClick={() =>
+              setStatsDetailsDrawer({
+                isOpen: true,
+                variant: "year",
+                period: { year },
+                type: "income",
+              })
+            }
           />
         </div>
       ))}
@@ -1030,6 +1090,18 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
         isOpen={!!selectedEventForInfo}
         onClose={() => setSelectedEventForInfo(null)}
       />
+
+      {/* Stats Details Drawer */}
+      {statsDetailsDrawer && (
+        <StatsDetailsDrawer
+          calendarV2Data={calendarV2Data}
+          isOpen={statsDetailsDrawer.isOpen}
+          period={statsDetailsDrawer.period}
+          type={statsDetailsDrawer.type}
+          variant={statsDetailsDrawer.variant}
+          onClose={() => setStatsDetailsDrawer(null)}
+        />
+      )}
     </section>
   );
 };

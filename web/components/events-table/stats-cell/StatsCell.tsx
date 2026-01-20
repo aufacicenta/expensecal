@@ -18,6 +18,8 @@ export const StatsCell: React.FC<StatsCellProps> = ({
   variant,
   label,
   className,
+  onIncomeClick,
+  onExpenseClick,
 }) => {
   const net = new Decimal(stats.net);
   const isPositive = net.greaterThan(0);
@@ -25,6 +27,9 @@ export const StatsCell: React.FC<StatsCellProps> = ({
   const percentChangeValue = stats.netPercentChange
     ? Number(stats.netPercentChange)
     : 0;
+
+  const clickableStyles =
+    "cursor-pointer transition-colors hover:bg-default-100 active:bg-default-200";
 
   return (
     <div
@@ -43,12 +48,40 @@ export const StatsCell: React.FC<StatsCellProps> = ({
       )}
 
       {/* Total Income */}
-      <div className="text-success flex items-center justify-end">
+      <div
+        className={clsx(
+          "text-success flex items-center justify-end",
+          onIncomeClick && clickableStyles,
+        )}
+        role={onIncomeClick ? "button" : undefined}
+        tabIndex={onIncomeClick ? 0 : undefined}
+        onClick={onIncomeClick}
+        onKeyDown={(e) => {
+          if (onIncomeClick && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            onIncomeClick();
+          }
+        }}
+      >
         <span className="w-6/12">{formatCurrency(stats.totalIncome)}</span>
       </div>
 
       {/* Total Expenses */}
-      <div className="text-danger flex items-center justify-end">
+      <div
+        className={clsx(
+          "text-danger flex items-center justify-end",
+          onExpenseClick && clickableStyles,
+        )}
+        role={onExpenseClick ? "button" : undefined}
+        tabIndex={onExpenseClick ? 0 : undefined}
+        onClick={onExpenseClick}
+        onKeyDown={(e) => {
+          if (onExpenseClick && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            onExpenseClick();
+          }
+        }}
+      >
         <span className="w-6/12">{formatCurrency(stats.totalExpenses)}</span>
       </div>
 
