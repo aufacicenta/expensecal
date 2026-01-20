@@ -1,4 +1,5 @@
 import { EventAttributes } from "@expensecal/database/models/Event";
+import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
@@ -15,6 +16,7 @@ import {
   Circle,
   CircleCheckBig,
   CircleX,
+  Command,
   Info,
   ListChevronsUpDown,
   Loader2,
@@ -22,6 +24,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { CommandsModal } from "../commands-modal/CommandsModal";
 import { StaggerLoadingAnimation } from "../stagger-loading-animation/StaggerLoadingAnimation";
 
 import { EventsTableProps } from "./EventsTable.types";
@@ -112,6 +115,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
   const [expandedEventIds, setExpandedEventIds] = useState<Set<string>>(
     new Set(),
   );
+  const [isCommandsModalOpen, setIsCommandsModalOpen] = useState(false);
 
   const handleEventCategoryUpdate = async (
     eventId: string,
@@ -1102,6 +1106,24 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
           onClose={() => setStatsDetailsDrawer(null)}
         />
       )}
+
+      {/* Floating Commands Button */}
+      <Button
+        isIconOnly
+        className="fixed right-6 bottom-6 z-50 shadow-lg"
+        color="primary"
+        radius="full"
+        size="lg"
+        onPress={() => setIsCommandsModalOpen(true)}
+      >
+        <Command size={24} />
+      </Button>
+
+      {/* Commands Modal */}
+      <CommandsModal
+        isOpen={isCommandsModalOpen}
+        onOpenChange={setIsCommandsModalOpen}
+      />
     </section>
   );
 };

@@ -8,7 +8,6 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
-import { CommandsModal } from "@/components/commands-modal/CommandsModal";
 import { CalendarV2ContextController } from "@/context/CalendarV2/CalendarV2ContextController";
 import { CurrencyContextController } from "@/context/Currency/CurrencyContextController";
 import { EventCategoriesContextController } from "@/context/EventCategories/EventCategoriesContextController";
@@ -44,10 +43,7 @@ export function Providers({ children, themeProps }: ProvidersProps) {
                 <CurrencyContextController>
                   <FilteringContextController>
                     <EventCategoriesContextController>
-                      <>
-                        <CommandsModal />
-                        {children}
-                      </>
+                      <>{children}</>
                     </EventCategoriesContextController>
                   </FilteringContextController>
                 </CurrencyContextController>

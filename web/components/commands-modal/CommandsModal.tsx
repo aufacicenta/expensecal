@@ -6,24 +6,49 @@ import { useCallback, useEffect, useState } from "react";
 import { CommandsModalProps } from "./CommandsModal.types";
 import { EventsMultiLineInput } from "./events-multi-line-input/EventsMultiLineInput";
 
-export const CommandsModal: React.FC<CommandsModalProps> = ({ className }) => {
-  const [isOpen, setIsOpen] = useState(false);
+export const CommandsModal: React.FC<CommandsModalProps> = ({
+  className,
+  isOpen: controlledIsOpen,
+  onOpenChange,
+}) => {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+
+  // Use controlled state if provided, otherwise use internal state
+  const isControlled = controlledIsOpen !== undefined;
+  const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
+
+  const setIsOpen = useCallback(
+    (value: boolean | ((prev: boolean) => boolean)) => {
+      const newValue = typeof value === "function" ? value(isOpen) : value;
+
+      if (onOpenChange) {
+        onOpenChange(newValue);
+      }
+      if (!isControlled) {
+        setInternalIsOpen(newValue);
+      }
+    },
+    [isControlled, isOpen, onOpenChange],
+  );
 
   // Handle keyboard shortcut (Cmd+K on Mac, Ctrl+K on Windows/Linux)
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
-    const shortcutKey = isMac ? e.metaKey : e.ctrlKey;
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
+      const shortcutKey = isMac ? e.metaKey : e.ctrlKey;
 
-    if (shortcutKey && e.key === "k") {
-      e.preventDefault();
-      setIsOpen((prev) => !prev);
-    }
+      if (shortcutKey && e.key === "k") {
+        e.preventDefault();
+        setIsOpen((prev) => !prev);
+      }
 
-    // Close modal with Escape key
-    if (e.key === "Escape") {
-      setIsOpen(false);
-    }
-  }, []);
+      // Close modal with Escape key
+      if (e.key === "Escape") {
+        setIsOpen(false);
+      }
+    },
+    [setIsOpen],
+  );
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
