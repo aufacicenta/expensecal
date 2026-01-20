@@ -13,6 +13,10 @@ import {
 
 import { GetChildEventsResponse } from "@/app/api/v1/events/[id]/children/types";
 import {
+  MakeRecurringRequestBody,
+  MakeRecurringResponse,
+} from "@/app/api/v1/events/[id]/make-recurring/types";
+import {
   DeleteMode,
   UpdateEventRequestBody,
   UpdateEventSuccessResponse,
@@ -42,6 +46,7 @@ export const EventsContextController = ({
     deleteEvent: { isLoading: false, error: undefined },
     deleteEventMultiple: { isLoading: false, error: undefined },
     fetchChildEvents: { isLoading: false, error: undefined },
+    makeEventRecurring: { isLoading: false, error: undefined },
   });
 
   /**
@@ -467,6 +472,53 @@ export const EventsContextController = ({
     }
   };
 
+  const makeEventRecurring = async (
+    eventId: string,
+    body: MakeRecurringRequestBody,
+  ): Promise<MakeRecurringResponse> => {
+    setActionStates((prev) => ({
+      ...prev,
+      makeEventRecurring: { isLoading: true, error: undefined },
+    }));
+    try {
+      const response = await fetch(
+        routes.api.v1.events.makeRecurring(eventId),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = (await response.json()) as MakeRecurringResponse;
+
+      // Reload calendar to reflect new recurring events
+      await reloadCalendar();
+
+      setActionStates((prev) => ({
+        ...prev,
+        makeEventRecurring: { isLoading: false, error: undefined },
+      }));
+
+      return data;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
+      setActionStates((prev) => ({
+        ...prev,
+        makeEventRecurring: { isLoading: false, error: errorMsg },
+      }));
+      console.error("Error making event recurring:", error);
+      throw error;
+    }
+  };
+
   const props: EventsContextType = {
     actionStates,
     createEventFromText,
@@ -479,6 +531,7 @@ export const EventsContextController = ({
     deleteEvent,
     deleteEventMultiple,
     fetchChildEvents,
+    makeEventRecurring,
   };
 
   return (

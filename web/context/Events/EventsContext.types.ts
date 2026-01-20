@@ -2,6 +2,10 @@ import { ReactNode } from "react";
 
 import { GetChildEventsResponse } from "@/app/api/v1/events/[id]/children/types";
 import {
+  MakeRecurringRequestBody,
+  MakeRecurringResponse,
+} from "@/app/api/v1/events/[id]/make-recurring/types";
+import {
   DeleteMode,
   UpdateEventRequestBody,
   UpdateEventResponse,
@@ -71,6 +75,10 @@ export type EventsContextActionStates = {
     isLoading: boolean;
     error?: string;
   };
+  makeEventRecurring: {
+    isLoading: boolean;
+    error?: string;
+  };
 };
 
 export type EventsContextType = {
@@ -106,4 +114,8 @@ export type EventsContextType = {
     deleteMode?: DeleteMode,
   ) => Promise<void>;
   fetchChildEvents: (eventId: string) => Promise<GetChildEventsResponse>;
+  makeEventRecurring: (
+    eventId: string,
+    body: MakeRecurringRequestBody,
+  ) => Promise<MakeRecurringResponse>;
 };

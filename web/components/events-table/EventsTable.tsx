@@ -38,6 +38,8 @@ import { ThemeSwitch } from "../theme-switch";
 
 import { EventsTableProps } from "./EventsTable.types";
 import { DeleteEventConfirmationModal } from "./delete-event-confirmation-modal/DeleteEventConfirmationModal";
+import { MakeRecurringModal } from "./make-recurring-modal/MakeRecurringModal";
+import { MakeRecurringParams } from "./make-recurring-modal/MakeRecurringModal.types";
 import {
   EventCellAmountEdit,
   type EventCellAmountEditHandle,
@@ -81,6 +83,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     deleteEvent,
     actionStates: eventsContextActionStates,
     deleteEventMultiple,
+    makeEventRecurring,
   } = useEventsContext();
   const { categories } = useEventCategoriesContext();
   const { currencies } = useCurrencyContext();
@@ -92,6 +95,8 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
   const [selectedEventForDelete, setSelectedEventForDelete] =
     useState<CalendarEvent | null>(null);
   const [selectedEventForInfo, setSelectedEventForInfo] =
+    useState<CalendarEvent | null>(null);
+  const [selectedEventForRecurring, setSelectedEventForRecurring] =
     useState<CalendarEvent | null>(null);
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(
     new Set(),
@@ -327,6 +332,22 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
       } catch (error) {
         console.error("Failed to delete event:", error);
       }
+    }
+  };
+
+  const handleConfirmMakeRecurring = async (params: MakeRecurringParams) => {
+    if (!selectedEventForRecurring?.id) return;
+
+    try {
+      await makeEventRecurring(selectedEventForRecurring.id, {
+        frequency: params.frequency,
+        interval: params.interval,
+        count: params.count,
+        split_amount: params.splitAmount,
+      });
+      setSelectedEventForRecurring(null);
+    } catch (error) {
+      console.error("Failed to make event recurring:", error);
     }
   };
 
@@ -1120,10 +1141,30 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
                                               </>
                                             )}
                                             {/* Event Update Confirm Actions End */}
-                                            {/* @TODO make a single event recurring or in installments */}
+                                            {/* Make a single event recurring or in installments */}
                                             {getStructureType(eventObj) ===
                                               "single" && (
-                                              <div>
+                                              <div
+                                                role="button"
+                                                tabIndex={0}
+                                                title="Make recurring"
+                                                onClick={() =>
+                                                  setSelectedEventForRecurring(
+                                                    eventObj,
+                                                  )
+                                                }
+                                                onKeyDown={(e) => {
+                                                  if (
+                                                    e.key === "Enter" ||
+                                                    e.key === " "
+                                                  ) {
+                                                    e.preventDefault();
+                                                    setSelectedEventForRecurring(
+                                                      eventObj,
+                                                    );
+                                                  }
+                                                }}
+                                              >
                                                 <CalendarSync
                                                   className="stroke-default-400 hover:stroke-primary cursor-pointer"
                                                   size={16}
@@ -1719,6 +1760,15 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
         multipleCount={selectedEventIds.size}
         onClose={() => setSelectedEventForDelete(null)}
         onConfirm={handleConfirmDelete}
+      />
+
+      {/* Make Recurring Modal */}
+      <MakeRecurringModal
+        event={selectedEventForRecurring}
+        isLoading={eventsContextActionStates.makeEventRecurring.isLoading}
+        isOpen={!!selectedEventForRecurring}
+        onClose={() => setSelectedEventForRecurring(null)}
+        onConfirm={handleConfirmMakeRecurring}
       />
 
       {/* Event Info Drawer */}
