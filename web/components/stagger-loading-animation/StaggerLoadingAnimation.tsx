@@ -12,7 +12,7 @@ const GRID = [GRID_SIZE, GRID_SIZE];
 
 export const StaggerLoadingAnimation: React.FC<
   StaggerLoadingAnimationProps
-> = ({ children, className }) => {
+> = ({ className }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const visualizerRef = useRef<HTMLDivElement>(null);
 
@@ -30,8 +30,10 @@ export const StaggerLoadingAnimation: React.FC<
         "w-[1rem]",
         "h-[1rem]",
         "border",
-        "border-white",
-        "bg-white",
+        "border-black",
+        "bg-black",
+        "dark:border-white",
+        "dark:bg-white",
       );
       fragment.appendChild(div);
     }
