@@ -1,7 +1,7 @@
 "use client";
 
 import Decimal from "decimal.js";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { CalendarV2Context } from "./CalendarV2Context";
 import {
@@ -13,9 +13,12 @@ import {
 import {
   CalendarEvent,
   GetCalendarV2SuccessResponse,
+  MonthStats,
 } from "@/app/api/v2/calendar/types";
+import { useEventCategoriesContext } from "@/context/EventCategories/useEventCategoriesContext";
 import { useExchangeRatesContext } from "@/context/ExchangeRates/useExchangeRatesContext";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
+import { filterEventsByCategories } from "@/lib/calendar/filterEvents";
 import {
   addEventToStats,
   applyCarryForwardAndRecalculate,
@@ -30,6 +33,7 @@ export const CalendarV2ContextController = ({
 }: CalendarV2ContextControllerProps) => {
   const routes = useRoutes();
   const exchangeRatesContext = useExchangeRatesContext();
+  const { selectedCategoryIds } = useEventCategoriesContext();
 
   const [calendarV2Data, setCalendarV2Data] = useState<
     GetCalendarV2SuccessResponse["data"] | undefined
@@ -42,6 +46,105 @@ export const CalendarV2ContextController = ({
         error: undefined,
       },
     });
+
+  /**
+   * Filter calendar data by selected categories and recalculate stats
+   * Returns the original data if no categories are selected
+   */
+  const filteredCalendarData = useMemo(() => {
+    if (!calendarV2Data || selectedCategoryIds.length === 0) {
+      return calendarV2Data;
+    }
+
+    // Deep clone the calendar data to avoid mutations
+    const filteredData: GetCalendarV2SuccessResponse["data"] = {
+      calendar: {},
+      stats: {},
+    };
+
+    // Process each year
+    for (const [year, yearObj] of Object.entries(calendarV2Data.calendar)) {
+      filteredData.calendar[year] = {};
+      filteredData.stats[year] = {
+        stats: { totalIncome: "0", totalExpenses: "0", net: "0" },
+      };
+
+      let yearIncome = new Decimal(0);
+      let yearExpenses = new Decimal(0);
+
+      // Process each month
+      for (const [month, monthObj] of Object.entries(yearObj)) {
+        filteredData.calendar[year][month] = {};
+        filteredData.stats[year][month] = {
+          stats: { totalIncome: "0", totalExpenses: "0", net: "0" },
+        };
+
+        let monthIncome = new Decimal(0);
+        let monthExpenses = new Decimal(0);
+
+        // Process each day
+        for (const [day, events] of Object.entries(monthObj)) {
+          // Filter events by selected categories
+          const filteredEvents = filterEventsByCategories(
+            events as CalendarEvent[],
+            selectedCategoryIds,
+          ) as CalendarEvent[];
+
+          if (filteredEvents.length > 0) {
+            filteredData.calendar[year][month][day] = filteredEvents;
+
+            // Calculate day stats from filtered events
+            let dayIncome = new Decimal(0);
+            let dayExpenses = new Decimal(0);
+
+            for (const event of filteredEvents) {
+              const amount = new Decimal(event.exchangeRate || "0");
+
+              if (event.type === "INCOME") {
+                dayIncome = dayIncome.plus(amount);
+              } else {
+                dayExpenses = dayExpenses.plus(amount);
+              }
+            }
+
+            const dayNet = dayIncome.minus(dayExpenses);
+
+            (filteredData.stats[year][month] as MonthStats)[day] = {
+              totalIncome: dayIncome.toString(),
+              totalExpenses: dayExpenses.toString(),
+              net: dayNet.toString(),
+            };
+
+            monthIncome = monthIncome.plus(dayIncome);
+            monthExpenses = monthExpenses.plus(dayExpenses);
+          }
+        }
+
+        // Set month stats
+        const monthNet = monthIncome.minus(monthExpenses);
+
+        (filteredData.stats[year][month] as MonthStats).stats = {
+          totalIncome: monthIncome.toString(),
+          totalExpenses: monthExpenses.toString(),
+          net: monthNet.toString(),
+        };
+
+        yearIncome = yearIncome.plus(monthIncome);
+        yearExpenses = yearExpenses.plus(monthExpenses);
+      }
+
+      // Set year stats
+      const yearNet = yearIncome.minus(yearExpenses);
+
+      filteredData.stats[year].stats = {
+        totalIncome: yearIncome.toString(),
+        totalExpenses: yearExpenses.toString(),
+        net: yearNet.toString(),
+      };
+    }
+
+    return filteredData;
+  }, [calendarV2Data, selectedCategoryIds]);
 
   const loadCalendarV2 = async () => {
     setActionStates((prev) => ({
@@ -482,6 +585,7 @@ export const CalendarV2ContextController = ({
 
   const props: CalendarV2ContextType = {
     calendarV2Data,
+    filteredCalendarData,
     currentMonth,
     actionStates,
     loadCalendarV2,

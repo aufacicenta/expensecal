@@ -1,5 +1,11 @@
 import { Checkbox } from "@heroui/checkbox";
-import { ArrowLeftRight, ListFilter } from "lucide-react";
+import {
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+} from "@heroui/dropdown";
+import { ArrowLeftRight, Circle, ListFilter } from "lucide-react";
 
 import { EventsTableHeaderProps } from "./EventsTableHeader.types";
 
@@ -11,9 +17,26 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
   showOriginalText,
   onToggleAll,
   onToggleTextMode,
+  categories,
+  selectedCategoryIds,
+  onCategoryFilterChange,
 }) => {
   const isAllSelected = selectedCount > 0 && selectedCount === totalCount;
   const isIndeterminate = selectedCount > 0 && selectedCount < totalCount;
+
+  const handleCategoryToggle = (categoryId: string) => {
+    if (selectedCategoryIds.includes(categoryId)) {
+      onCategoryFilterChange(
+        selectedCategoryIds.filter((id) => id !== categoryId),
+      );
+    } else {
+      onCategoryFilterChange([...selectedCategoryIds, categoryId]);
+    }
+  };
+
+  const handleClearFilter = () => {
+    onCategoryFilterChange([]);
+  };
 
   return (
     <nav className="bg-background fixed top-0 left-0 z-50 text-xs">
@@ -84,10 +107,68 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
           <span>{showOriginalText ? "Original Text" : "Description"}</span>
           <ArrowLeftRight size={12} />
         </div>
-        <div className="hover:text-default-400-foreground w-[180px] cursor-pointer">
-          <span>Categories</span>
-          <ListFilter size={12} />
-        </div>
+        <Dropdown>
+          <DropdownTrigger>
+            <div className="hover:text-default-400-foreground flex w-[180px] cursor-pointer items-center gap-1">
+              <span>Categories</span>
+              <ListFilter
+                className={selectedCategoryIds.length > 0 ? "text-primary" : ""}
+                size={12}
+              />
+              {selectedCategoryIds.length > 0 && (
+                <span className="bg-primary text-primary-foreground ml-1 rounded-full px-1.5 text-[10px]">
+                  {selectedCategoryIds.length}
+                </span>
+              )}
+            </div>
+          </DropdownTrigger>
+          <DropdownMenu
+            aria-label="Category filter"
+            closeOnSelect={false}
+            variant="flat"
+          >
+            {categories.length === 0 ? (
+              <DropdownItem key="no-categories" isReadOnly>
+                No categories available
+              </DropdownItem>
+            ) : (
+              <>
+                <DropdownItem
+                  key="clear-filter"
+                  className="text-default-500"
+                  isDisabled={selectedCategoryIds.length === 0}
+                  onPress={handleClearFilter}
+                >
+                  Clear filter
+                </DropdownItem>
+                {categories
+                  .filter(
+                    (category): category is typeof category & { id: string } =>
+                      category.id !== undefined,
+                  )
+                  .map((category) => (
+                    <DropdownItem
+                      key={category.id}
+                      startContent={
+                        <Circle
+                          fill={
+                            selectedCategoryIds.includes(category.id)
+                              ? category.color
+                              : "transparent"
+                          }
+                          size={12}
+                          stroke={category.color}
+                        />
+                      }
+                      onPress={() => handleCategoryToggle(category.id)}
+                    >
+                      {category.name}
+                    </DropdownItem>
+                  ))}
+              </>
+            )}
+          </DropdownMenu>
+        </Dropdown>
         <div className="w-[120px] justify-end">
           <span>Actions</span>
         </div>

@@ -20,6 +20,13 @@ export type CalendarV2ContextType = {
   calendarV2Data: GetCalendarV2SuccessResponse["data"] | undefined;
 
   /**
+   * Filtered calendar data based on selected category IDs
+   * Returns the original data if no categories are selected
+   * Stats are recalculated to reflect only filtered events
+   */
+  filteredCalendarData: GetCalendarV2SuccessResponse["data"] | undefined;
+
+  /**
    * Currently displayed month
    */
   currentMonth: Date;

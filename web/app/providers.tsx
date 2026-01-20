@@ -37,19 +37,19 @@ export function Providers({ children, themeProps }: ProvidersProps) {
       <ToastProvider />
       <NextThemesProvider {...themeProps}>
         <ExchangeRatesContextController>
-          <CalendarV2ContextController>
-            <EventEditModalContextController>
-              <EventsContextController>
-                <CurrencyContextController>
-                  <FilteringContextController>
-                    <EventCategoriesContextController>
+          <FilteringContextController>
+            <EventCategoriesContextController>
+              <CalendarV2ContextController>
+                <EventEditModalContextController>
+                  <EventsContextController>
+                    <CurrencyContextController>
                       <>{children}</>
-                    </EventCategoriesContextController>
-                  </FilteringContextController>
-                </CurrencyContextController>
-              </EventsContextController>
-            </EventEditModalContextController>
-          </CalendarV2ContextController>
+                    </CurrencyContextController>
+                  </EventsContextController>
+                </EventEditModalContextController>
+              </CalendarV2ContextController>
+            </EventCategoriesContextController>
+          </FilteringContextController>
         </ExchangeRatesContextController>
       </NextThemesProvider>
     </HeroUIProvider>
