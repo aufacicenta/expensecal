@@ -1,10 +1,16 @@
 import { CreationOptional, DataTypes, Model, Sequelize } from "sequelize";
 
+export enum CurrencyType {
+  FIAT = "FIAT",
+  CRYPTO = "CRYPTO",
+}
+
 export interface CurrencyAttributes {
   id?: string;
   symbol: string;
   name: string;
   decimal_units: number;
+  currency_type: CurrencyType;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -14,6 +20,7 @@ export class Currency extends Model<CurrencyAttributes> implements CurrencyAttri
   declare symbol: string;
   declare name: string;
   declare decimal_units: number;
+  declare currency_type: CurrencyType;
 
   declare readonly created_at: Date;
   declare readonly updated_at: Date;
@@ -37,6 +44,12 @@ export class Currency extends Model<CurrencyAttributes> implements CurrencyAttri
         decimal_units: {
           type: DataTypes.INTEGER,
           allowNull: false,
+        },
+        currency_type: {
+          type: DataTypes.ENUM(...Object.values(CurrencyType)),
+          allowNull: false,
+          defaultValue: CurrencyType.FIAT,
+          comment: "Type of currency: FIAT for traditional currencies, CRYPTO for cryptocurrencies",
         },
       },
       {

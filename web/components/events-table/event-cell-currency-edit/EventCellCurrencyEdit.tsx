@@ -1,8 +1,8 @@
 import { Button } from "@heroui/button";
-import { Select, SelectItem } from "@heroui/select";
+import { Select, SelectItem, SelectSection } from "@heroui/select";
 import clsx from "clsx";
 import { CircleCheckBig, CircleX } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { EventCellCurrencyEditProps } from "./EventCellCurrencyEdit.types";
 
@@ -17,6 +17,18 @@ export const EventCellCurrencyEdit: React.FC<EventCellCurrencyEditProps> = ({
     event.currency?.id || "",
   );
   const [isLoading, setIsLoading] = useState(false);
+
+  // Group currencies by type (FIAT vs CRYPTO)
+  const { fiatCurrencies, cryptoCurrencies } = useMemo(() => {
+    const fiat = availableCurrencies.filter(
+      (c) => c.currency_type === "FIAT" || !c.currency_type,
+    );
+    const crypto = availableCurrencies.filter(
+      (c) => c.currency_type === "CRYPTO",
+    );
+
+    return { fiatCurrencies: fiat, cryptoCurrencies: crypto };
+  }, [availableCurrencies]);
 
   const handleSelectionChange = (newSelection: "all" | Set<React.Key>) => {
     if (newSelection === "all") {
@@ -65,7 +77,7 @@ export const EventCellCurrencyEdit: React.FC<EventCellCurrencyEditProps> = ({
       <Select
         classNames={{
           trigger: "min-h-10",
-          listboxWrapper: "max-h-48",
+          listboxWrapper: "max-h-64",
         }}
         isDisabled={isLoading}
         placeholder="Select currency"
@@ -75,17 +87,68 @@ export const EventCellCurrencyEdit: React.FC<EventCellCurrencyEditProps> = ({
         variant="bordered"
         onSelectionChange={handleSelectionChange}
       >
-        {availableCurrencies.map((currency) => (
-          <SelectItem
-            key={currency.id || ""}
-            className="flex items-center gap-2"
-            textValue={currency.name}
-          >
-            <div className="flex w-full items-center gap-2">
-              <span className="font-medium">{currency.symbol}</span>
-            </div>
-          </SelectItem>
-        ))}
+        {cryptoCurrencies.length > 0 ? (
+          <>
+            <SelectSection
+              classNames={{
+                heading: "text-xs font-semibold text-default-500 uppercase",
+              }}
+              title="Fiat Currencies"
+            >
+              {fiatCurrencies.map((currency) => (
+                <SelectItem
+                  key={currency.id || ""}
+                  className="flex items-center gap-2"
+                  textValue={`${currency.symbol} - ${currency.name}`}
+                >
+                  <div className="flex w-full items-center gap-2">
+                    <span className="font-medium">{currency.symbol}</span>
+                    <span className="text-default-400 text-xs">
+                      {currency.name}
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectSection>
+            <SelectSection
+              classNames={{
+                heading: "text-xs font-semibold text-default-500 uppercase",
+              }}
+              title="Cryptocurrencies"
+            >
+              {cryptoCurrencies.map((currency) => (
+                <SelectItem
+                  key={currency.id || ""}
+                  className="flex items-center gap-2"
+                  textValue={`${currency.symbol} - ${currency.name}`}
+                >
+                  <div className="flex w-full items-center gap-2">
+                    <span className="font-medium">{currency.symbol}</span>
+                    <span className="text-default-400 text-xs">
+                      {currency.name}
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectSection>
+          </>
+        ) : (
+          // When no crypto currencies exist, show flat list without sections
+          availableCurrencies.map((currency) => (
+            <SelectItem
+              key={currency.id || ""}
+              className="flex items-center gap-2"
+              textValue={`${currency.symbol} - ${currency.name}`}
+            >
+              <div className="flex w-full items-center gap-2">
+                <span className="font-medium">{currency.symbol}</span>
+                <span className="text-default-400 text-xs">
+                  {currency.name}
+                </span>
+              </div>
+            </SelectItem>
+          ))
+        )}
       </Select>
       <div className="flex justify-end gap-2">
         <Button
