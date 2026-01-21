@@ -77,7 +77,7 @@ export const EventCellCurrencyEdit: React.FC<EventCellCurrencyEditProps> = ({
       <Select
         classNames={{
           trigger: "min-h-10",
-          listboxWrapper: "max-h-64",
+          listboxWrapper: "max-h-none",
         }}
         isDisabled={isLoading}
         placeholder="Select currency"
@@ -90,6 +90,7 @@ export const EventCellCurrencyEdit: React.FC<EventCellCurrencyEditProps> = ({
         {cryptoCurrencies.length > 0 ? (
           <>
             <SelectSection
+              showDivider
               classNames={{
                 heading: "text-xs font-semibold text-default-500 uppercase",
               }}
