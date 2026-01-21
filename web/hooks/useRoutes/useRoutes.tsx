@@ -37,6 +37,10 @@ export const routes = {
       exchangeRates: {
         get: () => `/api/v1/exchange-rates`,
       },
+      userPreferences: {
+        get: () => `/api/v1/user-preferences`,
+        update: () => `/api/v1/user-preferences`,
+      },
     },
     v2: {
       calendar: {

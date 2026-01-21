@@ -1,3 +1,9 @@
+import db from "@expensecal/database/db";
+import {
+  Currency,
+  initModels,
+  UserPreferences,
+} from "@expensecal/database/models";
 import { NextResponse } from "next/server";
 
 import { GetExchangeRatesResponse } from "./types";
@@ -28,9 +34,24 @@ export async function GET(): Promise<NextResponse<GetExchangeRatesResponse>> {
       );
     }
 
-    // Fetch latest exchange rates from USD
-    const baseCurrency = "USD"; // @TODO get from user_id preferences in the future
-    const ratesMap = await getLatestRatesFromCurrency(baseCurrency);
+    // Initialize database models
+    initModels(db);
+
+    // Get user's base currency preference
+    const userPrefs = await UserPreferences.findOne({
+      where: { user_id: user.id },
+      include: [
+        {
+          model: Currency,
+          as: "baseCurrency",
+          attributes: ["id", "symbol", "name"],
+        },
+      ],
+    });
+    const baseCurrency = userPrefs?.baseCurrency?.symbol || "USD";
+
+    // Fetch latest exchange rates from USD (always the hub currency)
+    const ratesMap = await getLatestRatesFromCurrency("USD");
 
     // Convert Map to plain object for JSON serialization
     const rates: Record<string, string> = {};

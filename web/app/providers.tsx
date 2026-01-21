@@ -15,6 +15,7 @@ import { EventEditModalContextController } from "@/context/EventEditModal/EventE
 import { EventsContextController } from "@/context/Events/EventsContextController";
 import { ExchangeRatesContextController } from "@/context/ExchangeRates/ExchangeRatesContextController";
 import { FilteringContextController } from "@/context/Filtering/FilteringContextController";
+import { UserPreferencesContextController } from "@/context/UserPreferences/UserPreferencesContextController";
 
 export interface ProvidersProps {
   children: React.ReactNode;
@@ -43,7 +44,9 @@ export function Providers({ children, themeProps }: ProvidersProps) {
                 <EventEditModalContextController>
                   <EventsContextController>
                     <CurrencyContextController>
-                      <>{children}</>
+                      <UserPreferencesContextController>
+                        <>{children}</>
+                      </UserPreferencesContextController>
                     </CurrencyContextController>
                   </EventsContextController>
                 </EventEditModalContextController>

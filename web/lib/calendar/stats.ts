@@ -11,6 +11,17 @@ import {
 /**
  * Calculate financial summary for a day
  * Converts all events to the base currency using exchange rates
+ *
+ * Uses hub-and-spoke model where all rates are stored as USD -> X
+ * To convert from currency A to currency B:
+ * 1. Convert A to USD: amount / USD->A rate
+ * 2. Convert USD to B: result * USD->B rate
+ *
+ * @param amount - Amount to convert as Decimal
+ * @param currencySymbol - Source currency symbol (e.g., "MXN")
+ * @param baseCurrencySymbol - Target base currency symbol (e.g., "EUR")
+ * @param exchangeRates - Map of currency symbols to their USD->X rates
+ * @returns Converted amount as Decimal
  */
 export function convertAmount(
   amount: Decimal,
@@ -18,24 +29,49 @@ export function convertAmount(
   baseCurrencySymbol: string,
   exchangeRates: Map<string, string>,
 ): Decimal {
-  // Convert amount to base currency if needed
-  let convertedAmount = amount;
+  // No conversion needed if same currency
+  if (currencySymbol === baseCurrencySymbol) {
+    return amount;
+  }
 
-  if (currencySymbol !== baseCurrencySymbol && currencySymbol !== "UNKNOWN") {
-    const rate = exchangeRates.get(currencySymbol);
+  // Cannot convert unknown currencies
+  if (currencySymbol === "UNKNOWN") {
+    return amount;
+  }
 
-    if (rate) {
-      // Convert using hub-and-spoke model: (amount / rate) * 1
-      convertedAmount = new Decimal(
-        convertCurrency(amount.toString(), rate, "1"),
+  // Get the source currency's rate (USD -> source)
+  const sourceRate = exchangeRates.get(currencySymbol);
+
+  if (!sourceRate) {
+    // Rate not found, log warning and use unconverted amount
+    console.warn(
+      `Exchange rate not found for ${currencySymbol}, using unconverted amount`,
+    );
+
+    return amount;
+  }
+
+  // If converting to USD, target rate is "1" (1 USD = 1 USD)
+  // Otherwise, get the target currency's rate (USD -> target)
+  let targetRate = "1";
+
+  if (baseCurrencySymbol !== "USD") {
+    const fetchedTargetRate = exchangeRates.get(baseCurrencySymbol);
+
+    if (!fetchedTargetRate) {
+      console.warn(
+        `Exchange rate not found for base currency ${baseCurrencySymbol}, converting to USD instead`,
       );
     } else {
-      // Rate not found, log warning and use unconverted amount
-      console.warn(
-        `Exchange rate not found for ${currencySymbol}, using unconverted amount`,
-      );
+      targetRate = fetchedTargetRate;
     }
   }
+
+  // Convert using hub-and-spoke model: (amount / sourceRate) * targetRate
+  // This converts: source currency -> USD -> target currency
+  const convertedAmount = new Decimal(
+    convertCurrency(amount.toString(), sourceRate, targetRate),
+  );
 
   return convertedAmount;
 }

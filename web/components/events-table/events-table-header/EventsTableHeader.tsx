@@ -9,7 +9,9 @@ import { ArrowLeftRight, Circle, CircleDashed, ListFilter } from "lucide-react";
 
 import { EventsTableHeaderProps } from "./EventsTableHeader.types";
 
+import { BaseCurrencySelector } from "@/components/base-currency-selector/BaseCurrencySelector";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { useUserPreferencesContext } from "@/context/UserPreferences/useUserPreferencesContext";
 import { UNCATEGORIZED_FILTER_ID } from "@/lib/calendar/filterEvents";
 
 export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
@@ -22,6 +24,7 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
   selectedCategoryIds,
   onCategoryFilterChange,
 }) => {
+  const { baseCurrency } = useUserPreferencesContext();
   const isAllSelected = selectedCount > 0 && selectedCount === totalCount;
   const isIndeterminate = selectedCount > 0 && selectedCount < totalCount;
 
@@ -47,7 +50,8 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
           <span className="">ExpenseCal</span>
           <span className="text-default-400">v0.0.2</span>
         </div>
-        <div className="text-right">
+        <div className="flex items-center gap-2 text-right">
+          <BaseCurrencySelector />
           <ThemeSwitch />
         </div>
       </div>
@@ -88,7 +92,7 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
           <ListFilter size={12} />
         </div>
         <div className="w-[120px] justify-end">
-          <span>Ex. Rate (USD)</span>
+          <span>Ex. Rate ({baseCurrency?.symbol || "USD"})</span>
         </div>
         <div className="w-[90px] justify-center">
           <span>Type</span>

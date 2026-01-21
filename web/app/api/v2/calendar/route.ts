@@ -1,5 +1,10 @@
 import db from "@expensecal/database/db";
-import { Category, Currency, initModels } from "@expensecal/database/models";
+import {
+  Category,
+  Currency,
+  initModels,
+  UserPreferences,
+} from "@expensecal/database/models";
 import { Event, EventType } from "@expensecal/database/models/Event";
 import Decimal from "decimal.js";
 import { NextResponse } from "next/server";
@@ -82,9 +87,22 @@ export async function GET(): Promise<NextResponse<GetCalendarResponse>> {
       order: [["event_date", "ASC"]],
     });
 
+    // Get user's base currency preference
+    const userPrefs = await UserPreferences.findOne({
+      where: { user_id: user.id },
+      include: [
+        {
+          model: Currency,
+          as: "baseCurrency",
+          attributes: ["id", "symbol", "name"],
+        },
+      ],
+    });
+    const baseCurrencySymbol = userPrefs?.baseCurrency?.symbol || "USD";
+
     // Fetch latest exchange rates for currency conversion
-    const baseCurrencySymbol = "USD"; // TODO: Pull from user.base_currency once implemented
-    const exchangeRates = await getLatestRatesFromCurrency(baseCurrencySymbol);
+    // Always fetch from USD as the hub currency, then convert to user's base currency
+    const exchangeRates = await getLatestRatesFromCurrency("USD");
 
     // Group events by year/month/day and calculate stats with carry-forward in single pass
     const calendarData: CalendarData = {};
