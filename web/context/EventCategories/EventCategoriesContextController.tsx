@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 
-import { CreatedCategoryData } from "@/app/api/v1/categories/create/types";
-import { CategoryData } from "@/app/api/v1/categories/types";
-import { useFilteringContext } from "@/context/Filtering/useFilteringContext";
-import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 import { EventCategoriesContext } from "./EventCategoriesContext";
 import {
   EventCategoriesContextControllerProps,
   EventCategoriesContextType,
 } from "./EventCategoriesContext.types";
+
+import { CreatedCategoryData } from "@/app/api/v1/categories/create/types";
+import { CategoryData } from "@/app/api/v1/categories/types";
+import { useFilteringContext } from "@/context/Filtering/useFilteringContext";
+import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 
 export const EventCategoriesContextController = ({
   children,
@@ -30,6 +31,7 @@ export const EventCategoriesContextController = ({
     try {
       const response = await fetch(routes.api.v1.categories.get());
       const data = await response.json();
+
       if (data.success) {
         setCategories(data.data);
       }
@@ -59,16 +61,20 @@ export const EventCategoriesContextController = ({
       });
 
       const data = await response.json();
+
       if (data.success) {
         // Add the new category to the list
         setCategories([...categories, data.data]);
+
         return data.data;
       } else {
         console.error("Failed to create category:", data.error);
+
         return null;
       }
     } catch (err) {
       console.error("Failed to create category:", err);
+
       return null;
     }
   };

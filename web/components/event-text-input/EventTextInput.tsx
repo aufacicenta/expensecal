@@ -1,19 +1,21 @@
-import { useCalendarContext } from "@/context/Calendar/useCalendarContext";
-import { useEventsContext } from "@/context/Events/useEventsContext";
 import { useDraggable } from "@dnd-kit/core";
 import { Textarea } from "@heroui/input";
 import { addToast } from "@heroui/toast";
 import clsx from "clsx";
 import { Grip } from "lucide-react";
 import { useState } from "react";
+
 import { EventTextInputProps } from "./EventTextInput.types";
+
+import { useEventsContext } from "@/context/Events/useEventsContext";
+import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
 
 export const EventTextInput: React.FC<EventTextInputProps> = ({
   className,
   position = { x: 0, y: 0 },
 }) => {
   const eventsController = useEventsContext();
-  const calendarContext = useCalendarContext();
+  const calendarContext = useCalendarV2Context();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -76,11 +78,11 @@ export const EventTextInput: React.FC<EventTextInputProps> = ({
   return (
     <div
       ref={setNodeRef}
-      style={style}
       className={clsx(
         "bg-background border-primary fixed z-50 rounded border p-2 transition-transform duration-75",
         className,
       )}
+      style={style}
     >
       <div className="flex gap-2">
         <div
@@ -88,18 +90,18 @@ export const EventTextInput: React.FC<EventTextInputProps> = ({
           {...attributes}
           className="cursor-grab touch-none active:cursor-grabbing"
         >
-          <Grip size={16} className="[&>circle]:fill-content3" />
+          <Grip className="[&>circle]:fill-content3" size={16} />
         </div>
         <Textarea
+          className="w-full"
+          description="Press Enter to parse and create event (Shift+Enter for new line)"
+          disabled={loading}
+          isDisabled={loading}
           label="Enter expense or income"
           placeholder="e.g., Spent $50 on groceries"
           value={input}
-          onValueChange={setInput}
           onKeyDown={handleKeyDown}
-          disabled={loading}
-          isDisabled={loading}
-          description="Press Enter to parse and create event (Shift+Enter for new line)"
-          className="w-full"
+          onValueChange={setInput}
         />
       </div>
     </div>

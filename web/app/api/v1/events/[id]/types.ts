@@ -4,7 +4,10 @@
  */
 
 import { EventAttributes } from "@expensecal/database/models/Event";
+
 import { BaseErrorResponse, BaseSuccessResponse } from "../../types";
+
+export type DeleteMode = "single" | "all-future";
 
 export type UpdateEventRequestBody = {
   type?: EventAttributes["type"];

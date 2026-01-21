@@ -1,27 +1,40 @@
-import { createInstallments } from "@/lib/events/createInstallments";
-import { getLocalLMStudioParser } from "@/lib/parser/localLMStudioParser";
+import db from "@expensecal/database/db";
+import { initModels } from "@expensecal/database/models";
+import { Currency } from "@expensecal/database/models/Currency";
+import { Event, EventType } from "@expensecal/database/models/Event";
+import { NextRequest, NextResponse } from "next/server";
+
+import {
+  CreateFromTextRequestBody,
+  CreateFromTextResponse,
+  CreateFromTextSuccessResponse,
+} from "./types";
+
+import {
+  createInstallments,
+  createRecurringEvents,
+} from "@/lib/events/createInstallments";
+import { getParserInstance } from "@/lib/parser/parserFactory";
 import {
   createValidationErrorResponse,
   validateISO8601Date,
   validateRequiredString,
 } from "@/lib/validators";
 import { stackServerApp } from "@/stack/server";
-import db from "@expensecal/database/db";
-import { initModels } from "@expensecal/database/models";
-import { Currency } from "@expensecal/database/models/Currency";
-import { Event, EventType } from "@expensecal/database/models/Event";
-import { NextRequest, NextResponse } from "next/server";
-import { CreateFromTextRequestBody, CreateFromTextResponse } from "./types";
 
 /**
  * POST /api/v1/events/create-from-text
- * Parse natural language text, create an event, and optionally create recurrence installments in one call
+ * Parse natural language text, create an event, and optionally create recurring events or installments in one call
  * Protected endpoint (requires authentication)
  *
  * Request body:
  * - text: Natural language text to parse (required)
  * - current_date: ISO 8601 format date for context (optional)
  * - create_installments: If true and event has recurrence_rule, automatically create installments (optional, default false)
+ *
+ * Behavior:
+ * - If split_installments from parser is true: creates installments (amount split across instances)
+ * - If split_installments from parser is false: creates recurring events (same amount for each instance)
  */
 export async function POST(
   request: NextRequest,
@@ -29,6 +42,7 @@ export async function POST(
   try {
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -44,6 +58,7 @@ export async function POST(
 
     // Validate text
     const textError = validateRequiredString(body.text, "text");
+
     if (textError) {
       return createValidationErrorResponse(textError);
     }
@@ -54,16 +69,18 @@ export async function POST(
       "current_date",
       false,
     );
+
     if (currentDateResult.error) {
       return createValidationErrorResponse(currentDateResult.error);
     }
     const currentDate = currentDateResult.date ?? undefined;
 
-    // Get parser instance (Ollama or LiteLLM based on env)
-    const parser = getLocalLMStudioParser();
+    // Get parser instance (Local LM Studio for dev, LiteLLM for production/staging)
+    const parser = getParserInstance();
 
     // Check if Ollama is available
     const health = await parser.checkHealth();
+
     if (!health.available) {
       return NextResponse.json(
         {
@@ -149,104 +166,124 @@ export async function POST(
       updated_at: event.updated_at.toISOString(),
     };
 
-    const responseData: any = {
+    const responseData: CreateFromTextSuccessResponse["data"] = {
       event: eventData,
       parsed: parseResult,
     };
 
-    // Create installments if requested and event has recurrence rule
+    // Create installments or recurring events if event has recurrence rule
     if (event.recurrence_rule && parseResult.recurrence_rule) {
       try {
-        const installmentsResult = await createInstallments({
-          parentEventId: event.id,
-          splitAmount: parseResult.split_installments || false,
-        });
+        const shouldSplitAmount = parseResult.split_installments === true;
 
-        if (!installmentsResult.success) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: "Failed to create installments",
-              details: installmentsResult.error,
-              stage: "installments",
+        if (shouldSplitAmount) {
+          // Create installments (split amount across instances)
+          const installmentsResult = await createInstallments({
+            parentEventId: event.id,
+            splitAmount: true,
+          });
+
+          if (!installmentsResult.success) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: "Failed to create installments",
+                details: installmentsResult.error,
+                stage: "installments",
+              },
+              { status: 400 },
+            );
+          }
+
+          // Fetch installment events with fresh data
+          const installmentEvents = await Event.findAll({
+            where: {
+              id: installmentsResult.installmentIds,
             },
-            { status: 400 },
-          );
-        }
+            order: [["event_date", "ASC"]],
+          });
 
-        // Fetch installment events with fresh data
-        const installmentEvents = await Event.findAll({
-          where: {
-            id: installmentsResult.installmentIds,
-          },
-          order: [["event_date", "ASC"]],
-        });
+          // Calculate amount per installment
+          const amountPerInstallment = installmentEvents.length
+            ? installmentEvents[0].amount
+            : "0";
 
-        // Calculate amount per installment
-        const amountPerInstallment = installmentEvents.length
-          ? installmentEvents[0].amount
-          : "0";
+          // Fetch updated parent event
+          const updatedParent = await Event.findByPk(event.id);
 
-        // Fetch updated parent event
-        const updatedParent = await Event.findByPk(event.id);
-        if (!updatedParent) {
-          return NextResponse.json(
-            {
-              success: false,
-              error:
-                "Failed to retrieve parent event after installment creation",
-              stage: "installments",
+          if (!updatedParent) {
+            return NextResponse.json(
+              {
+                success: false,
+                error:
+                  "Failed to retrieve parent event after installment creation",
+                stage: "installments",
+              },
+              { status: 500 },
+            );
+          }
+
+          responseData.installments = {
+            parent_event: updatedParent.toJSON(),
+            installments: installmentEvents.map((inst) => inst),
+            installment_count: installmentsResult.installmentCount,
+            amount_per_installment: amountPerInstallment,
+          };
+        } else {
+          // Create recurring events (same amount for each instance)
+          const recurringResult = await createRecurringEvents({
+            parentEventId: event.id,
+          });
+
+          if (!recurringResult.success) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: "Failed to create recurring events",
+                details: recurringResult.error,
+                stage: "installments",
+              },
+              { status: 400 },
+            );
+          }
+
+          // Fetch recurring events with fresh data
+          const recurringEvents = await Event.findAll({
+            where: {
+              id: recurringResult.recurringEventIds,
             },
-            { status: 500 },
-          );
-        }
+            order: [["event_date", "ASC"]],
+          });
 
-        responseData.installments = {
-          parent_event: {
-            id: updatedParent.id,
-            user_id: updatedParent.user_id,
-            type: updatedParent.type,
-            amount: updatedParent.amount,
-            currency_id: updatedParent.currency_id,
-            quantity: updatedParent.quantity,
-            description: updatedParent.description,
-            event_date: updatedParent.event_date.toISOString(),
-            parent_event_id: null,
-            recurrence_rule: updatedParent.recurrence_rule || "",
-            recurrence_end_date:
-              updatedParent.recurrence_end_date?.toISOString() || null,
-            original_text: updatedParent.original_text || null,
-            created_at: updatedParent.created_at.toISOString(),
-            updated_at: updatedParent.updated_at.toISOString(),
-          },
-          installments: installmentEvents.map((inst) => ({
-            id: inst.id,
-            user_id: inst.user_id,
-            type: inst.type,
-            amount: inst.amount,
-            currency_id: inst.currency_id,
-            quantity: inst.quantity,
-            description: inst.description,
-            event_date: inst.event_date.toISOString(),
-            parent_event_id: inst.parent_event_id!,
-            recurrence_rule: null,
-            recurrence_end_date: null,
-            created_at: inst.created_at.toISOString(),
-            updated_at: inst.updated_at.toISOString(),
-          })),
-          installment_count: installmentsResult.installmentCount,
-          amount_per_installment: amountPerInstallment,
-        };
-      } catch (installmentError) {
-        console.error("Error creating installments:", installmentError);
+          // Fetch updated parent event
+          const updatedParent = await Event.findByPk(event.id);
+
+          if (!updatedParent) {
+            return NextResponse.json(
+              {
+                success: false,
+                error:
+                  "Failed to retrieve parent event after recurring events creation",
+                stage: "installments",
+              },
+              { status: 500 },
+            );
+          }
+
+          responseData.recurring_events = {
+            parent_event: updatedParent.toJSON(),
+            recurring_events: recurringEvents.map((evt) => evt),
+            recurring_event_count: recurringResult.recurringEventCount,
+          };
+        }
+      } catch (error) {
+        console.error("Error creating recurrence events:", error);
+
         return NextResponse.json(
           {
             success: false,
-            error: "Failed to create installments",
-            details:
-              installmentError instanceof Error
-                ? installmentError.message
-                : String(installmentError),
+            error: "Failed to create recurrence events",
+            details: error instanceof Error ? error.message : String(error),
             stage: "installments",
           },
           { status: 400 },
@@ -254,7 +291,7 @@ export async function POST(
       }
     }
 
-    // Return created event with parsed data and optional installments
+    // Return created event with parsed data and optional installments or recurring events
     return NextResponse.json(
       {
         success: true,
@@ -264,6 +301,7 @@ export async function POST(
     );
   } catch (error) {
     console.error("Create from text endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,

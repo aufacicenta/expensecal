@@ -1,11 +1,13 @@
-import { validateUUID } from "@/lib/validators";
-import { stackServerApp } from "@/stack/server";
 import { Op } from "@expensecal/database";
 import db from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
 import { Event } from "@expensecal/database/models/Event";
 import { NextRequest, NextResponse } from "next/server";
+
 import { GetChildEventsResponse } from "./types";
+
+import { stackServerApp } from "@/stack/server";
+import { validateUUID } from "@/lib/validators";
 
 /**
  * GET /api/v1/events/[id]/children
@@ -21,6 +23,7 @@ export async function GET(
 
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -34,6 +37,7 @@ export async function GET(
 
     // Validate event ID
     const idError = validateUUID(id, "id", true);
+
     if (idError) {
       return NextResponse.json(
         {
@@ -50,6 +54,7 @@ export async function GET(
 
     // Find the parent event
     const event = await Event.findByPk(id);
+
     if (!event) {
       return NextResponse.json(
         {
@@ -98,27 +103,13 @@ export async function GET(
     return NextResponse.json(
       {
         success: true,
-        data: childEvents.map((childEvent) => ({
-          id: childEvent.id,
-          user_id: childEvent.user_id,
-          type: childEvent.type,
-          amount: childEvent.amount,
-          currency_id: childEvent.currency_id,
-          quantity: childEvent.quantity,
-          description: childEvent.description,
-          event_date: childEvent.event_date,
-          parent_event_id: childEvent.parent_event_id,
-          recurrence_rule: childEvent.recurrence_rule,
-          recurrence_end_date: childEvent.recurrence_end_date || null,
-          created_at: childEvent.created_at,
-          updated_at: childEvent.updated_at,
-          currency: childEvent.currency || undefined,
-        })),
+        data: childEvents,
       },
       { status: 200 },
     );
   } catch (error) {
     console.error("Get child events endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,

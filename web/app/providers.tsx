@@ -2,17 +2,19 @@
 
 import type { ThemeProviderProps } from "next-themes";
 
-import { CalendarContextController } from "@/context/Calendar/CalendarContextController";
-import { CurrencyContextController } from "@/context/Currency/CurrencyContextController";
-import { EventCategoriesContextController } from "@/context/EventCategories/EventCategoriesContextController";
-import { EventEditModalContextController } from "@/context/EventEditModal/EventEditModalContext";
-import { EventsContextController } from "@/context/Events/EventsContextController";
-import { FilteringContextController } from "@/context/Filtering/FilteringContextController";
 import { HeroUIProvider } from "@heroui/system";
 import { ToastProvider } from "@heroui/toast";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { useRouter } from "next/navigation";
 import * as React from "react";
+
+import { CalendarV2ContextController } from "@/context/CalendarV2/CalendarV2ContextController";
+import { CurrencyContextController } from "@/context/Currency/CurrencyContextController";
+import { EventCategoriesContextController } from "@/context/EventCategories/EventCategoriesContextController";
+import { EventEditModalContextController } from "@/context/EventEditModal/EventEditModalContext";
+import { EventsContextController } from "@/context/Events/EventsContextController";
+import { ExchangeRatesContextController } from "@/context/ExchangeRates/ExchangeRatesContextController";
+import { FilteringContextController } from "@/context/Filtering/FilteringContextController";
 
 export interface ProvidersProps {
   children: React.ReactNode;
@@ -34,19 +36,21 @@ export function Providers({ children, themeProps }: ProvidersProps) {
     <HeroUIProvider navigate={router.push}>
       <ToastProvider />
       <NextThemesProvider {...themeProps}>
-        <CalendarContextController>
-          <EventEditModalContextController>
-            <EventsContextController>
-              <CurrencyContextController>
-                <FilteringContextController>
-                  <EventCategoriesContextController>
-                    {children}
-                  </EventCategoriesContextController>
-                </FilteringContextController>
-              </CurrencyContextController>
-            </EventsContextController>
-          </EventEditModalContextController>
-        </CalendarContextController>
+        <ExchangeRatesContextController>
+          <FilteringContextController>
+            <EventCategoriesContextController>
+              <CalendarV2ContextController>
+                <EventEditModalContextController>
+                  <EventsContextController>
+                    <CurrencyContextController>
+                      <>{children}</>
+                    </CurrencyContextController>
+                  </EventsContextController>
+                </EventEditModalContextController>
+              </CalendarV2ContextController>
+            </EventCategoriesContextController>
+          </FilteringContextController>
+        </ExchangeRatesContextController>
       </NextThemesProvider>
     </HeroUIProvider>
   );

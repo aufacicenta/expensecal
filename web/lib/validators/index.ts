@@ -1,5 +1,6 @@
-import { BaseErrorResponse } from "@/app/api/v1/types";
 import { NextResponse } from "next/server";
+
+import { BaseErrorResponse } from "@/app/api/v1/types";
 
 /**
  * Type for validation errors returned by validator functions
@@ -25,6 +26,7 @@ export function validateRequiredString(
       details: `Field '${fieldName}' is required and must be a non-empty string`,
     };
   }
+
   return null;
 }
 
@@ -69,6 +71,7 @@ export function validateISO8601Date(
 
   // Parse and validate the date
   const date = new Date(value);
+
   if (isNaN(date.getTime())) {
     return {
       date: null,
@@ -118,6 +121,7 @@ export function validatePositiveNumber(
 
   // Try to parse as number
   const numValue = Number(value);
+
   if (isNaN(numValue)) {
     return {
       value: null,
@@ -170,6 +174,7 @@ export function validateEnum(
       details: `Field '${fieldName}' must be one of: ${allowedValues.join(", ")}`,
     };
   }
+
   return null;
 }
 
@@ -209,6 +214,7 @@ export function validateUUID(
   // Simple UUID validation (v4 format)
   const uuidRegex =
     /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
   if (!uuidRegex.test(value)) {
     return {
       message: `Invalid ${fieldName}`,
@@ -307,6 +313,7 @@ export function validateHexColor(
 
   // Validate hex color format (e.g., #FF5733)
   const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
+
   if (!hexColorRegex.test(value)) {
     return {
       message: `Invalid ${fieldName} format`,

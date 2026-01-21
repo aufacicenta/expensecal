@@ -1,6 +1,7 @@
 import sequelize from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
 import { NextRequest, NextResponse } from "next/server";
+
 import { ExampleRequest, ExampleResponse } from "./types";
 
 /**
@@ -43,6 +44,7 @@ export async function POST(
     );
   } catch (error) {
     console.error("Error creating campaign:", error);
+
     return NextResponse.json(
       {
         success: false,

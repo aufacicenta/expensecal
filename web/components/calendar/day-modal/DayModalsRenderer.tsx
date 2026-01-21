@@ -1,7 +1,8 @@
 "use client";
 
-import { useDayModalContext } from "@/context/DayModal/useDayModalContext";
 import { DayModal } from "./DayModal";
+
+import { useDayModalContext } from "@/context/DayModal/useDayModalContext";
 
 export const DayModalsRenderer: React.FC = () => {
   const { modals, closeModal } = useDayModalContext();

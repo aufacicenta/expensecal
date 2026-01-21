@@ -1,12 +1,3 @@
-import {
-  createValidationErrorResponse,
-  validateEnum,
-  validateISO8601Date,
-  validatePositiveNumber,
-  validateRequiredString,
-  validateUUID,
-} from "@/lib/validators";
-import { stackServerApp } from "@/stack/server";
 import { Op } from "@expensecal/database";
 import db from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
@@ -15,7 +6,20 @@ import { Currency } from "@expensecal/database/models/Currency";
 import { Event } from "@expensecal/database/models/Event";
 import { EventCategories } from "@expensecal/database/models/EventCategories";
 import { NextRequest, NextResponse } from "next/server";
+
+import { deleteEventWithValidation } from "../delete-helpers";
+
 import { UpdateEventRequestBody, UpdateEventResponse } from "./types";
+
+import { stackServerApp } from "@/stack/server";
+import {
+  createValidationErrorResponse,
+  validateEnum,
+  validateISO8601Date,
+  validatePositiveNumber,
+  validateRequiredString,
+  validateUUID,
+} from "@/lib/validators";
 
 /**
  * PUT /api/v1/events/[id]
@@ -31,6 +35,7 @@ export async function PUT(
 
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -44,6 +49,7 @@ export async function PUT(
 
     // Validate event ID
     const idError = validateUUID(id, "id", true);
+
     if (idError) {
       return createValidationErrorResponse(idError);
     }
@@ -54,7 +60,8 @@ export async function PUT(
     initModels(db);
 
     // Find the event
-    const event = await Event.findByPk(id);
+    let event = await Event.findByPk(id);
+
     if (!event) {
       return NextResponse.json(
         {
@@ -81,6 +88,7 @@ export async function PUT(
     // Validate updatable fields if provided
     if (body.type !== undefined) {
       const typeError = validateEnum(body.type, "type", ["EXPENSE", "INCOME"]);
+
       if (typeError) {
         return createValidationErrorResponse(typeError);
       }
@@ -88,6 +96,7 @@ export async function PUT(
 
     if (body.amount !== undefined) {
       const amountResult = validatePositiveNumber(body.amount, "amount");
+
       if (amountResult.error) {
         return createValidationErrorResponse(amountResult.error);
       }
@@ -99,12 +108,14 @@ export async function PUT(
         "currency_id",
         true,
       );
+
       if (currencyIdError) {
         return createValidationErrorResponse(currencyIdError);
       }
 
       // Verify currency exists
       const currency = await Currency.findByPk(body.currency_id);
+
       if (!currency) {
         return NextResponse.json(
           {
@@ -122,6 +133,7 @@ export async function PUT(
         body.description,
         "description",
       );
+
       if (descriptionError) {
         return createValidationErrorResponse(descriptionError);
       }
@@ -133,6 +145,7 @@ export async function PUT(
         "event_date",
         true,
       );
+
       if (eventDateResult.error) {
         return createValidationErrorResponse(eventDateResult.error);
       }
@@ -143,6 +156,7 @@ export async function PUT(
         minValue: 0,
         isRequired: false,
       });
+
       if (quantityResult.error) {
         return createValidationErrorResponse(quantityResult.error);
       }
@@ -154,6 +168,7 @@ export async function PUT(
         "recurrence_end_date",
         false,
       );
+
       if (recurrenceEndDateResult.error) {
         return createValidationErrorResponse(recurrenceEndDateResult.error);
       }
@@ -169,6 +184,7 @@ export async function PUT(
 
       for (const categoryId of body.categoryIds) {
         const categoryIdError = validateUUID(categoryId, "categoryId", true);
+
         if (categoryIdError) {
           return createValidationErrorResponse(categoryIdError);
         }
@@ -180,6 +196,7 @@ export async function PUT(
             user_id: user.id,
           },
         });
+
         if (!category) {
           return NextResponse.json(
             {
@@ -214,47 +231,90 @@ export async function PUT(
 
     // Handle category assignments if provided
     if (body.categoryIds !== undefined) {
-      // Delete existing category associations
+      // Determine which events to update categories for
+      // If this is a recurring event (has parent_event_id or recurrence_rule),
+      // update categories for all related events (parent, self, and all children)
+      let eventIdsToUpdate = [event.id];
+
+      if (event.parent_event_id || event.recurrence_rule) {
+        // Get the parent event ID
+        const parentEventId = event.parent_event_id || event.id;
+
+        // Find all events in this recurring series
+        const allRelatedEvents = await Event.findAll({
+          where: {
+            user_id: user.id,
+            [Op.or]: [
+              { id: parentEventId },
+              { parent_event_id: parentEventId },
+            ],
+          },
+          attributes: ["id"],
+        });
+
+        eventIdsToUpdate = allRelatedEvents.map((e) => e.id);
+      }
+
+      // Delete existing category associations for all affected events
       await EventCategories.destroy({
         where: {
-          event_id: event.id,
+          event_id: eventIdsToUpdate,
         },
       });
 
-      // Create new category associations
-      if (body.categoryIds.length > 0) {
-        const eventCategoriesData = body.categoryIds.map((categoryId) => ({
-          event_id: event.id,
-          category_id: categoryId,
-        }));
+      // Create new category associations for all affected events
+      if (body.categoryIds !== undefined && body.categoryIds.length > 0) {
+        const eventCategoriesData = eventIdsToUpdate.flatMap((eventId) =>
+          body.categoryIds!.map((categoryId) => ({
+            event_id: eventId,
+            category_id: categoryId,
+          })),
+        );
+
         await EventCategories.bulkCreate(eventCategoriesData);
       }
+    }
+
+    // Refetch the event
+    event = await Event.findByPk(id, {
+      include: [
+        {
+          model: Currency,
+          as: "currency",
+          attributes: ["id", "symbol", "name"],
+        },
+        {
+          model: Category,
+          as: "categories",
+          through: {
+            as: "event_categories",
+          },
+        },
+      ],
+    });
+
+    if (!event) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Event not found",
+          details: `No event found with id: ${id}`,
+        },
+        { status: 404 },
+      );
     }
 
     // Return updated event
     return NextResponse.json(
       {
         success: true,
-        data: {
-          id: event.id,
-          user_id: event.user_id,
-          type: event.type,
-          amount: event.amount,
-          currency_id: event.currency_id,
-          quantity: event.quantity,
-          description: event.description,
-          event_date: event.event_date,
-          parent_event_id: event.parent_event_id,
-          recurrence_rule: event.recurrence_rule,
-          recurrence_end_date: event.recurrence_end_date || null,
-          created_at: event.created_at,
-          updated_at: event.updated_at,
-        },
+        data: event,
       },
       { status: 200 },
     );
   } catch (error) {
     console.error("Update event endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,
@@ -282,6 +342,7 @@ export async function DELETE(
 
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -295,6 +356,7 @@ export async function DELETE(
 
     // Validate event ID
     const idError = validateUUID(id, "id", true);
+
     if (idError) {
       return createValidationErrorResponse(idError);
     }
@@ -302,6 +364,7 @@ export async function DELETE(
     // Get query parameters
     const deleteMode =
       request.nextUrl.searchParams.get("deleteMode") || "single";
+
     if (!["single", "all-future"].includes(deleteMode)) {
       return createValidationErrorResponse(
         new Error("deleteMode must be 'single' or 'all-future'"),
@@ -311,87 +374,51 @@ export async function DELETE(
     // Initialize database models
     initModels(db);
 
-    // Find the event
-    const event = await Event.findByPk(id);
-    if (!event) {
+    try {
+      // Use shared deletion logic
+      const event = await deleteEventWithValidation({
+        eventId: id,
+        userId: user.id,
+        deleteMode: deleteMode as "single" | "all-future",
+      });
+
       return NextResponse.json(
         {
-          success: false,
-          error: "Event not found",
-          details: `No event found with id: ${id}`,
+          success: true,
+          data: event,
         },
-        { status: 404 },
+        { status: 200 },
       );
-    }
+    } catch (error) {
+      const errorType = (error as any).errorType;
 
-    // Verify ownership
-    if (event.user_id !== user.id) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Forbidden",
-          details: "You do not have permission to delete this event",
-        },
-        { status: 403 },
-      );
-    }
-
-    if (deleteMode === "all-future") {
-      // Delete this event and all future child events if recurring
-      if (event.parent_event_id || event.recurrence_rule) {
-        // Get parent event if this is a child
-        const parentId = event.parent_event_id || event.id;
-
-        // Delete this event and all child events with event_date >= this event's date
-        await Event.destroy({
-          where: {
-            user_id: user.id,
-            [Op.or]: [
-              {
-                id: event.id,
-              },
-              {
-                parent_event_id: parentId,
-                event_date: {
-                  [Op.gte]: event.event_date,
-                },
-              },
-            ],
+      if (errorType === "NotFound") {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Event not found",
+            details: error instanceof Error ? error.message : String(error),
           },
-        });
-      } else {
-        // Not a recurring event, just delete it
-        await event.destroy();
+          { status: 404 },
+        );
       }
-    } else {
-      // Delete only this single event
-      await event.destroy();
-    }
 
-    // Return success response with deleted event info
-    return NextResponse.json(
-      {
-        success: true,
-        data: {
-          id: event.id,
-          user_id: event.user_id,
-          type: event.type,
-          amount: event.amount,
-          currency_id: event.currency_id,
-          quantity: event.quantity,
-          description: event.description,
-          event_date: event.event_date,
-          parent_event_id: event.parent_event_id,
-          recurrence_rule: event.recurrence_rule,
-          recurrence_end_date: event.recurrence_end_date || null,
-          created_at: event.created_at,
-          updated_at: event.updated_at,
-        },
-      },
-      { status: 200 },
-    );
+      if (errorType === "Forbidden") {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Forbidden",
+            details: error instanceof Error ? error.message : String(error),
+          },
+          { status: 403 },
+        );
+      }
+
+      throw error;
+    }
   } catch (error) {
     console.error("Delete event endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,

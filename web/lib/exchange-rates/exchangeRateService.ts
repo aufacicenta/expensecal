@@ -53,6 +53,7 @@ export async function fetchExchangeRates(
   const rates: ExchangeRateData[] = [];
   const now = new Date();
   const snapshotDate = new Date(now);
+
   snapshotDate.setHours(0, 0, 0, 0); // Midnight UTC
 
   // Fetch rates from exchangerate-api.com
@@ -91,6 +92,7 @@ export async function fetchExchangeRates(
         });
       } else if (currency in data.conversion_rates) {
         const rate = data.conversion_rates[currency];
+
         rates.push({
           fromSymbol: baseSymbol,
           toSymbol: currency,
@@ -108,6 +110,7 @@ export async function fetchExchangeRates(
     return rates;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+
     throw new Error(`Failed to fetch exchange rates: ${errorMessage}`);
   }
 }

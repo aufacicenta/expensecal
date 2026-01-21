@@ -1,6 +1,6 @@
 import { Sequelize } from "sequelize";
 import { initModels } from "../models";
-import { Currency } from "../models/Currency";
+import { Currency, CurrencyType } from "../models/Currency";
 import { Event, EventType } from "../models/Event";
 import { EventInstallment } from "../models/EventInstallment";
 
@@ -26,6 +26,7 @@ describe("EventInstallment Model", () => {
       symbol: "USD",
       name: "US Dollar",
       decimal_units: 2,
+      currency_type: CurrencyType.FIAT,
     });
   });
 

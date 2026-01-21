@@ -3,6 +3,8 @@ import { Currency } from "./Currency";
 
 export enum ExchangeRateSource {
   EXCHANGERATE_API = "exchangerate-api",
+  COINGECKO = "coingecko",
+  COINMARKETCAP = "coinmarketcap",
   MANUAL = "manual",
 }
 

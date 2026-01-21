@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-export type CalendarProps = {
+export type CalendarV2Props = {
   children?: ReactNode;
   className?: string;
 };

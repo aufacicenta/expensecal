@@ -1,3 +1,19 @@
+import { Op } from "@expensecal/database";
+import db from "@expensecal/database/db";
+import { Category, initModels } from "@expensecal/database/models";
+import { Currency } from "@expensecal/database/models/Currency";
+import { Event, EventType } from "@expensecal/database/models/Event";
+import { Decimal } from "decimal.js";
+import { NextRequest, NextResponse } from "next/server";
+
+import {
+  CalendarDay,
+  CalendarEventData,
+  CalendarMonth,
+  GetCalendarResponse,
+  MonthlyFinancialSummary,
+} from "./types";
+
 import {
   addMonths,
   endOfMonth,
@@ -12,20 +28,6 @@ import {
   getLatestRatesFromCurrency,
 } from "@/lib/exchange-rates";
 import { stackServerApp } from "@/stack/server";
-import { Op } from "@expensecal/database";
-import db from "@expensecal/database/db";
-import { Category, initModels } from "@expensecal/database/models";
-import { Currency } from "@expensecal/database/models/Currency";
-import { Event, EventType } from "@expensecal/database/models/Event";
-import { Decimal } from "decimal.js";
-import { NextRequest, NextResponse } from "next/server";
-import {
-  CalendarDay,
-  CalendarEventData,
-  CalendarMonth,
-  GetCalendarResponse,
-  MonthlyFinancialSummary,
-} from "./types";
 
 /**
  * GET /api/v1/calendar
@@ -44,6 +46,7 @@ export async function GET(
   try {
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -62,6 +65,7 @@ export async function GET(
 
     // Validate and parse month parameter
     let requestedMonth: Date;
+
     try {
       requestedMonth = monthParam ? parseMonthString(monthParam) : new Date();
     } catch (err) {
@@ -78,6 +82,7 @@ export async function GET(
 
     // Parse range parameter
     const monthsRange = rangeParam ? parseInt(rangeParam) : 6;
+
     if (isNaN(monthsRange) || monthsRange < 0 || monthsRange > 24) {
       return NextResponse.json(
         {
@@ -128,8 +133,10 @@ export async function GET(
 
     // Group events by date for quick lookup
     const eventsByDate = new Map<string, Event[]>();
+
     events.forEach((event) => {
       const dateKey = toDateString(event.event_date);
+
       if (!eventsByDate.has(dateKey)) {
         eventsByDate.set(dateKey, []);
       }
@@ -142,6 +149,7 @@ export async function GET(
 
     for (let i = -monthsRange; i <= monthsRange; i++) {
       const monthDate = new Date(currentMonthDate);
+
       monthDate.setUTCMonth(monthDate.getUTCMonth() + i);
 
       const month = buildCalendarMonth(
@@ -150,6 +158,7 @@ export async function GET(
         baseCurrencySymbol,
         exchangeRates,
       );
+
       months.push(month);
     }
 
@@ -203,6 +212,7 @@ export async function GET(
     );
   } catch (error) {
     console.error("Calendar endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,
@@ -231,6 +241,7 @@ function buildCalendarMonth(
 
   const days: CalendarDay[] = [];
   const today = new Date();
+
   today.setHours(0, 0, 0, 0);
 
   // Generate calendar grid (5-6 weeks * 7 days)
@@ -242,12 +253,14 @@ function buildCalendarMonth(
     const dayOfMonth = isCurrentMonth ? i - firstDayOfWeek + 1 : 0;
 
     let cellDate: Date;
+
     if (isCurrentMonth) {
       cellDate = new Date(Date.UTC(year, month, dayOfMonth));
     } else if (i < firstDayOfWeek) {
       // Previous month
       const prevMonth = new Date(Date.UTC(year, month, 0));
       const prevMonthDays = prevMonth.getUTCDate();
+
       cellDate = new Date(
         Date.UTC(year, month - 1, prevMonthDays - (firstDayOfWeek - i - 1)),
       );
@@ -315,8 +328,10 @@ function calculateDayFinancialSummary(
 
     // Convert amount to base currency if needed
     let convertedAmount = amount;
+
     if (currencySymbol !== baseCurrencySymbol && currencySymbol !== "UNKNOWN") {
       const rate = exchangeRates.get(currencySymbol);
+
       if (rate) {
         // Convert using hub-and-spoke model: (amount / rate) * 1
         convertedAmount = new Decimal(
@@ -392,6 +407,7 @@ function calculateMonthlyFinancialSummary(
     }
 
     const summary = currencySummaries.get(currencyId)!;
+
     summary.eventCount++;
 
     if (event.type === EventType.INCOME) {
@@ -410,6 +426,7 @@ function calculateMonthlyFinancialSummary(
 
   currencySummaries.forEach((summary, currencyId) => {
     const net = summary.totalIncome.minus(summary.totalExpenses);
+
     byCurrency[currencyId] = {
       symbol: summary.symbol,
       totalIncome: summary.totalIncome.toString(),
@@ -420,6 +437,7 @@ function calculateMonthlyFinancialSummary(
 
     // Convert amounts to base currency if not already
     const currencySymbol = summary.symbol;
+
     if (currencySymbol === baseCurrencySymbol) {
       // Direct sum, no conversion needed
       totalIncome = totalIncome.plus(summary.totalIncome);
@@ -427,6 +445,7 @@ function calculateMonthlyFinancialSummary(
     } else if (currencySymbol !== "UNKNOWN") {
       // Get exchange rate for this currency
       const rate = exchangeRates.get(currencySymbol);
+
       if (rate) {
         // Convert using hub-and-spoke model: (amount / rate) * 1
         // Since we're converting to USD (base 1.0), we divide by the rate
@@ -440,6 +459,7 @@ function calculateMonthlyFinancialSummary(
         const convertedExpenses = new Decimal(
           convertCurrency(summary.totalExpenses.toString(), rate, "1"),
         );
+
         totalIncome = totalIncome.plus(convertedIncome);
         totalExpenses = totalExpenses.plus(convertedExpenses);
       } else {

@@ -15,6 +15,9 @@ export const routes = {
           `/api/v1/events/${encodeURIComponent(eventId)}`,
         children: (eventId: string) =>
           `/api/v1/events/${encodeURIComponent(eventId)}/children`,
+        makeRecurring: (eventId: string) =>
+          `/api/v1/events/${encodeURIComponent(eventId)}/make-recurring`,
+        deleteMultiple: () => `/api/v1/events/delete-multiple`,
         installments: {
           create: () => `/api/v1/events/installments/create`,
           list: () => `/api/v1/events/installments/list`,
@@ -30,6 +33,14 @@ export const routes = {
       categories: {
         get: () => `/api/v1/categories`,
         create: () => `/api/v1/categories/create`,
+      },
+      exchangeRates: {
+        get: () => `/api/v1/exchange-rates`,
+      },
+    },
+    v2: {
+      calendar: {
+        get: () => `/api/v2/calendar`,
       },
     },
   },

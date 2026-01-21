@@ -1,9 +1,11 @@
-import { stackServerApp } from "@/stack/server";
 import db from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
 import { Currency } from "@expensecal/database/models/Currency";
 import { NextRequest, NextResponse } from "next/server";
+
 import { GetCurrenciesResponse } from "./types";
+
+import { stackServerApp } from "@/stack/server";
 
 /**
  * GET /api/v1/currencies
@@ -11,11 +13,12 @@ import { GetCurrenciesResponse } from "./types";
  * Protected endpoint (requires authentication)
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
 ): Promise<NextResponse<GetCurrenciesResponse>> {
   try {
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -45,6 +48,7 @@ export async function GET(
     );
   } catch (error) {
     console.error("Get currencies endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,

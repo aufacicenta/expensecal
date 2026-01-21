@@ -1,14 +1,16 @@
-import {
-  createValidationErrorResponse,
-  validateQueryParam,
-} from "@/lib/validators";
-import { stackServerApp } from "@/stack/server";
 import db from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
 import { Event } from "@expensecal/database/models/Event";
 import { EventInstallment } from "@expensecal/database/models/EventInstallment";
 import { NextRequest, NextResponse } from "next/server";
+
 import { ListInstallmentsResponse } from "../types";
+
+import { stackServerApp } from "@/stack/server";
+import {
+  createValidationErrorResponse,
+  validateQueryParam,
+} from "@/lib/validators";
 
 /**
  * GET /api/v1/events/installments/list?parent_event_id=...
@@ -43,6 +45,7 @@ export async function GET(
   try {
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -61,6 +64,7 @@ export async function GET(
       "parent_event_id",
       true,
     );
+
     if (parentEventIdResult.error) {
       return createValidationErrorResponse(parentEventIdResult.error);
     }
@@ -71,6 +75,7 @@ export async function GET(
 
     // Verify parent event exists and belongs to the user
     const parentEvent = await Event.findByPk(parentEventId);
+
     if (!parentEvent) {
       return NextResponse.json(
         {
@@ -136,6 +141,7 @@ export async function GET(
         totalAmount = installmentEvents
           .reduce((sum, event) => {
             const eventAmount = parseFloat(event.amount);
+
             return sum + (isNaN(eventAmount) ? 0 : eventAmount);
           }, 0)
           .toString();
@@ -156,6 +162,7 @@ export async function GET(
     );
   } catch (error) {
     console.error("List installments endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,

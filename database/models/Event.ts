@@ -2,6 +2,7 @@ import { CreationOptional, DataTypes, ForeignKey, Model, NonAttribute, Sequelize
 import Category from "./Category";
 import { Currency } from "./Currency";
 import EventCategories from "./EventCategories";
+import EventInstallment from "./EventInstallment";
 
 export enum EventType {
   EXPENSE = "EXPENSE",
@@ -18,11 +19,14 @@ export interface EventAttributes {
   description: string;
   event_date: Date;
   parent_event_id?: string | null;
+  installment_id?: string | null; // Points to EventInstallment.id if this is an installment
   recurrence_rule?: string | null;
   recurrence_end_date?: Date | null;
   original_text?: string | null;
   currency?: Currency;
   categories?: Category[]; // Categories associated with this event
+  childEvents?: EventAttributes[]; // Brought from associations
+  parentEvent?: EventAttributes; // Brought from associations
   created_at?: Date;
   updated_at?: Date;
   deleted_at?: Date | null;
@@ -38,6 +42,7 @@ export class Event extends Model<EventAttributes> implements EventAttributes {
   declare description: string;
   declare event_date: Date;
   declare parent_event_id: ForeignKey<Event["id"]> | null;
+  declare installment_id: ForeignKey<EventInstallment["id"]> | null;
   declare recurrence_rule: string | null;
   declare recurrence_end_date: Date | null;
   declare original_text: string | null;
@@ -106,6 +111,15 @@ export class Event extends Model<EventAttributes> implements EventAttributes {
           },
           comment: "Points to original/first event for recurring events",
         },
+        installment_id: {
+          type: DataTypes.UUID,
+          allowNull: true,
+          references: {
+            model: "event_installments",
+            key: "id",
+          },
+          comment: "Points to EventInstallment record if this event is part of an installment structure",
+        },
         recurrence_rule: {
           type: DataTypes.TEXT,
           allowNull: true,
@@ -154,6 +168,9 @@ export class Event extends Model<EventAttributes> implements EventAttributes {
           },
           {
             fields: ["parent_event_id"],
+          },
+          {
+            fields: ["installment_id"],
           },
           {
             fields: ["deleted_at"],

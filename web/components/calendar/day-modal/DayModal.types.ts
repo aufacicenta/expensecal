@@ -1,5 +1,6 @@
-import { CalendarDay } from "@/app/api/v1/calendar/types";
 import { ReactNode } from "react";
+
+import { CalendarDay } from "@/app/api/v1/calendar/types";
 
 export type DayModalProps = {
   day: CalendarDay;

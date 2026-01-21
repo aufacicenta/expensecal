@@ -4,6 +4,7 @@
  */
 
 import { CurrencyAttributes } from "@expensecal/database/models/Currency";
+
 import { BaseErrorResponse, BaseSuccessResponse } from "../types";
 
 export type CurrencyData = CurrencyAttributes;

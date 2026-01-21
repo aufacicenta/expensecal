@@ -67,6 +67,7 @@ export function generateRecurrenceInstances(
 
     // Add the RRULE
     const rule = rrulestr(rruleInput, { dtstart: startDate });
+
     rruleSet.rrule(rule);
 
     // Determine the end date for generating instances
@@ -76,11 +77,13 @@ export function generateRecurrenceInstances(
     if (!maxDate) {
       // Check if RRULE has UNTIL clause
       const untilMatch = rruleInput.match(/UNTIL=(\d{8}T\d{6}Z?|\d{8})/);
+
       if (untilMatch) {
         maxDate = new Date(untilMatch[1]);
       } else {
         // Default to using COUNT if no UNTIL specified
         const hasCount = /COUNT=\d+/.test(rruleInput);
+
         if (!hasCount) {
           // Will default to 12 instances below
           maxDate = undefined;
@@ -101,6 +104,7 @@ export function generateRecurrenceInstances(
       // If still no maxDate, use COUNT from RRULE
       const countMatch = rruleInput.match(/COUNT=(\d+)/);
       const count = countMatch ? parseInt(countMatch[1], 10) : 12; // Default to 12
+
       // Get count+1 instances to account for the start date being included
       dates = rruleSet.all((date, i) => i < count + 1);
       // Remove duplicate if first date matches start date exactly
@@ -140,6 +144,7 @@ export function isValidRRule(rruleString: string): boolean {
 
     // Try to parse it
     rrulestr(rruleInput, { dtstart: new Date() });
+
     return true;
   } catch {
     return false;
@@ -168,12 +173,14 @@ export function getRecurrenceCount(
 
     // Check for COUNT parameter
     const countMatch = rruleInput.match(/COUNT=(\d+)/);
+
     if (countMatch) {
       return parseInt(countMatch[1], 10);
     }
 
     // Check for UNTIL parameter - count instances up to that date
     const untilMatch = rruleInput.match(/UNTIL=(\d{8}T\d{6}Z?|\d{8})/);
+
     if (untilMatch) {
       const until = new Date(untilMatch[1]);
       const instances = generateRecurrenceInstances({
@@ -181,6 +188,7 @@ export function getRecurrenceCount(
         startDate,
         endDate: until,
       });
+
       return instances.length;
     }
 

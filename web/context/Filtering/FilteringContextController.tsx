@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import { FilteringContext } from "./FilteringContext";
 import {
   FilteringContextControllerProps,
@@ -29,6 +30,7 @@ export const FilteringContextController = ({
         .split(",")
         .map((id) => id.trim())
         .filter((id) => id.length > 0);
+
       setSelectedCategoryIds(ids);
     }
   };
@@ -56,6 +58,7 @@ export const FilteringContextController = ({
     const newUrl = `${window.location.pathname}${
       params.toString() ? "?" + params.toString() : ""
     }`;
+
     window.history.replaceState({}, "", newUrl);
   };
 

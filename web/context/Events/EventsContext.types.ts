@@ -1,5 +1,12 @@
+import { ReactNode } from "react";
+
 import { GetChildEventsResponse } from "@/app/api/v1/events/[id]/children/types";
 import {
+  MakeRecurringRequestBody,
+  MakeRecurringResponse,
+} from "@/app/api/v1/events/[id]/make-recurring/types";
+import {
+  DeleteMode,
   UpdateEventRequestBody,
   UpdateEventResponse,
 } from "@/app/api/v1/events/[id]/types";
@@ -22,13 +29,63 @@ import {
   ParseRequestBody,
   ParseResponse,
 } from "@/app/api/v1/events/parse/types";
-import { ReactNode } from "react";
 
 export type EventsContextControllerProps = {
   children: ReactNode;
 };
 
+export type EventsContextActionStates = {
+  createEventFromText: {
+    isLoading: boolean;
+    error?: string;
+  };
+  parseEventText: {
+    isLoading: boolean;
+    error?: string;
+  };
+  createEvent: {
+    isLoading: boolean;
+    error?: string;
+  };
+  createInstallments: {
+    isLoading: boolean;
+    error?: string;
+  };
+  listInstallments: {
+    isLoading: boolean;
+    error?: string;
+  };
+  deleteInstallments: {
+    isLoading: boolean;
+    error?: string;
+  };
+  updateEvent: {
+    isLoading: boolean;
+    error?: string;
+  };
+  deleteEvent: {
+    isLoading: boolean;
+    error?: string;
+  };
+  deleteEventMultiple: {
+    isLoading: boolean;
+    error?: string;
+  };
+  fetchChildEvents: {
+    isLoading: boolean;
+    error?: string;
+  };
+  makeEventRecurring: {
+    isLoading: boolean;
+    error?: string;
+  };
+};
+
 export type EventsContextType = {
+  /**
+   * Action States for all async functions
+   */
+  actionStates: EventsContextActionStates;
   createEventFromText: (
     body: CreateFromTextRequestBody,
   ) => Promise<CreateFromTextResponse>;
@@ -46,11 +103,19 @@ export type EventsContextType = {
   updateEvent: (
     eventId: string,
     body: UpdateEventRequestBody,
-    originalEventDate?: Date,
+    originalEventDate: Date,
   ) => Promise<UpdateEventResponse>;
   deleteEvent: (
     eventId: string,
-    deleteMode?: "single" | "all-future",
+    deleteMode?: DeleteMode,
   ) => Promise<UpdateEventResponse>;
+  deleteEventMultiple: (
+    eventIds: string[],
+    deleteMode?: DeleteMode,
+  ) => Promise<void>;
   fetchChildEvents: (eventId: string) => Promise<GetChildEventsResponse>;
+  makeEventRecurring: (
+    eventId: string,
+    body: MakeRecurringRequestBody,
+  ) => Promise<MakeRecurringResponse>;
 };

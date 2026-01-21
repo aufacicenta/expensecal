@@ -14,6 +14,7 @@ export const toDateString = (date: Date | string): string => {
   const month = String(d.getUTCMonth() + 1).padStart(2, "0");
   const day = String(d.getUTCDate()).padStart(2, "0");
   const year = d.getUTCFullYear();
+
   return `${year}-${month}-${day}`;
 };
 
@@ -27,6 +28,7 @@ export const toMonthString = (date: Date | string): string => {
   const d = new Date(date);
   const month = String(d.getUTCMonth() + 1).padStart(2, "0");
   const year = d.getUTCFullYear();
+
   return `${year}-${month}`;
 };
 
@@ -42,6 +44,7 @@ export const formatDateForDisplay = (
   options?: Intl.DateTimeFormatOptions,
 ): string => {
   const d = new Date(date);
+
   return d.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -59,6 +62,7 @@ export const formatDateForDisplay = (
  */
 export const formatDateShort = (date: Date | string): string => {
   const d = new Date(date);
+
   return d.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -74,7 +78,9 @@ export const formatDateShort = (date: Date | string): string => {
  */
 export const startOfDay = (date: Date | string): Date => {
   const d = new Date(date);
+
   d.setUTCHours(0, 0, 0, 0);
+
   return d;
 };
 
@@ -85,7 +91,9 @@ export const startOfDay = (date: Date | string): Date => {
  */
 export const endOfDay = (date: Date | string): Date => {
   const d = new Date(date);
+
   d.setUTCHours(23, 59, 59, 999);
+
   return d;
 };
 
@@ -97,8 +105,10 @@ export const endOfDay = (date: Date | string): Date => {
  */
 export const startOfMonth = (date: Date | string): Date => {
   const d = new Date(date);
+
   d.setUTCDate(1);
   d.setUTCHours(0, 0, 0, 0);
+
   return d;
 };
 
@@ -109,9 +119,11 @@ export const startOfMonth = (date: Date | string): Date => {
  */
 export const endOfMonth = (date: Date | string): Date => {
   const d = new Date(date);
+
   d.setUTCMonth(d.getUTCMonth() + 1);
   d.setUTCDate(0);
   d.setUTCHours(23, 59, 59, 999);
+
   return d;
 };
 
@@ -129,6 +141,7 @@ export const parseMonthString = (monthStr: string): Date => {
   if (monthStr.includes("-")) {
     // YYYY-MM format
     const [yearStr, monthStr_] = monthStr.split("-");
+
     year = parseInt(yearStr, 10);
     month = parseInt(monthStr_, 10);
   } else if (monthStr.length === 6) {
@@ -146,6 +159,7 @@ export const parseMonthString = (monthStr: string): Date => {
   }
 
   const date = new Date(Date.UTC(year, month - 1, 1));
+
   return date;
 };
 
@@ -158,9 +172,11 @@ export const parseMonthString = (monthStr: string): Date => {
  */
 export const parseDateString = (dateStr: string): Date => {
   const date = new Date(`${dateStr}T00:00:00Z`);
+
   if (isNaN(date.getTime())) {
     throw new Error(`Invalid date string: ${dateStr}`);
   }
+
   return date;
 };
 
@@ -172,11 +188,13 @@ export const parseDateString = (dateStr: string): Date => {
  */
 export const getWeekNumber = (date: Date | string): number => {
   const d = new Date(date);
+
   d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   const weekNum = Math.ceil(
     ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
   );
+
   return weekNum;
 };
 
@@ -192,7 +210,9 @@ export const getWeekStart = (date: Date | string): Date => {
   const weekStart = new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff),
   );
+
   weekStart.setUTCHours(0, 0, 0, 0);
+
   return weekStart;
 };
 
@@ -204,8 +224,10 @@ export const getWeekStart = (date: Date | string): Date => {
 export const getWeekEnd = (date: Date | string): Date => {
   const weekStart = getWeekStart(date);
   const weekEnd = new Date(weekStart);
+
   weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
   weekEnd.setUTCHours(23, 59, 59, 999);
+
   return weekEnd;
 };
 
@@ -217,7 +239,9 @@ export const getWeekEnd = (date: Date | string): Date => {
  */
 export const addDays = (date: Date | string, days: number): Date => {
   const d = new Date(date);
+
   d.setUTCDate(d.getUTCDate() + days);
+
   return d;
 };
 
@@ -229,7 +253,9 @@ export const addDays = (date: Date | string, days: number): Date => {
  */
 export const addMonths = (date: Date | string, months: number): Date => {
   const d = new Date(date);
+
   d.setUTCMonth(d.getUTCMonth() + months);
+
   return d;
 };
 
@@ -272,6 +298,7 @@ export const getDaysDifference = (
   const d1 = startOfDay(date1);
   const d2 = startOfDay(date2);
   const diffTime = d2.getTime() - d1.getTime();
+
   return Math.round(diffTime / (1000 * 60 * 60 * 24));
 };
 
@@ -282,7 +309,39 @@ export const getDaysDifference = (
  */
 export const getDaysInMonth = (date: Date | string): number => {
   const d = new Date(date);
+
   return new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0),
   ).getUTCDate();
+};
+
+/**
+ * Format a month string (YYYY-MM) to short month name (UTC timezone)
+ * @param monthStr - Month string in YYYY-MM format
+ * @returns Short month name (e.g., "Jan")
+ * @example formatMonthShort("2026-01") => "Jan"
+ */
+export const formatMonthShort = (monthStr: string): string => {
+  const date = parseMonthString(monthStr);
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    timeZone: "UTC",
+  });
+};
+
+/**
+ * Format a date to short day of week name (e.g., "Mon", "Tue", "Wed")
+ * @param date - Date or date string (day number will be converted to date in current month context)
+ * @returns Formatted day of week string (e.g., "Mon")
+ * @example formatDayShort(new Date("2026-01-06T00:00:00Z")) => "Tue"
+ * @example formatDayShort("2026-01-06") => "Tue"
+ */
+export const formatDayShort = (date: Date | string): string => {
+  const d = new Date(date);
+
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    timeZone: "UTC",
+  });
 };

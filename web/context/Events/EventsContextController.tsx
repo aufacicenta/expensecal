@@ -1,9 +1,26 @@
 "use client";
 
-import { useContext } from "react";
+import { useState } from "react";
+
+import { useCalendarV2Context } from "../CalendarV2/useCalendarV2Context";
+
+import { EventsContext } from "./EventsContext";
+import {
+  EventsContextActionStates,
+  EventsContextControllerProps,
+  EventsContextType,
+} from "./EventsContext.types";
 
 import { GetChildEventsResponse } from "@/app/api/v1/events/[id]/children/types";
-import { UpdateEventRequestBody } from "@/app/api/v1/events/[id]/types";
+import {
+  MakeRecurringRequestBody,
+  MakeRecurringResponse,
+} from "@/app/api/v1/events/[id]/make-recurring/types";
+import {
+  DeleteMode,
+  UpdateEventRequestBody,
+  UpdateEventSuccessResponse,
+} from "@/app/api/v1/events/[id]/types";
 import { CreateFromTextSuccessResponse } from "@/app/api/v1/events/create-from-text/types";
 import { CreateEventRequestBody } from "@/app/api/v1/events/create/types";
 import {
@@ -11,91 +28,43 @@ import {
   DeleteInstallmentsRequestBody,
 } from "@/app/api/v1/events/installments/types";
 import { ParseRequestBody } from "@/app/api/v1/events/parse/types";
-import { CalendarContext } from "@/context/Calendar/CalendarContext";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
-import { EventsContext } from "./EventsContext";
-import {
-  EventsContextControllerProps,
-  EventsContextType,
-} from "./EventsContext.types";
 
 export const EventsContextController = ({
   children,
 }: EventsContextControllerProps) => {
   const routes = useRoutes();
-  const calendarContext = useContext(CalendarContext);
+  const calendarContext = useCalendarV2Context();
+  const [actionStates, setActionStates] = useState<EventsContextActionStates>({
+    createEventFromText: { isLoading: false, error: undefined },
+    parseEventText: { isLoading: false, error: undefined },
+    createEvent: { isLoading: false, error: undefined },
+    createInstallments: { isLoading: false, error: undefined },
+    listInstallments: { isLoading: false, error: undefined },
+    deleteInstallments: { isLoading: false, error: undefined },
+    updateEvent: { isLoading: false, error: undefined },
+    deleteEvent: { isLoading: false, error: undefined },
+    deleteEventMultiple: { isLoading: false, error: undefined },
+    fetchChildEvents: { isLoading: false, error: undefined },
+    makeEventRecurring: { isLoading: false, error: undefined },
+  });
 
   /**
    * Full calendar reload (fallback for multi-event changes)
    */
   const reloadCalendar = async () => {
     if (calendarContext) {
-      const currentMonth = new Date().toISOString().split("T")[0].slice(0, 7);
-      await calendarContext.loadCalendar(currentMonth);
-    }
-  };
-
-  /**
-   * Fetch events for a specific date and update only that cell
-   * More efficient than full reload for single-event changes
-   */
-  const updateCalendarCell = async (eventDate: Date) => {
-    if (!calendarContext) return;
-
-    const dateStr = eventDate.toISOString().split("T")[0];
-
-    try {
-      calendarContext.setCellLoading(dateStr, true);
-
-      // Fetch events for this specific date by using a focused query
-      const params = new URLSearchParams();
-      const monthStr = eventDate.toISOString().split("T")[0].slice(0, 7);
-      params.append("month", monthStr);
-      params.append("range", "0"); // Fetch only the requested month
-
-      const response = await fetch(
-        `${routes.api.v1.calendar.get()}?${params.toString()}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Find the events for the specific date
-        const dateEvents: any[] = [];
-        for (const month of data.data.months) {
-          for (const day of month.days) {
-            if (day.date === dateStr) {
-              dateEvents.push(...day.events);
-              break;
-            }
-          }
-        }
-
-        // Update only this cell
-        await calendarContext.updateCellEvents(dateStr, dateEvents);
-      }
-    } catch (error) {
-      console.error("Error updating calendar cell:", error);
-      // Fallback to full reload on error
-      await reloadCalendar();
-    } finally {
-      calendarContext.setCellLoading(dateStr, false);
+      await calendarContext.loadCalendarV2();
     }
   };
 
   const createEventFromText = async (
     body: ParseRequestBody & { create_installments?: boolean },
   ) => {
+    setActionStates((prev) => ({
+      ...prev,
+      createEventFromText: { isLoading: true, error: undefined },
+    }));
     try {
       const response = await fetch(
         routes.api.v1.events.createFromText?.() ||
@@ -115,22 +84,31 @@ export const EventsContextController = ({
 
       const data = (await response.json()) as CreateFromTextSuccessResponse;
 
-      // Update only the affected cell instead of reloading entire calendar
-      if (data.data?.event) {
-        const eventDate = new Date(data.data.event.event_date);
-        await updateCalendarCell(eventDate);
-      } else if (body.current_date) {
-        await updateCalendarCell(new Date(body.current_date));
-      }
+      await reloadCalendar();
+
+      setActionStates((prev) => ({
+        ...prev,
+        createEventFromText: { isLoading: false, error: undefined },
+      }));
 
       return data;
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
+      setActionStates((prev) => ({
+        ...prev,
+        createEventFromText: { isLoading: false, error: errorMsg },
+      }));
       console.error("Error creating event from text:", error);
       throw error;
     }
   };
 
   const parseEventText = async (body: ParseRequestBody) => {
+    setActionStates((prev) => ({
+      ...prev,
+      parseEventText: { isLoading: true, error: undefined },
+    }));
     try {
       const response = await fetch(routes.api.v1.events.parse(), {
         method: "POST",
@@ -145,14 +123,30 @@ export const EventsContextController = ({
       }
 
       const data = await response.json();
+
+      setActionStates((prev) => ({
+        ...prev,
+        parseEventText: { isLoading: false, error: undefined },
+      }));
+
       return data;
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
+      setActionStates((prev) => ({
+        ...prev,
+        parseEventText: { isLoading: false, error: errorMsg },
+      }));
       console.error("Error parsing event text:", error);
       throw error;
     }
   };
 
   const createEvent = async (body: CreateEventRequestBody) => {
+    setActionStates((prev) => ({
+      ...prev,
+      createEvent: { isLoading: true, error: undefined },
+    }));
     try {
       const response = await fetch(routes.api.v1.events.create(), {
         method: "POST",
@@ -168,19 +162,29 @@ export const EventsContextController = ({
 
       const data = await response.json();
 
-      // Update only the affected cell instead of reloading entire calendar
-      if (data.data?.event_date) {
-        await updateCalendarCell(new Date(data.data.event_date));
-      }
+      setActionStates((prev) => ({
+        ...prev,
+        createEvent: { isLoading: false, error: undefined },
+      }));
 
       return data;
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
+      setActionStates((prev) => ({
+        ...prev,
+        createEvent: { isLoading: false, error: errorMsg },
+      }));
       console.error("Error creating event:", error);
       throw error;
     }
   };
 
   const createInstallments = async (body: CreateInstallmentsRequestBody) => {
+    setActionStates((prev) => ({
+      ...prev,
+      createInstallments: { isLoading: true, error: undefined },
+    }));
     try {
       const response = await fetch(routes.api.v1.events.installments.create(), {
         method: "POST",
@@ -200,14 +204,29 @@ export const EventsContextController = ({
       // This is less frequent than single event creation
       await reloadCalendar();
 
+      setActionStates((prev) => ({
+        ...prev,
+        createInstallments: { isLoading: false, error: undefined },
+      }));
+
       return data;
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
+      setActionStates((prev) => ({
+        ...prev,
+        createInstallments: { isLoading: false, error: errorMsg },
+      }));
       console.error("Error creating installments:", error);
       throw error;
     }
   };
 
   const listInstallments = async (parentEventId: string) => {
+    setActionStates((prev) => ({
+      ...prev,
+      listInstallments: { isLoading: true, error: undefined },
+    }));
     try {
       const response = await fetch(
         `${routes.api.v1.events.installments.list()}?parent_event_id=${encodeURIComponent(parentEventId)}`,
@@ -224,14 +243,30 @@ export const EventsContextController = ({
       }
 
       const data = await response.json();
+
+      setActionStates((prev) => ({
+        ...prev,
+        listInstallments: { isLoading: false, error: undefined },
+      }));
+
       return data;
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
+      setActionStates((prev) => ({
+        ...prev,
+        listInstallments: { isLoading: false, error: errorMsg },
+      }));
       console.error("Error listing installments:", error);
       throw error;
     }
   };
 
   const deleteInstallments = async (body: DeleteInstallmentsRequestBody) => {
+    setActionStates((prev) => ({
+      ...prev,
+      deleteInstallments: { isLoading: true, error: undefined },
+    }));
     try {
       const response = await fetch(routes.api.v1.events.installments.delete(), {
         method: "POST",
@@ -251,8 +286,19 @@ export const EventsContextController = ({
       // This is less frequent than single event deletion
       await reloadCalendar();
 
+      setActionStates((prev) => ({
+        ...prev,
+        deleteInstallments: { isLoading: false, error: undefined },
+      }));
+
       return data;
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
+      setActionStates((prev) => ({
+        ...prev,
+        deleteInstallments: { isLoading: false, error: errorMsg },
+      }));
       console.error("Error deleting installments:", error);
       throw error;
     }
@@ -261,38 +307,13 @@ export const EventsContextController = ({
   const updateEvent = async (
     eventId: string,
     body: UpdateEventRequestBody,
-    originalEventDate?: Date,
+    oldEventDate: Date,
   ) => {
+    setActionStates((prev) => ({
+      ...prev,
+      updateEvent: { isLoading: true, error: undefined },
+    }));
     try {
-      // Track the original event date for refresh purposes
-      // If not provided, we'll try to fetch it
-      let trackedOriginalDate: Date | null = originalEventDate || null;
-
-      // If original date not provided, try to fetch the current event
-      if (!trackedOriginalDate) {
-        try {
-          const currentEventResponse = await fetch(
-            routes.api.v1.events.detail(eventId),
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-              },
-            },
-          );
-
-          if (currentEventResponse.ok) {
-            const currentEventData = await currentEventResponse.json();
-            if (currentEventData.data?.event_date) {
-              trackedOriginalDate = new Date(currentEventData.data.event_date);
-            }
-          }
-        } catch (err) {
-          // If we can't fetch the original, we'll just update the new date
-          console.warn("Could not fetch original event date:", err);
-        }
-      }
-
       const response = await fetch(routes.api.v1.events.detail(eventId), {
         method: "PUT",
         headers: {
@@ -305,33 +326,23 @@ export const EventsContextController = ({
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as UpdateEventSuccessResponse;
 
-      // Update the affected cells
-      if (data.data?.event_date) {
-        const newEventDate = new Date(data.data.event_date);
+      calendarContext.updateCalendarCellEvent(data.data, oldEventDate);
 
-        // If date changed, update both old and new date cells
-        if (trackedOriginalDate) {
-          const oldDateStr = trackedOriginalDate.toISOString().split("T")[0];
-          const newDateStr = newEventDate.toISOString().split("T")[0];
-
-          if (oldDateStr !== newDateStr) {
-            // Date was changed, update both cells
-            await updateCalendarCell(trackedOriginalDate);
-            await updateCalendarCell(newEventDate);
-          } else {
-            // Date wasn't changed, just update the current cell
-            await updateCalendarCell(newEventDate);
-          }
-        } else {
-          // Couldn't get original date, just update new date
-          await updateCalendarCell(newEventDate);
-        }
-      }
+      setActionStates((prev) => ({
+        ...prev,
+        updateEvent: { isLoading: false, error: undefined },
+      }));
 
       return data;
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
+      setActionStates((prev) => ({
+        ...prev,
+        updateEvent: { isLoading: false, error: errorMsg },
+      }));
       console.error("Error updating event:", error);
       throw error;
     }
@@ -339,10 +350,15 @@ export const EventsContextController = ({
 
   const deleteEvent = async (
     eventId: string,
-    deleteMode: "single" | "all-future" = "single",
+    deleteMode: DeleteMode = "single",
   ) => {
+    setActionStates((prev) => ({
+      ...prev,
+      deleteEvent: { isLoading: true, error: undefined },
+    }));
     try {
       const params = new URLSearchParams();
+
       params.append("deleteMode", deleteMode);
 
       const response = await fetch(
@@ -361,14 +377,68 @@ export const EventsContextController = ({
 
       const data = await response.json();
 
-      // Update only the affected cell instead of reloading entire calendar
-      if (data.data?.event_date) {
-        await updateCalendarCell(new Date(data.data.event_date));
-      }
+      // Update calendar to reflect deletion
+      await reloadCalendar();
+
+      setActionStates((prev) => ({
+        ...prev,
+        deleteEvent: { isLoading: false, error: undefined },
+      }));
 
       return data;
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
+      setActionStates((prev) => ({
+        ...prev,
+        deleteEvent: { isLoading: false, error: errorMsg },
+      }));
       console.error("Error deleting event:", error);
+      throw error;
+    }
+  };
+
+  const deleteEventMultiple = async (
+    eventIds: string[],
+    deleteMode: DeleteMode = "single",
+  ) => {
+    setActionStates((prev) => ({
+      ...prev,
+      deleteEventMultiple: { isLoading: true, error: undefined },
+    }));
+    try {
+      const response = await fetch(routes.api.v1.events.deleteMultiple(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          eventIds,
+          deleteMode,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      await response.json();
+
+      // Reload calendar after bulk deletion
+      await reloadCalendar();
+
+      setActionStates((prev) => ({
+        ...prev,
+        deleteEventMultiple: { isLoading: false, error: undefined },
+      }));
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
+      setActionStates((prev) => ({
+        ...prev,
+        deleteEventMultiple: { isLoading: false, error: errorMsg },
+      }));
+      console.error("Error deleting multiple events:", error);
       throw error;
     }
   };
@@ -376,17 +446,81 @@ export const EventsContextController = ({
   const fetchChildEvents = async (
     eventId: string,
   ): Promise<GetChildEventsResponse> => {
+    setActionStates((prev) => ({
+      ...prev,
+      fetchChildEvents: { isLoading: true, error: undefined },
+    }));
     try {
       const response = await fetch(routes.api.v1.events.children(eventId));
       const data = await response.json();
+
+      setActionStates((prev) => ({
+        ...prev,
+        fetchChildEvents: { isLoading: false, error: undefined },
+      }));
+
       return data;
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
+      setActionStates((prev) => ({
+        ...prev,
+        fetchChildEvents: { isLoading: false, error: errorMsg },
+      }));
       console.error("Failed to fetch child events:", error);
       throw error;
     }
   };
 
+  const makeEventRecurring = async (
+    eventId: string,
+    body: MakeRecurringRequestBody,
+  ): Promise<MakeRecurringResponse> => {
+    setActionStates((prev) => ({
+      ...prev,
+      makeEventRecurring: { isLoading: true, error: undefined },
+    }));
+    try {
+      const response = await fetch(
+        routes.api.v1.events.makeRecurring(eventId),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = (await response.json()) as MakeRecurringResponse;
+
+      // Reload calendar to reflect new recurring events
+      await reloadCalendar();
+
+      setActionStates((prev) => ({
+        ...prev,
+        makeEventRecurring: { isLoading: false, error: undefined },
+      }));
+
+      return data;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
+      setActionStates((prev) => ({
+        ...prev,
+        makeEventRecurring: { isLoading: false, error: errorMsg },
+      }));
+      console.error("Error making event recurring:", error);
+      throw error;
+    }
+  };
+
   const props: EventsContextType = {
+    actionStates,
     createEventFromText,
     parseEventText,
     createEvent,
@@ -395,7 +529,9 @@ export const EventsContextController = ({
     deleteInstallments,
     updateEvent,
     deleteEvent,
+    deleteEventMultiple,
     fetchChildEvents,
+    makeEventRecurring,
   };
 
   return (

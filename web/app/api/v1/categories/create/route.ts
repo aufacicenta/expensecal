@@ -1,14 +1,16 @@
+import db from "@expensecal/database/db";
+import { initModels } from "@expensecal/database/models";
+import { Category } from "@expensecal/database/models/Category";
+import { NextRequest, NextResponse } from "next/server";
+
+import { CreateCategoryRequestBody, CreateCategoryResponse } from "./types";
+
+import { stackServerApp } from "@/stack/server";
 import {
   createValidationErrorResponse,
   validateHexColor,
   validateRequiredString,
 } from "@/lib/validators";
-import { stackServerApp } from "@/stack/server";
-import db from "@expensecal/database/db";
-import { initModels } from "@expensecal/database/models";
-import { Category } from "@expensecal/database/models/Category";
-import { NextRequest, NextResponse } from "next/server";
-import { CreateCategoryRequestBody, CreateCategoryResponse } from "./types";
 
 /**
  * POST /api/v1/categories/create
@@ -21,6 +23,7 @@ export async function POST(
   try {
     // Authenticate user with Stackframe
     const user = await stackServerApp.getUser();
+
     if (!user) {
       return NextResponse.json(
         {
@@ -36,12 +39,14 @@ export async function POST(
 
     // Validate name
     const nameError = validateRequiredString(body.name, "name");
+
     if (nameError) {
       return createValidationErrorResponse(nameError);
     }
 
     // Validate color
     const colorError = validateHexColor(body.color, "color");
+
     if (colorError) {
       return createValidationErrorResponse(colorError);
     }
@@ -75,6 +80,7 @@ export async function POST(
     );
   } catch (error) {
     console.error("Create category endpoint error:", error);
+
     return NextResponse.json(
       {
         success: false,
