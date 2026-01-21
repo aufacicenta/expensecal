@@ -5,11 +5,12 @@ import {
   DropdownMenu,
   DropdownTrigger,
 } from "@heroui/dropdown";
-import { ArrowLeftRight, Circle, ListFilter } from "lucide-react";
+import { ArrowLeftRight, Circle, CircleDashed, ListFilter } from "lucide-react";
 
 import { EventsTableHeaderProps } from "./EventsTableHeader.types";
 
 import { ThemeSwitch } from "@/components/theme-switch";
+import { UNCATEGORIZED_FILTER_ID } from "@/lib/calendar/filterEvents";
 
 export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
   selectedCount,
@@ -125,6 +126,9 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
           <DropdownMenu
             aria-label="Category filter"
             closeOnSelect={false}
+            disabledKeys={
+              selectedCategoryIds.length === 0 ? ["clear-filter"] : []
+            }
             variant="flat"
           >
             {categories.length === 0 ? (
@@ -136,7 +140,6 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
                 <DropdownItem
                   key="clear-filter"
                   className="text-default-500"
-                  isDisabled={selectedCategoryIds.length === 0}
                   onPress={handleClearFilter}
                 >
                   Clear filter
@@ -165,6 +168,23 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
                       {category.name}
                     </DropdownItem>
                   ))}
+                <DropdownItem
+                  key={UNCATEGORIZED_FILTER_ID}
+                  className="text-default-500"
+                  startContent={
+                    <CircleDashed
+                      fill={
+                        selectedCategoryIds.includes(UNCATEGORIZED_FILTER_ID)
+                          ? "currentColor"
+                          : "transparent"
+                      }
+                      size={12}
+                    />
+                  }
+                  onPress={() => handleCategoryToggle(UNCATEGORIZED_FILTER_ID)}
+                >
+                  Uncategorized
+                </DropdownItem>
               </>
             )}
           </DropdownMenu>
