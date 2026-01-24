@@ -6,6 +6,7 @@ import { useCalendarV2Context } from "../CalendarV2/useCalendarV2Context";
 
 import { EventsContext } from "./EventsContext";
 import {
+  CreateEventFromTextOptions,
   EventsContextActionStates,
   EventsContextControllerProps,
   EventsContextType,
@@ -60,6 +61,7 @@ export const EventsContextController = ({
 
   const createEventFromText = async (
     body: ParseRequestBody & { create_installments?: boolean },
+    options?: CreateEventFromTextOptions,
   ) => {
     setActionStates((prev) => ({
       ...prev,
@@ -84,7 +86,10 @@ export const EventsContextController = ({
 
       const data = (await response.json()) as CreateFromTextSuccessResponse;
 
-      await reloadCalendar();
+      // Skip reload if specified (useful for batch operations)
+      if (!options?.skipReload) {
+        await reloadCalendar();
+      }
 
       setActionStates((prev) => ({
         ...prev,
@@ -522,6 +527,7 @@ export const EventsContextController = ({
   const props: EventsContextType = {
     actionStates,
     createEventFromText,
+    reloadCalendar,
     parseEventText,
     createEvent,
     createInstallments,

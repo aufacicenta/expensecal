@@ -81,6 +81,14 @@ export type EventsContextActionStates = {
   };
 };
 
+export type CreateEventFromTextOptions = {
+  /**
+   * If true, skips calendar reload after event creation.
+   * Useful for batch processing where you want to reload once at the end.
+   */
+  skipReload?: boolean;
+};
+
 export type EventsContextType = {
   /**
    * Action States for all async functions
@@ -88,7 +96,12 @@ export type EventsContextType = {
   actionStates: EventsContextActionStates;
   createEventFromText: (
     body: CreateFromTextRequestBody,
+    options?: CreateEventFromTextOptions,
   ) => Promise<CreateFromTextResponse>;
+  /**
+   * Reload the calendar data. Exposed for batch operations that skip reload.
+   */
+  reloadCalendar: () => Promise<void>;
   parseEventText: (body: ParseRequestBody) => Promise<ParseResponse>;
   createEvent: (body: CreateEventRequestBody) => Promise<CreateEventResponse>;
   createInstallments: (
