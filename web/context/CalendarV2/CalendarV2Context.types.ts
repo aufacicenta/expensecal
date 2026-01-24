@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-import { GetCalendarV2SuccessResponse } from "@/app/api/v2/calendar/types";
+import { ProcessedCalendarData } from "@/app/api/v2/calendar/types";
 
 export type CalendarV2ContextControllerProps = {
   children: ReactNode;
@@ -15,16 +15,17 @@ export type CalendarV2ContextActionStates = {
 
 export type CalendarV2ContextType = {
   /**
-   * V2 calendar data structure: year -> month -> day -> events[]
+   * Processed calendar data structure: year -> month -> day -> events[]
+   * Built client-side from raw events + exchange rates
    */
-  calendarV2Data: GetCalendarV2SuccessResponse["data"] | undefined;
+  calendarV2Data: ProcessedCalendarData | undefined;
 
   /**
    * Filtered calendar data based on selected category IDs
    * Returns the original data if no categories are selected
    * Stats are recalculated to reflect only filtered events
    */
-  filteredCalendarData: GetCalendarV2SuccessResponse["data"] | undefined;
+  filteredCalendarData: ProcessedCalendarData | undefined;
 
   /**
    * Currently displayed month

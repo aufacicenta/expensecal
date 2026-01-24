@@ -1,11 +1,11 @@
 import {
   CalendarEvent,
-  GetCalendarV2SuccessResponse,
+  ProcessedCalendarData,
 } from "@/app/api/v2/calendar/types";
 
 export type EventInfoDrawerProps = {
   event: CalendarEvent | null;
-  calendarV2Data: GetCalendarV2SuccessResponse["data"];
+  calendarV2Data: ProcessedCalendarData;
   isOpen: boolean;
   onClose: () => void;
 };

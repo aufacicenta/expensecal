@@ -13,6 +13,12 @@ export type FinancialSummary = {
 
 export type CalendarEvent = EventAttributes & { exchangeRate: string };
 
+/**
+ * Raw event from API (before client-side processing)
+ * Does not include exchangeRate - this is calculated client-side
+ */
+export type RawCalendarEvent = EventAttributes;
+
 type Day = Array<CalendarEvent>;
 type Month = Record<string, Day>;
 type Year = Record<string, Month>;
@@ -32,16 +38,29 @@ export type YearStats = {
 
 export type CalendarStatsData = Record<string, YearStats>;
 
+/**
+ * Processed calendar data (after client-side calculation)
+ * Used by components for rendering
+ */
+export type ProcessedCalendarData = {
+  calendar: CalendarData;
+  stats: CalendarStatsData;
+};
+
+/**
+ * New lightweight API response - returns raw events for client-side processing
+ * Stats calculation happens on the client using exchange rates from ExchangeRatesContext
+ */
 export type GetCalendarV2SuccessResponse = {
   data: {
-    calendar: CalendarData;
-    stats: CalendarStatsData;
+    events: RawCalendarEvent[];
+    baseCurrency: string;
   };
 } & BaseSuccessResponse;
 
 export type GetCalendarErrorResponse = {
   details?: string;
-  stage?: "validation" | "database" | "calculation"; // Which stage failed
+  stage?: "validation" | "database"; // Which stage failed (no more "calculation" stage)
 } & BaseErrorResponse;
 
 export type GetCalendarResponse =

@@ -2,11 +2,11 @@ import { useState, useCallback } from "react";
 
 import {
   CalendarEvent,
-  GetCalendarV2SuccessResponse,
+  ProcessedCalendarData,
 } from "@/app/api/v2/calendar/types";
 
 type UseEventSelectionParams = {
-  calendarV2Data: GetCalendarV2SuccessResponse["data"] | undefined;
+  calendarV2Data: ProcessedCalendarData | undefined;
 };
 
 export const useEventSelection = ({
