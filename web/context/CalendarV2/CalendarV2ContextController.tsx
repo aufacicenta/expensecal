@@ -272,6 +272,26 @@ export const CalendarV2ContextController = ({
         );
       }
 
+      // Sort events within each day: INCOME first (highest to lowest), then EXPENSE (highest to lowest)
+      for (const year of Object.keys(calendarData)) {
+        for (const month of Object.keys(calendarData[year])) {
+          for (const day of Object.keys(calendarData[year][month])) {
+            calendarData[year][month][day].sort((a, b) => {
+              // First, sort by type: INCOME before EXPENSE
+              if (a.type !== b.type) {
+                return a.type === "INCOME" ? -1 : 1;
+              }
+
+              // Within the same type, sort by amount descending (highest first)
+              const amountA = new Decimal(a.exchangeRate || "0");
+              const amountB = new Decimal(b.exchangeRate || "0");
+
+              return amountB.minus(amountA).toNumber();
+            });
+          }
+        }
+      }
+
       return { calendar: calendarData, stats };
     },
     [],
