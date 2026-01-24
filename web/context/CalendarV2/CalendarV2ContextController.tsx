@@ -21,6 +21,7 @@ import {
 } from "@/app/api/v2/calendar/types";
 import { useEventCategoriesContext } from "@/context/EventCategories/useEventCategoriesContext";
 import { useExchangeRatesContext } from "@/context/ExchangeRates/useExchangeRatesContext";
+import { useUserPreferencesContext } from "@/context/UserPreferences/useUserPreferencesContext";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 import { filterEventsByCategories } from "@/lib/calendar/filterEvents";
 import {
@@ -37,6 +38,7 @@ export const CalendarV2ContextController = ({
 }: CalendarV2ContextControllerProps) => {
   const routes = useRoutes();
   const exchangeRatesContext = useExchangeRatesContext();
+  const { baseCurrency: userBaseCurrency } = useUserPreferencesContext();
   const { selectedCategoryIds } = useEventCategoriesContext();
 
   // Store raw events from API - processing happens in useMemo
@@ -299,21 +301,26 @@ export const CalendarV2ContextController = ({
 
   /**
    * Processed calendar data - computed from raw events + exchange rates
-   * Recalculates when raw events or exchange rates change
+   * Recalculates when raw events, exchange rates, or user's base currency preference changes
    */
   const calendarV2Data = useMemo<ProcessedCalendarData | undefined>(() => {
     if (!rawEvents) return undefined;
 
     // Use rates from context, fallback to empty if not loaded yet
     const rates = exchangeRatesContext.rates;
+    // Use user's base currency preference (updates immediately when changed)
+    // Fall back to exchangeRatesContext.baseCurrency or local state
     const effectiveBaseCurrency =
-      exchangeRatesContext.baseCurrency || baseCurrency;
+      userBaseCurrency?.symbol ||
+      exchangeRatesContext.baseCurrency ||
+      baseCurrency;
 
     return processEventsIntoCalendar(rawEvents, rates, effectiveBaseCurrency);
   }, [
     rawEvents,
     exchangeRatesContext.rates,
     exchangeRatesContext.baseCurrency,
+    userBaseCurrency?.symbol,
     baseCurrency,
     processEventsIntoCalendar,
   ]);

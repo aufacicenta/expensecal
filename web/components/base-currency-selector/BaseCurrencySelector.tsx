@@ -32,9 +32,6 @@ export const BaseCurrencySelector: FC<BaseCurrencySelectorProps> = ({
     setUpdating(true);
     await updateBaseCurrency(currencyId);
     setUpdating(false);
-
-    // Force page reload to refetch calendar data with new base currency
-    window.location.reload();
   };
 
   const isLoading = currenciesLoading || preferencesLoading || updating;

@@ -37,23 +37,23 @@ export function Providers({ children, themeProps }: ProvidersProps) {
     <HeroUIProvider navigate={router.push}>
       <ToastProvider />
       <NextThemesProvider {...themeProps}>
-        <ExchangeRatesContextController>
-          <FilteringContextController>
-            <EventCategoriesContextController>
-              <CalendarV2ContextController>
-                <EventEditModalContextController>
-                  <EventsContextController>
-                    <CurrencyContextController>
-                      <UserPreferencesContextController>
+        <UserPreferencesContextController>
+          <ExchangeRatesContextController>
+            <FilteringContextController>
+              <EventCategoriesContextController>
+                <CalendarV2ContextController>
+                  <EventEditModalContextController>
+                    <EventsContextController>
+                      <CurrencyContextController>
                         <>{children}</>
-                      </UserPreferencesContextController>
-                    </CurrencyContextController>
-                  </EventsContextController>
-                </EventEditModalContextController>
-              </CalendarV2ContextController>
-            </EventCategoriesContextController>
-          </FilteringContextController>
-        </ExchangeRatesContextController>
+                      </CurrencyContextController>
+                    </EventsContextController>
+                  </EventEditModalContextController>
+                </CalendarV2ContextController>
+              </EventCategoriesContextController>
+            </FilteringContextController>
+          </ExchangeRatesContextController>
+        </UserPreferencesContextController>
       </NextThemesProvider>
     </HeroUIProvider>
   );
