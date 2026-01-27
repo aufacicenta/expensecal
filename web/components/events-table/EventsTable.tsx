@@ -97,6 +97,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
   const {
     selectedEventIds,
     getAllEventIds,
+    getSelectedEvents,
     handleToggleEventSelection,
     handleToggleDaySelection,
     handleToggleMonthSelection,
@@ -132,6 +133,38 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
       },
       eventDate,
     );
+  };
+
+  const handleBulkCategoryUpdate = async (categoryIds: string[]) => {
+    if (selectedEventIds.size === 0) return;
+
+    const selectedEvents = getSelectedEvents();
+
+    // Update all selected events with the new category ids
+    await Promise.all(
+      selectedEvents.map((event) =>
+        updateEvent(event.id!, { categoryIds }, event.event_date),
+      ),
+    );
+
+    // Clear selection after bulk update
+    clearSelection();
+  };
+
+  const handleBulkCurrencyUpdate = async (currencyId: string) => {
+    if (selectedEventIds.size === 0) return;
+
+    const selectedEvents = getSelectedEvents();
+
+    // Update all selected events with the new currency
+    await Promise.all(
+      selectedEvents.map((event) =>
+        updateEvent(event.id!, { currency_id: currencyId }, event.event_date),
+      ),
+    );
+
+    // Clear selection after bulk update
+    clearSelection();
   };
 
   const handleEventQuantityUpdate = async (
@@ -298,10 +331,14 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
       {/* Fixed Table Nav */}
       <EventsTableHeader
         categories={categories}
+        currencies={currencies}
+        isBulkUpdateLoading={eventsContextActionStates.updateEvent.isLoading}
         selectedCategoryIds={selectedCategoryIds}
         selectedCount={selectedEventIds.size}
         showOriginalText={showOriginalText}
         totalCount={getAllEventIds().length}
+        onBulkCategoryUpdate={handleBulkCategoryUpdate}
+        onBulkCurrencyUpdate={handleBulkCurrencyUpdate}
         onCategoryFilterChange={setSelectedCategoryIds}
         onToggleAll={handleToggleAllSelection}
         onToggleTextMode={() => setShowOriginalText(!showOriginalText)}
