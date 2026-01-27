@@ -16,5 +16,6 @@ export type EventsTableHeaderProps = {
   currencies: CurrencyData[];
   onBulkCategoryUpdate: (categoryIds: string[]) => Promise<void>;
   onBulkCurrencyUpdate: (currencyId: string) => Promise<void>;
+  onBulkDateUpdate: (newDate: Date) => Promise<void>;
   isBulkUpdateLoading?: boolean;
 };

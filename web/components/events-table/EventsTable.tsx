@@ -167,6 +167,22 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     clearSelection();
   };
 
+  const handleBulkDateUpdate = async (newDate: Date) => {
+    if (selectedEventIds.size === 0) return;
+
+    const selectedEvents = getSelectedEvents();
+
+    // Update all selected events with the new date
+    await Promise.all(
+      selectedEvents.map((event) =>
+        updateEvent(event.id!, { event_date: newDate }, event.event_date),
+      ),
+    );
+
+    // Clear selection after bulk update
+    clearSelection();
+  };
+
   const handleEventQuantityUpdate = async (
     eventId: string,
     quantity: number,
@@ -339,6 +355,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
         totalCount={getAllEventIds().length}
         onBulkCategoryUpdate={handleBulkCategoryUpdate}
         onBulkCurrencyUpdate={handleBulkCurrencyUpdate}
+        onBulkDateUpdate={handleBulkDateUpdate}
         onCategoryFilterChange={setSelectedCategoryIds}
         onToggleAll={handleToggleAllSelection}
         onToggleTextMode={() => setShowOriginalText(!showOriginalText)}

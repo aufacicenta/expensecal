@@ -1,13 +1,17 @@
 import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
+import { DatePicker } from "@heroui/date-picker";
 import {
   Dropdown,
   DropdownItem,
   DropdownMenu,
   DropdownTrigger,
 } from "@heroui/dropdown";
+import { Popover, PopoverContent, PopoverTrigger } from "@heroui/popover";
+import { CalendarDate } from "@internationalized/date";
 import {
   ArrowLeftRight,
+  Calendar,
   ChevronDown,
   Circle,
   CircleCheckBig,
@@ -24,6 +28,7 @@ import { BaseCurrencySelector } from "@/components/base-currency-selector/BaseCu
 import { ThemeSwitch } from "@/components/theme-switch";
 import { useUserPreferencesContext } from "@/context/UserPreferences/useUserPreferencesContext";
 import { UNCATEGORIZED_FILTER_ID } from "@/lib/calendar/filterEvents";
+import { toDateString } from "@/lib/date";
 
 export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
   selectedCount,
@@ -37,6 +42,7 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
   currencies,
   onBulkCategoryUpdate,
   onBulkCurrencyUpdate,
+  onBulkDateUpdate,
   isBulkUpdateLoading = false,
 }) => {
   const { baseCurrency } = useUserPreferencesContext();
@@ -49,6 +55,9 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
   );
   // Bulk currency update state
   const [bulkCurrencyId, setBulkCurrencyId] = useState<string>("");
+  // Bulk date update state
+  const [bulkDate, setBulkDate] = useState<CalendarDate | null>(null);
+  const [isDatePopoverOpen, setIsDatePopoverOpen] = useState(false);
 
   const handleBulkCategorySelectionChange = (
     newSelection: "all" | Set<React.Key>,
@@ -91,9 +100,16 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
       await onBulkCurrencyUpdate(bulkCurrencyId);
       setBulkCurrencyId("");
     }
+
+    // Apply date changes if selected
+    if (bulkDate) {
+      await onBulkDateUpdate(bulkDate.toDate("UTC"));
+      setBulkDate(null);
+    }
   };
 
-  const hasPendingChanges = bulkCategoryIds.size > 0 || !!bulkCurrencyId;
+  const hasPendingChanges =
+    bulkCategoryIds.size > 0 || !!bulkCurrencyId || !!bulkDate;
 
   const handleCategoryToggle = (categoryId: string) => {
     if (selectedCategoryIds.includes(categoryId)) {
@@ -228,6 +244,41 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
                   ))}
               </DropdownMenu>
             </Dropdown>
+
+            {/* Bulk Date Picker */}
+            <Popover
+              isOpen={isDatePopoverOpen}
+              placement="bottom"
+              onOpenChange={setIsDatePopoverOpen}
+            >
+              <PopoverTrigger>
+                <button
+                  className="flex cursor-pointer items-center gap-1 px-1 transition-opacity hover:opacity-80"
+                  disabled={isBulkUpdateLoading}
+                >
+                  <Calendar className="text-default-500" size={14} />
+                  <span className="text-default-500 text-xs">
+                    {bulkDate
+                      ? toDateString(bulkDate.toDate("UTC"))
+                      : "Set date..."}
+                  </span>
+                  <ChevronDown className="text-default-400" size={12} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="p-2">
+                <DatePicker
+                  isDisabled={isBulkUpdateLoading}
+                  label="Select new date"
+                  size="sm"
+                  value={bulkDate}
+                  variant="bordered"
+                  onChange={(date) => {
+                    setBulkDate(date);
+                    setIsDatePopoverOpen(false);
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
 
             {/* Single Apply Button */}
             <Button
