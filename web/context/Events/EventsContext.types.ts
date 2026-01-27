@@ -11,6 +11,10 @@ import {
   UpdateEventResponse,
 } from "@/app/api/v1/events/[id]/types";
 import {
+  CreateFromFileRequestBody,
+  CreateFromFileResponse,
+} from "@/app/api/v1/events/create-from-file/types";
+import {
   CreateFromTextRequestBody,
   CreateFromTextResponse,
 } from "@/app/api/v1/events/create-from-text/types";
@@ -36,6 +40,10 @@ export type EventsContextControllerProps = {
 
 export type EventsContextActionStates = {
   createEventFromText: {
+    isLoading: boolean;
+    error?: string;
+  };
+  createEventFromFile: {
     isLoading: boolean;
     error?: string;
   };
@@ -98,6 +106,13 @@ export type EventsContextType = {
     body: CreateFromTextRequestBody,
     options?: CreateEventFromTextOptions,
   ) => Promise<CreateFromTextResponse>;
+  /**
+   * Create events from an uploaded file
+   * The file content is sent to the LLM for intelligent parsing
+   */
+  createEventFromFile: (
+    body: CreateFromFileRequestBody,
+  ) => Promise<CreateFromFileResponse>;
   /**
    * Reload the calendar data. Exposed for batch operations that skip reload.
    */

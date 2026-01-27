@@ -2,8 +2,9 @@ import { Button } from "@heroui/button";
 import { Textarea } from "@heroui/input";
 import { addToast } from "@heroui/toast";
 import clsx from "clsx";
-import { Send } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Paperclip, Send, Upload } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useDropzone } from "react-dropzone";
 
 import { EventsMultiLineInputProps } from "./EventsMultiLineInput.types";
 
@@ -18,6 +19,49 @@ type LineResult = {
   error?: string;
 };
 
+// Accepted file types for upload
+const ACCEPTED_FILE_TYPES = {
+  "text/plain": [".txt"],
+  "text/csv": [".csv"],
+  "application/json": [".json"],
+  "application/pdf": [".pdf"],
+  "image/png": [".png"],
+  "image/jpeg": [".jpg", ".jpeg"],
+  "image/gif": [".gif"],
+  "image/webp": [".webp"],
+};
+
+// Binary file types that should be sent as base64
+const BINARY_FILE_TYPES = [
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+];
+
+// Max file size: 5MB for PDFs, 1MB for text files
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+/**
+ * Read a file as base64 string (without the data URL prefix)
+ */
+const readFileAsBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
+      const base64 = result.split(",")[1];
+
+      resolve(base64);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+};
+
 export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
   className,
   onSubmit,
@@ -26,12 +70,134 @@ export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
   const calendarContext = useCalendarV2Context();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fileUploading, setFileUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     // Autofocus the textarea when the component mounts
     textareaRef.current?.focus();
   }, []);
+
+  const handleFileUpload = useCallback(
+    async (file: File) => {
+      setFileUploading(true);
+
+      try {
+        const isBinaryFile = BINARY_FILE_TYPES.includes(file.type);
+
+        // Read file content based on type
+        let fileContent: string;
+
+        if (isBinaryFile) {
+          // Read binary files as base64
+          fileContent = await readFileAsBase64(file);
+        } else {
+          // Read text files as text
+          fileContent = await file.text();
+
+          if (!fileContent.trim()) {
+            addToast({
+              title: "Empty file",
+              description: "The uploaded file appears to be empty",
+              color: "warning",
+            });
+
+            return;
+          }
+        }
+
+        // Call the create-from-file API
+        const response = await eventsController.createEventFromFile({
+          file_content: fileContent,
+          file_name: file.name,
+          file_type: file.type || "text/plain",
+          current_date: calendarContext.currentMonth.toISOString(),
+        });
+
+        if ("error" in response) {
+          addToast({
+            title: "File processing failed",
+            description: response.error,
+            color: "danger",
+          });
+
+          return;
+        }
+
+        // Show results
+        const { summary } = response.data;
+
+        if (summary.total_created > 0) {
+          addToast({
+            title: `Created ${summary.total_created} event${summary.total_created > 1 ? "s" : ""} from file`,
+            description: `Assigned to "${summary.category_name}" category${summary.total_failed > 0 ? `. ${summary.total_failed} failed.` : ""}`,
+            color: "success",
+          });
+
+          if (onSubmit) {
+            onSubmit();
+          }
+        } else if (summary.total_failed > 0) {
+          addToast({
+            title: "Failed to create events",
+            description: `All ${summary.total_failed} parsed events failed to create`,
+            color: "danger",
+          });
+        } else {
+          addToast({
+            title: "No events found",
+            description: "Could not extract any events from the file",
+            color: "warning",
+          });
+        }
+      } catch (error) {
+        console.error("File upload error:", error);
+        addToast({
+          title: "Upload failed",
+          description: error instanceof Error ? error.message : "Unknown error",
+          color: "danger",
+        });
+      } finally {
+        setFileUploading(false);
+      }
+    },
+    [eventsController, calendarContext.currentMonth, onSubmit],
+  );
+
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      if (acceptedFiles.length > 0) {
+        handleFileUpload(acceptedFiles[0]);
+      }
+    },
+    [handleFileUpload],
+  );
+
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+    onDrop,
+    accept: ACCEPTED_FILE_TYPES,
+    maxSize: MAX_FILE_SIZE,
+    multiple: false,
+    noClick: true, // We'll handle click separately with the button
+    onDropRejected: (rejections) => {
+      const rejection = rejections[0];
+
+      if (rejection?.errors[0]?.code === "file-too-large") {
+        addToast({
+          title: "File too large",
+          description: "Maximum file size is 5MB",
+          color: "danger",
+        });
+      } else if (rejection?.errors[0]?.code === "file-invalid-type") {
+        addToast({
+          title: "Invalid file type",
+          description:
+            "Please upload a .txt, .csv, .json, .pdf, or image file (.png, .jpg, .gif, .webp)",
+          color: "danger",
+        });
+      }
+    },
+  });
 
   const handleSubmit = async () => {
     if (!input.trim()) return;
@@ -158,40 +324,83 @@ export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
     }
   };
 
+  const isLoading =
+    loading ||
+    fileUploading ||
+    eventsController.actionStates.createEventFromText.isLoading ||
+    eventsController.actionStates.createEventFromFile.isLoading ||
+    calendarContext.actionStates.loadCalendarV2.isLoading;
+
   return (
     <div className={clsx("flex flex-col gap-3", className)}>
-      <Textarea
-        ref={textareaRef}
-        className="w-full"
-        description="Ctrl+Enter (or Cmd+Enter on Mac) to submit"
-        disabled={loading}
-        isDisabled={loading}
-        label="Enter expenses or income"
-        maxRows={8}
-        minRows={4}
-        placeholder="e.g., Spent $50 on groceries tomorrow&#10;Got paid $2000 next Friday"
-        value={input}
-        variant="bordered"
-        onKeyDown={handleKeyDown}
-        onValueChange={setInput}
-      />
-      <Button
-        color="primary"
-        endContent={loading ? undefined : <Send size={16} />}
-        isLoading={
-          loading ||
-          eventsController.actionStates.createEventFromText.isLoading ||
-          calendarContext.actionStates.loadCalendarV2.isLoading
-        }
-        variant="bordered"
-        onPress={handleSubmit}
+      <div
+        {...getRootProps()}
+        className={clsx(
+          "relative rounded-lg transition-all duration-200",
+          isDragActive && "ring-primary ring-2 ring-offset-2",
+        )}
       >
-        {loading
-          ? "Creating..."
-          : calendarContext.actionStates.loadCalendarV2.isLoading
-            ? "Refreshing Calendar"
-            : "Create Events"}
-      </Button>
+        <input {...getInputProps()} />
+
+        {/* Drag overlay */}
+        {isDragActive && (
+          <div className="bg-primary/10 absolute inset-0 z-10 flex items-center justify-center rounded-lg backdrop-blur-sm">
+            <div className="text-primary flex flex-col items-center gap-2">
+              <Upload size={32} />
+              <span className="text-sm font-medium">Drop file to upload</span>
+            </div>
+          </div>
+        )}
+
+        <Textarea
+          ref={textareaRef}
+          className="w-full"
+          description="Ctrl+Enter to submit | Drag & drop or click clip icon to upload file"
+          disabled={isLoading}
+          isDisabled={isLoading}
+          label="Enter expenses or income"
+          maxRows={8}
+          minRows={4}
+          placeholder="e.g., Spent $50 on groceries tomorrow&#10;Got paid $2000 next Friday&#10;&#10;Or drop a file (.txt, .csv, .json, .pdf, or image)"
+          value={input}
+          variant="bordered"
+          onKeyDown={handleKeyDown}
+          onValueChange={setInput}
+        />
+      </div>
+
+      <div className="flex gap-2">
+        <Button
+          isIconOnly
+          aria-label="Upload file"
+          color="default"
+          isDisabled={isLoading}
+          isLoading={fileUploading}
+          title="Upload file (.txt, .csv, .json, .pdf, or image)"
+          variant="bordered"
+          onPress={open}
+        >
+          {!fileUploading && <Paperclip size={16} />}
+        </Button>
+
+        <Button
+          className="flex-1"
+          color="primary"
+          endContent={isLoading ? undefined : <Send size={16} />}
+          isDisabled={!input.trim() && !isLoading}
+          isLoading={isLoading && !fileUploading}
+          variant="bordered"
+          onPress={handleSubmit}
+        >
+          {fileUploading
+            ? "Processing file..."
+            : loading
+              ? "Creating..."
+              : calendarContext.actionStates.loadCalendarV2.isLoading
+                ? "Refreshing Calendar"
+                : "Create Events"}
+        </Button>
+      </div>
     </div>
   );
 };

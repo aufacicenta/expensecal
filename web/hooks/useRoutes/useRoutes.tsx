@@ -11,6 +11,7 @@ export const routes = {
         parse: () => `/api/v1/events/parse`,
         create: () => `/api/v1/events/create`,
         createFromText: () => `/api/v1/events/create-from-text`,
+        createFromFile: () => `/api/v1/events/create-from-file`,
         detail: (eventId: string) =>
           `/api/v1/events/${encodeURIComponent(eventId)}`,
         children: (eventId: string) =>

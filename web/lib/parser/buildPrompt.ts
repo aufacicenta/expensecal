@@ -62,3 +62,58 @@ Output: {"type": "EXPENSE", "amount": "1200.00", "currency": "USD", "quantity": 
 Input: "50 USD quarterly insurance next month"
 Output: {"type": "EXPENSE", "amount": "50.00", "currency": "USD", "quantity": 1, "description": "insurance", "event_date": "2025-11-15T00:00:00.000Z", "recurrence_rule": "FREQ=MONTHLY;INTERVAL=3", "recurrence_end_date": null, "split_installments": false, "confidence": 0.92}`;
 }
+
+/**
+ * Prompt builder for file parsing
+ * Used when processing uploaded files with multiple transactions
+ */
+export function buildFilePrompt(
+  fileContent: string,
+  fileName: string,
+  referenceDate: Date,
+): string {
+  const dateStr = referenceDate.toISOString().split("T")[0];
+  const dayOfWeek = referenceDate.toLocaleDateString("en-US", {
+    weekday: "long",
+  });
+
+  return `Current date: ${dateStr} (${dayOfWeek})
+File name: ${fileName}
+
+Parse the following file content and extract ALL expense/income transactions:
+
+---FILE CONTENT START---
+${fileContent}
+---FILE CONTENT END---
+
+PARSING INSTRUCTIONS:
+1. Analyze the file format (CSV, plain text, bank statement, JSON, etc.)
+2. Extract EVERY transaction/event you can identify
+3. For each transaction, determine:
+   - TYPE: "EXPENSE" or "INCOME" (debits/withdrawals are EXPENSE, credits/deposits are INCOME)
+   - AMOUNT: as a decimal string (e.g., "100.50")
+   - CURRENCY: default to USD if not specified
+   - QUANTITY: number of items, default to 1
+   - DESCRIPTION: what the transaction is for
+   - EVENT_DATE: in ISO 8601 format. If dates are relative (yesterday, today), use the reference date above
+   - RECURRENCE: null unless explicitly recurring
+   - SPLIT_INSTALLMENTS: false unless explicitly mentioned
+   - CONFIDENCE: 0.0 to 1.0 based on parsing certainty
+   - RAW_TEXT: the original text/row this was extracted from
+
+4. For CSV files:
+   - Use header row to understand columns
+   - Common columns: date, description, amount, type, category, debit, credit
+   - Negative amounts or "debit" columns typically mean EXPENSE
+   - Positive amounts or "credit" columns typically mean INCOME
+
+5. For bank statements:
+   - Withdrawals, purchases, payments = EXPENSE
+   - Deposits, transfers in, refunds = INCOME
+
+6. For plain text:
+   - Each line may be a separate transaction
+   - Skip empty lines and headers
+
+Return a JSON object with an "events" array containing all extracted transactions.`;
+}

@@ -22,6 +22,10 @@ import {
   UpdateEventRequestBody,
   UpdateEventSuccessResponse,
 } from "@/app/api/v1/events/[id]/types";
+import {
+  CreateFromFileRequestBody,
+  CreateFromFileSuccessResponse,
+} from "@/app/api/v1/events/create-from-file/types";
 import { CreateFromTextSuccessResponse } from "@/app/api/v1/events/create-from-text/types";
 import { CreateEventRequestBody } from "@/app/api/v1/events/create/types";
 import {
@@ -38,6 +42,7 @@ export const EventsContextController = ({
   const calendarContext = useCalendarV2Context();
   const [actionStates, setActionStates] = useState<EventsContextActionStates>({
     createEventFromText: { isLoading: false, error: undefined },
+    createEventFromFile: { isLoading: false, error: undefined },
     parseEventText: { isLoading: false, error: undefined },
     createEvent: { isLoading: false, error: undefined },
     createInstallments: { isLoading: false, error: undefined },
@@ -105,6 +110,47 @@ export const EventsContextController = ({
         createEventFromText: { isLoading: false, error: errorMsg },
       }));
       console.error("Error creating event from text:", error);
+      throw error;
+    }
+  };
+
+  const createEventFromFile = async (body: CreateFromFileRequestBody) => {
+    setActionStates((prev) => ({
+      ...prev,
+      createEventFromFile: { isLoading: true, error: undefined },
+    }));
+    try {
+      const response = await fetch(routes.api.v1.events.createFromFile(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = (await response.json()) as CreateFromFileSuccessResponse;
+
+      // Reload calendar to show new events
+      await reloadCalendar();
+
+      setActionStates((prev) => ({
+        ...prev,
+        createEventFromFile: { isLoading: false, error: undefined },
+      }));
+
+      return data;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
+      setActionStates((prev) => ({
+        ...prev,
+        createEventFromFile: { isLoading: false, error: errorMsg },
+      }));
+      console.error("Error creating events from file:", error);
       throw error;
     }
   };
@@ -527,6 +573,7 @@ export const EventsContextController = ({
   const props: EventsContextType = {
     actionStates,
     createEventFromText,
+    createEventFromFile,
     reloadCalendar,
     parseEventText,
     createEvent,
