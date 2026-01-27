@@ -2,6 +2,10 @@ const origin = process.env.NEXT_PUBLIC_RAILWAY_PUBLIC_DOMAIN;
 
 export const routes = {
   home: () => `/`,
+  table: {
+    index: () => `/table`,
+    view: (groupId: string) => `/table/view/${encodeURIComponent(groupId)}`,
+  },
   api: {
     v1: {
       example: {
@@ -25,6 +29,12 @@ export const routes = {
           list: () => `/api/v1/events/installments/list`,
           delete: () => `/api/v1/events/installments/delete`,
         },
+      },
+      eventGroups: {
+        list: () => `/api/v1/event-groups`,
+        create: () => `/api/v1/event-groups/create`,
+        detail: (groupId: string) =>
+          `/api/v1/event-groups/${encodeURIComponent(groupId)}`,
       },
       calendar: {
         get: () => `/api/v1/calendar`,

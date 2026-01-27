@@ -5,11 +5,13 @@ import {
   Dropdown,
   DropdownItem,
   DropdownMenu,
+  DropdownSection,
   DropdownTrigger,
 } from "@heroui/dropdown";
 import { Popover, PopoverContent, PopoverTrigger } from "@heroui/popover";
 import { CalendarDate } from "@internationalized/date";
 import {
+  ArrowLeft,
   ArrowLeftRight,
   Calendar,
   ChevronDown,
@@ -17,16 +19,22 @@ import {
   CircleCheckBig,
   CircleDashed,
   Coins,
+  FolderOpen,
+  FolderPlus,
   ListFilter,
+  Table,
   Tag,
 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { EventsTableHeaderProps } from "./EventsTableHeader.types";
 
 import { BaseCurrencySelector } from "@/components/base-currency-selector/BaseCurrencySelector";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { useEventGroupsContext } from "@/context/EventGroups/useEventGroupsContext";
 import { useUserPreferencesContext } from "@/context/UserPreferences/useUserPreferencesContext";
+import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 import { UNCATEGORIZED_FILTER_ID } from "@/lib/calendar/filterEvents";
 import { toDateString } from "@/lib/date";
 
@@ -43,8 +51,13 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
   onBulkCategoryUpdate,
   onBulkCurrencyUpdate,
   onBulkDateUpdate,
+  selectedEventIds,
+  onCreateViewClick,
+  currentView,
 }) => {
   const { baseCurrency } = useUserPreferencesContext();
+  const { eventGroups } = useEventGroupsContext();
+  const routes = useRoutes();
   const isAllSelected = selectedCount > 0 && selectedCount === totalCount;
   const isIndeterminate = selectedCount > 0 && selectedCount < totalCount;
 
@@ -128,9 +141,113 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
     <nav className="bg-background fixed top-0 left-0 z-50 text-xs">
       {/* App Top Bar */}
       <div className="flex w-screen items-center justify-between px-2 [&>div]:p-1">
-        <div className="flex gap-1 font-mono">
-          <span className="">ExpenseCal</span>
-          <span className="text-default-400">v0.0.2</span>
+        <div className="flex items-center gap-3 font-mono">
+          {/* Back button when viewing a saved view */}
+          {currentView && (
+            <Link href={routes.table.index()}>
+              <Button
+                isIconOnly
+                aria-label="Back to all events"
+                size="sm"
+                variant="light"
+              >
+                <ArrowLeft size={16} />
+              </Button>
+            </Link>
+          )}
+          <div className="flex gap-1">
+            <span className="">ExpenseCal</span>
+            <span className="text-default-400">v1.0.0</span>
+          </div>
+          {/* Views Dropdown */}
+          <Dropdown>
+            <DropdownTrigger>
+              <button className="hover:bg-default-100 flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 transition-colors">
+                <FolderOpen
+                  className={currentView ? "text-primary" : "text-default-500"}
+                  size={14}
+                />
+                <span
+                  className={
+                    currentView
+                      ? "text-primary text-xs font-medium"
+                      : "text-default-600 text-xs"
+                  }
+                >
+                  {currentView ? currentView.name : "Views"}
+                </span>
+                {currentView ? (
+                  <span className="text-default-500 text-[10px]">
+                    ({currentView.eventCount} event
+                    {currentView.eventCount !== 1 ? "s" : ""})
+                  </span>
+                ) : (
+                  eventGroups.length > 0 && (
+                    <span className="bg-default-200 text-default-600 ml-1 rounded-full px-1.5 py-0.5 text-[10px]">
+                      {eventGroups.length}
+                    </span>
+                  )
+                )}
+                <ChevronDown className="text-default-400" size={12} />
+              </button>
+            </DropdownTrigger>
+            <DropdownMenu
+              aria-label="Event views"
+              className="max-h-[300px] min-w-[200px] overflow-y-auto"
+            >
+              <DropdownSection showDivider title="All Events">
+                <DropdownItem
+                  key="all-events"
+                  className={!currentView ? "bg-primary/10" : undefined}
+                  href={routes.table.index()}
+                  startContent={
+                    <Table
+                      className={!currentView ? "text-primary" : undefined}
+                      size={14}
+                    />
+                  }
+                >
+                  All Events
+                </DropdownItem>
+              </DropdownSection>
+              <DropdownSection title="Saved Views">
+                {eventGroups.length > 0 ? (
+                  eventGroups.map((group) => (
+                    <DropdownItem
+                      key={group.id}
+                      className={
+                        currentView?.id === group.id
+                          ? "bg-primary/10"
+                          : undefined
+                      }
+                      description={`${group.event_count || 0} events`}
+                      href={routes.table.view(group.id)}
+                      startContent={
+                        <FolderOpen
+                          className={
+                            currentView?.id === group.id
+                              ? "text-primary"
+                              : undefined
+                          }
+                          size={14}
+                        />
+                      }
+                    >
+                      {group.name}
+                    </DropdownItem>
+                  ))
+                ) : (
+                  <DropdownItem
+                    key="no-views"
+                    isReadOnly
+                    className="text-default-400"
+                  >
+                    No saved views yet
+                  </DropdownItem>
+                )}
+              </DropdownSection>
+            </DropdownMenu>
+          </Dropdown>
         </div>
         <div className="flex items-center gap-2 text-right">
           <BaseCurrencySelector />
@@ -145,6 +262,16 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
             <span className="text-primary font-medium">
               {selectedCount} event{selectedCount > 1 ? "s" : ""} selected
             </span>
+            <Button
+              color="secondary"
+              size="sm"
+              startContent={<FolderPlus size={14} />}
+              title={`Create view from ${selectedEventIds.size} selected event${selectedEventIds.size !== 1 ? "s" : ""}`}
+              variant="flat"
+              onPress={onCreateViewClick}
+            >
+              Create View
+            </Button>
           </div>
           <div className="flex items-center gap-2">
             {/* Bulk Category Dropdown */}

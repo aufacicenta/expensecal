@@ -12,6 +12,7 @@ import { CalendarV2ContextController } from "@/context/CalendarV2/CalendarV2Cont
 import { CurrencyContextController } from "@/context/Currency/CurrencyContextController";
 import { EventCategoriesContextController } from "@/context/EventCategories/EventCategoriesContextController";
 import { EventEditModalContextController } from "@/context/EventEditModal/EventEditModalContext";
+import { EventGroupsContextController } from "@/context/EventGroups/EventGroupsContextController";
 import { EventsContextController } from "@/context/Events/EventsContextController";
 import { ExchangeRatesContextController } from "@/context/ExchangeRates/ExchangeRatesContextController";
 import { FilteringContextController } from "@/context/Filtering/FilteringContextController";
@@ -41,15 +42,17 @@ export function Providers({ children, themeProps }: ProvidersProps) {
           <ExchangeRatesContextController>
             <FilteringContextController>
               <EventCategoriesContextController>
-                <CalendarV2ContextController>
-                  <EventEditModalContextController>
-                    <EventsContextController>
-                      <CurrencyContextController>
-                        <>{children}</>
-                      </CurrencyContextController>
-                    </EventsContextController>
-                  </EventEditModalContextController>
-                </CalendarV2ContextController>
+                <EventGroupsContextController>
+                  <CalendarV2ContextController>
+                    <EventEditModalContextController>
+                      <EventsContextController>
+                        <CurrencyContextController>
+                          <>{children}</>
+                        </CurrencyContextController>
+                      </EventsContextController>
+                    </EventEditModalContextController>
+                  </CalendarV2ContextController>
+                </EventGroupsContextController>
               </EventCategoriesContextController>
             </FilteringContextController>
           </ExchangeRatesContextController>

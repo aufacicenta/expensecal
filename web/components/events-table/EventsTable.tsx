@@ -18,21 +18,24 @@ import {
   CircleCheckBig,
   CircleX,
   Command,
+  FolderPlus,
   Info,
   ListChevronsUpDown,
   Loader2,
   Trash,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { CommandsModal } from "../commands-modal/CommandsModal";
-import { StaggerLoadingAnimation } from "../stagger-loading-animation/StaggerLoadingAnimation";
+import { FullPageLoadingState } from "../full-page-loading-state/FullPageLoadingState";
 
 import { EventsTableProps } from "./EventsTable.types";
 import { DeleteEventConfirmationModal } from "./delete-event-confirmation-modal/DeleteEventConfirmationModal";
 import { EventInfoDrawer } from "./event-info-drawer/EventInfoDrawer";
 import { EventsTableHeader } from "./events-table-header/EventsTableHeader";
 import { MakeRecurringModal } from "./make-recurring-modal/MakeRecurringModal";
+import { CreateViewModal } from "./create-view-modal/CreateViewModal";
 import { ChildEventsPanel } from "./child-events-panel/ChildEventsPanel";
 import { StatsCell } from "./stats-cell/StatsCell";
 import { StatsDetailsDrawer } from "./stats-cell/StatsDetailsDrawer";
@@ -57,6 +60,7 @@ import { useEventsContext } from "@/context/Events/useEventsContext";
 import { useEventCategoriesContext } from "@/context/EventCategories/useEventCategoriesContext";
 import { useCurrencyContext } from "@/context/Currency/useCurrencyContext";
 import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
+import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 import {
   CalendarEvent,
   DayStats,
@@ -65,7 +69,7 @@ import {
 import { DeleteMode } from "@/app/api/v1/events/[id]/types";
 
 // @TODO handle an edge case with EventCellDateEdit where editing a recurring event may need to update all the dates in the series.
-export const EventsTable: React.FC<EventsTableProps> = ({}) => {
+export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
   const { calendarV2Data, filteredCalendarData, loadCalendarV2 } =
     useCalendarV2Context();
   const {
@@ -121,6 +125,9 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     new Set(),
   );
   const [isCommandsModalOpen, setIsCommandsModalOpen] = useState(false);
+  const [isCreateViewModalOpen, setIsCreateViewModalOpen] = useState(false);
+  const router = useRouter();
+  const routes = useRoutes();
 
   const handleEventCategoryUpdate = async (
     eventId: string,
@@ -281,6 +288,12 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     clearSelection();
   };
 
+  const handleCreateViewSuccess = (viewId: string) => {
+    clearSelection();
+    // Optionally navigate to the new view
+    router.push(routes.table.view(viewId));
+  };
+
   const handleEventQuantityUpdate = async (
     eventId: string,
     quantity: number,
@@ -412,20 +425,6 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     });
   };
 
-  const getLoadingStateComponent = () => (
-    <section className="bg-background/70 fixed top-0 right-0 bottom-0 left-0 z-[1000] h-screen w-screen">
-      <nav className="absolute top-0 right-0 left-0 flex w-full justify-between [&>div]:p-4">
-        <div>
-          <span className="font-mono">ExpenseCal</span>
-        </div>
-        <div>
-          <span className="font-mono">Loading...</span>
-        </div>
-      </nav>
-      <StaggerLoadingAnimation />
-    </section>
-  );
-
   useEffect(() => {
     if (!!calendarV2Data) return;
 
@@ -433,27 +432,31 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     loadCalendarV2();
   }, []);
 
-  if (!calendarV2Data) return getLoadingStateComponent();
+  if (!calendarV2Data) return <FullPageLoadingState />;
 
   return (
     <section className="relative w-fit overflow-x-auto pt-[58px]">
       {/* Loading State Over Existing Calendar*/}
       {(eventsContextActionStates.deleteEvent.isLoading ||
-        eventsContextActionStates.deleteEventMultiple.isLoading) &&
-        getLoadingStateComponent()}
+        eventsContextActionStates.deleteEventMultiple.isLoading) && (
+        <FullPageLoadingState />
+      )}
 
       {/* Fixed Table Nav */}
       <EventsTableHeader
         categories={categories}
         currencies={currencies}
+        currentView={currentView}
         selectedCategoryIds={selectedCategoryIds}
         selectedCount={selectedEventIds.size}
+        selectedEventIds={selectedEventIds}
         showOriginalText={showOriginalText}
         totalCount={getAllEventIds().length}
         onBulkCategoryUpdate={handleBulkCategoryUpdate}
         onBulkCurrencyUpdate={handleBulkCurrencyUpdate}
         onBulkDateUpdate={handleBulkDateUpdate}
         onCategoryFilterChange={setSelectedCategoryIds}
+        onCreateViewClick={() => setIsCreateViewModalOpen(true)}
         onToggleAll={handleToggleAllSelection}
         onToggleTextMode={() => setShowOriginalText(!showOriginalText)}
       />
@@ -1274,6 +1277,14 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
         onConfirm={handleConfirmMakeRecurring}
       />
 
+      {/* Create View Modal */}
+      <CreateViewModal
+        isOpen={isCreateViewModalOpen}
+        selectedEventIds={Array.from(selectedEventIds)}
+        onClose={() => setIsCreateViewModalOpen(false)}
+        onSuccess={handleCreateViewSuccess}
+      />
+
       {/* Event Info Drawer */}
       <EventInfoDrawer
         calendarV2Data={calendarV2Data}
@@ -1294,17 +1305,35 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
         />
       )}
 
-      {/* Floating Commands Button */}
-      <Button
-        isIconOnly
-        className="fixed right-6 bottom-6 z-50 shadow-lg"
-        color="primary"
-        radius="full"
-        size="lg"
-        onPress={() => setIsCommandsModalOpen(true)}
-      >
-        <Command size={24} />
-      </Button>
+      {/* Floating Action Buttons */}
+      <div className="fixed right-6 bottom-6 z-50 flex flex-col gap-3">
+        {/* Create View Button - only visible when events are selected */}
+        {selectedEventIds.size > 0 && (
+          <Button
+            isIconOnly
+            className="shadow-lg"
+            color="secondary"
+            radius="full"
+            size="lg"
+            title={`Create view from ${selectedEventIds.size} selected event${selectedEventIds.size !== 1 ? "s" : ""}`}
+            onPress={() => setIsCreateViewModalOpen(true)}
+          >
+            <FolderPlus size={24} />
+          </Button>
+        )}
+
+        {/* Commands Button */}
+        <Button
+          isIconOnly
+          className="shadow-lg"
+          color="primary"
+          radius="full"
+          size="lg"
+          onPress={() => setIsCommandsModalOpen(true)}
+        >
+          <Command size={24} />
+        </Button>
+      </div>
 
       {/* Commands Modal */}
       <CommandsModal
