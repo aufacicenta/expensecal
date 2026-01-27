@@ -19,6 +19,7 @@ export const routes = {
         makeRecurring: (eventId: string) =>
           `/api/v1/events/${encodeURIComponent(eventId)}/make-recurring`,
         deleteMultiple: () => `/api/v1/events/delete-multiple`,
+        updateMultiple: () => `/api/v1/events/update-multiple`,
         installments: {
           create: () => `/api/v1/events/installments/create`,
           list: () => `/api/v1/events/installments/list`,

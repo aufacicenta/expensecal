@@ -15,6 +15,10 @@ import {
   CreateFromFileResponse,
 } from "@/app/api/v1/events/create-from-file/types";
 import {
+  UpdateMultipleEventsRequestBody,
+  UpdateMultipleEventsResponse,
+} from "@/app/api/v1/events/update-multiple/types";
+import {
   CreateFromTextRequestBody,
   CreateFromTextResponse,
 } from "@/app/api/v1/events/create-from-text/types";
@@ -68,6 +72,10 @@ export type EventsContextActionStates = {
     error?: string;
   };
   updateEvent: {
+    isLoading: boolean;
+    error?: string;
+  };
+  updateEventMultiple: {
     isLoading: boolean;
     error?: string;
   };
@@ -133,6 +141,13 @@ export type EventsContextType = {
     body: UpdateEventRequestBody,
     originalEventDate: Date,
   ) => Promise<UpdateEventResponse>;
+  /**
+   * Update multiple events in a single API call.
+   * This is optimized for bulk operations and runs in the background.
+   */
+  updateEventMultiple: (
+    body: UpdateMultipleEventsRequestBody,
+  ) => Promise<UpdateMultipleEventsResponse>;
   deleteEvent: (
     eventId: string,
     deleteMode?: DeleteMode,

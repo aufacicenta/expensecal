@@ -10,6 +10,7 @@ import {
   DropdownTrigger,
 } from "@heroui/dropdown";
 import clsx from "clsx";
+import { addToast } from "@heroui/toast";
 import {
   CalendarFold,
   CalendarSync,
@@ -69,6 +70,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     useCalendarV2Context();
   const {
     updateEvent,
+    updateEventMultiple,
     deleteEvent,
     actionStates: eventsContextActionStates,
     deleteEventMultiple,
@@ -135,51 +137,147 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
     );
   };
 
-  const handleBulkCategoryUpdate = async (categoryIds: string[]) => {
+  const handleBulkCategoryUpdate = (categoryIds: string[]) => {
     if (selectedEventIds.size === 0) return;
 
     const selectedEvents = getSelectedEvents();
+    const eventCount = selectedEvents.length;
 
-    // Update all selected events with the new category ids
-    await Promise.all(
-      selectedEvents.map((event) =>
-        updateEvent(event.id!, { categoryIds }, event.event_date),
-      ),
-    );
+    // Fire and forget - don't block the UI
+    updateEventMultiple({
+      updates: selectedEvents.map((event) => ({
+        eventId: event.id!,
+        data: { categoryIds },
+      })),
+    })
+      .then((response) => {
+        if (response.success && response.data) {
+          addToast({
+            title: `Updated ${response.data.updatedCount} event${response.data.updatedCount > 1 ? "s" : ""}`,
+            description: "Categories updated successfully",
+            color: "success",
+          });
 
-    // Clear selection after bulk update
+          if (
+            response.data.failedUpdates &&
+            response.data.failedUpdates.length > 0
+          ) {
+            addToast({
+              title: `Failed to update ${response.data.failedUpdates.length} event${response.data.failedUpdates.length > 1 ? "s" : ""}`,
+              description: response.data.failedUpdates
+                .map((f) => f.reason)
+                .slice(0, 3)
+                .join("; "),
+              color: "warning",
+            });
+          }
+        }
+      })
+      .catch((error) => {
+        addToast({
+          title: `Failed to update ${eventCount} event${eventCount > 1 ? "s" : ""}`,
+          description: error instanceof Error ? error.message : "Unknown error",
+          color: "danger",
+        });
+      });
+
+    // Clear selection immediately for non-blocking UX
     clearSelection();
   };
 
-  const handleBulkCurrencyUpdate = async (currencyId: string) => {
+  const handleBulkCurrencyUpdate = (currencyId: string) => {
     if (selectedEventIds.size === 0) return;
 
     const selectedEvents = getSelectedEvents();
+    const eventCount = selectedEvents.length;
 
-    // Update all selected events with the new currency
-    await Promise.all(
-      selectedEvents.map((event) =>
-        updateEvent(event.id!, { currency_id: currencyId }, event.event_date),
-      ),
-    );
+    // Fire and forget - don't block the UI
+    updateEventMultiple({
+      updates: selectedEvents.map((event) => ({
+        eventId: event.id!,
+        data: { currency_id: currencyId },
+      })),
+    })
+      .then((response) => {
+        if (response.success && response.data) {
+          addToast({
+            title: `Updated ${response.data.updatedCount} event${response.data.updatedCount > 1 ? "s" : ""}`,
+            description: "Currency updated successfully",
+            color: "success",
+          });
 
-    // Clear selection after bulk update
+          if (
+            response.data.failedUpdates &&
+            response.data.failedUpdates.length > 0
+          ) {
+            addToast({
+              title: `Failed to update ${response.data.failedUpdates.length} event${response.data.failedUpdates.length > 1 ? "s" : ""}`,
+              description: response.data.failedUpdates
+                .map((f) => f.reason)
+                .slice(0, 3)
+                .join("; "),
+              color: "warning",
+            });
+          }
+        }
+      })
+      .catch((error) => {
+        addToast({
+          title: `Failed to update ${eventCount} event${eventCount > 1 ? "s" : ""}`,
+          description: error instanceof Error ? error.message : "Unknown error",
+          color: "danger",
+        });
+      });
+
+    // Clear selection immediately for non-blocking UX
     clearSelection();
   };
 
-  const handleBulkDateUpdate = async (newDate: Date) => {
+  const handleBulkDateUpdate = (newDate: Date) => {
     if (selectedEventIds.size === 0) return;
 
     const selectedEvents = getSelectedEvents();
+    const eventCount = selectedEvents.length;
 
-    // Update all selected events with the new date
-    await Promise.all(
-      selectedEvents.map((event) =>
-        updateEvent(event.id!, { event_date: newDate }, event.event_date),
-      ),
-    );
+    // Fire and forget - don't block the UI
+    updateEventMultiple({
+      updates: selectedEvents.map((event) => ({
+        eventId: event.id!,
+        data: { event_date: newDate },
+      })),
+    })
+      .then((response) => {
+        if (response.success && response.data) {
+          addToast({
+            title: `Updated ${response.data.updatedCount} event${response.data.updatedCount > 1 ? "s" : ""}`,
+            description: "Date updated successfully",
+            color: "success",
+          });
 
-    // Clear selection after bulk update
+          if (
+            response.data.failedUpdates &&
+            response.data.failedUpdates.length > 0
+          ) {
+            addToast({
+              title: `Failed to update ${response.data.failedUpdates.length} event${response.data.failedUpdates.length > 1 ? "s" : ""}`,
+              description: response.data.failedUpdates
+                .map((f) => f.reason)
+                .slice(0, 3)
+                .join("; "),
+              color: "warning",
+            });
+          }
+        }
+      })
+      .catch((error) => {
+        addToast({
+          title: `Failed to update ${eventCount} event${eventCount > 1 ? "s" : ""}`,
+          description: error instanceof Error ? error.message : "Unknown error",
+          color: "danger",
+        });
+      });
+
+    // Clear selection immediately for non-blocking UX
     clearSelection();
   };
 
@@ -348,7 +446,6 @@ export const EventsTable: React.FC<EventsTableProps> = ({}) => {
       <EventsTableHeader
         categories={categories}
         currencies={currencies}
-        isBulkUpdateLoading={eventsContextActionStates.updateEvent.isLoading}
         selectedCategoryIds={selectedCategoryIds}
         selectedCount={selectedEventIds.size}
         showOriginalText={showOriginalText}

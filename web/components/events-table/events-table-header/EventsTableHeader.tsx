@@ -43,7 +43,6 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
   onBulkCategoryUpdate,
   onBulkCurrencyUpdate,
   onBulkDateUpdate,
-  isBulkUpdateLoading = false,
 }) => {
   const { baseCurrency } = useUserPreferencesContext();
   const isAllSelected = selectedCount > 0 && selectedCount === totalCount;
@@ -88,22 +87,22 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
     setBulkCurrencyId(currencyId);
   };
 
-  const handleApplyBulkChanges = async () => {
+  const handleApplyBulkChanges = () => {
     // Apply category changes if any selected
     if (bulkCategoryIds.size > 0) {
-      await onBulkCategoryUpdate(Array.from(bulkCategoryIds));
+      onBulkCategoryUpdate(Array.from(bulkCategoryIds));
       setBulkCategoryIds(new Set());
     }
 
     // Apply currency changes if selected
     if (bulkCurrencyId) {
-      await onBulkCurrencyUpdate(bulkCurrencyId);
+      onBulkCurrencyUpdate(bulkCurrencyId);
       setBulkCurrencyId("");
     }
 
     // Apply date changes if selected
     if (bulkDate) {
-      await onBulkDateUpdate(bulkDate.toDate("UTC"));
+      onBulkDateUpdate(bulkDate.toDate("UTC"));
       setBulkDate(null);
     }
   };
@@ -151,10 +150,7 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
             {/* Bulk Category Dropdown */}
             <Dropdown>
               <DropdownTrigger>
-                <button
-                  className="flex cursor-pointer items-center gap-1 px-1 transition-opacity hover:opacity-80"
-                  disabled={isBulkUpdateLoading}
-                >
+                <button className="flex cursor-pointer items-center gap-1 px-1 transition-opacity hover:opacity-80">
                   <Tag className="text-default-500" size={14} />
                   <span className="text-default-500 text-xs">
                     {bulkCategoryIds.size > 0
@@ -202,10 +198,7 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
             {/* Bulk Currency Dropdown */}
             <Dropdown>
               <DropdownTrigger>
-                <button
-                  className="flex cursor-pointer items-center gap-1 px-1 transition-opacity hover:opacity-80"
-                  disabled={isBulkUpdateLoading}
-                >
+                <button className="flex cursor-pointer items-center gap-1 px-1 transition-opacity hover:opacity-80">
                   <Coins className="text-default-500" size={14} />
                   <span className="text-default-500 text-xs">
                     {bulkCurrencyId
@@ -252,10 +245,7 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
               onOpenChange={setIsDatePopoverOpen}
             >
               <PopoverTrigger>
-                <button
-                  className="flex cursor-pointer items-center gap-1 px-1 transition-opacity hover:opacity-80"
-                  disabled={isBulkUpdateLoading}
-                >
+                <button className="flex cursor-pointer items-center gap-1 px-1 transition-opacity hover:opacity-80">
                   <Calendar className="text-default-500" size={14} />
                   <span className="text-default-500 text-xs">
                     {bulkDate
@@ -267,7 +257,6 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
               </PopoverTrigger>
               <PopoverContent className="p-2">
                 <DatePicker
-                  isDisabled={isBulkUpdateLoading}
                   label="Select new date"
                   size="sm"
                   value={bulkDate}
@@ -284,11 +273,8 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
             <Button
               color="primary"
               isDisabled={!hasPendingChanges}
-              isLoading={isBulkUpdateLoading}
               size="sm"
-              startContent={
-                !isBulkUpdateLoading && <CircleCheckBig size={14} />
-              }
+              startContent={<CircleCheckBig size={14} />}
               variant="flat"
               onPress={handleApplyBulkChanges}
             >

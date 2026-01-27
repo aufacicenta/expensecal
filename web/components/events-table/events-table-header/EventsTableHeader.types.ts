@@ -14,8 +14,16 @@ export type EventsTableHeaderProps = {
   onCategoryFilterChange: (categoryIds: string[]) => void;
   // Bulk update props
   currencies: CurrencyData[];
-  onBulkCategoryUpdate: (categoryIds: string[]) => Promise<void>;
-  onBulkCurrencyUpdate: (currencyId: string) => Promise<void>;
-  onBulkDateUpdate: (newDate: Date) => Promise<void>;
-  isBulkUpdateLoading?: boolean;
+  /**
+   * Non-blocking bulk category update. Fires and forgets with toast notifications.
+   */
+  onBulkCategoryUpdate: (categoryIds: string[]) => void;
+  /**
+   * Non-blocking bulk currency update. Fires and forgets with toast notifications.
+   */
+  onBulkCurrencyUpdate: (currencyId: string) => void;
+  /**
+   * Non-blocking bulk date update. Fires and forgets with toast notifications.
+   */
+  onBulkDateUpdate: (newDate: Date) => void;
 };
