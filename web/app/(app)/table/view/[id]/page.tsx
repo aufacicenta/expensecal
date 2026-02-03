@@ -3,7 +3,7 @@
 import { Button } from "@heroui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useState } from "react";
 
 import { EventsTable } from "@/components/events-table/EventsTable";
 import { CurrentViewInfo } from "@/components/events-table/events-table-header/EventsTableHeader.types";
@@ -13,6 +13,7 @@ import { CalendarV2ContextType } from "@/context/CalendarV2/CalendarV2Context.ty
 import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
 import { useEventGroupsContext } from "@/context/EventGroups/useEventGroupsContext";
 import { useExchangeRatesContext } from "@/context/ExchangeRates/useExchangeRatesContext";
+import { InventoryContextController } from "@/context/Inventory/InventoryContextController";
 import { useUserPreferencesContext } from "@/context/UserPreferences/useUserPreferencesContext";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 import { CalendarEvent } from "@/app/api/v2/calendar/types";
@@ -35,33 +36,34 @@ export default function EventGroupViewPage({ params }: ViewPageProps) {
   const [groupName, setGroupName] = useState<string>("");
   const [rawEvents, setRawEvents] = useState<CalendarEvent[]>([]);
 
-  // Fetch event group data
-  useEffect(() => {
-    const loadEventGroup = async () => {
-      setLoading(true);
-      setError(null);
+  // Fetch event group data - extracted as a callback so it can be called manually
+  const loadEventGroup = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-      const result = await fetchEventGroup(id);
+    const result = await fetchEventGroup(id);
 
-      if (result.success) {
-        setGroupName(result.data.group.name);
-        // Convert events to CalendarEvent format
-        const events = result.data.events.map((event) => ({
-          ...event,
-          event_date: new Date(event.event_date),
-          exchangeRate: "1", // Will be recalculated in processEventsIntoCalendar
-        }));
+    if (result.success) {
+      setGroupName(result.data.group.name);
+      // Convert events to CalendarEvent format
+      const events = result.data.events.map((event) => ({
+        ...event,
+        event_date: new Date(event.event_date),
+        exchangeRate: "1", // Will be recalculated in processEventsIntoCalendar
+      }));
 
-        setRawEvents(events as CalendarEvent[]);
-      } else {
-        setError(result.error);
-      }
+      setRawEvents(events as CalendarEvent[]);
+    } else {
+      setError(result.error);
+    }
 
-      setLoading(false);
-    };
-
-    loadEventGroup();
+    setLoading(false);
   }, [id, fetchEventGroup]);
+
+  // Initial load and reload on id change
+  useEffect(() => {
+    loadEventGroup();
+  }, [loadEventGroup]);
 
   // Process events into calendar structure using the shared utility
   const processedData = useMemo(() => {
@@ -90,11 +92,9 @@ export default function EventGroupViewPage({ params }: ViewPageProps) {
         },
       },
       // Override loadCalendarV2 to reload the view data
-      loadCalendarV2: async () => {
-        // Re-fetch will happen via useEffect on id change
-      },
+      loadCalendarV2: loadEventGroup,
     }),
-    [parentCalendarContext, processedData, loading, error],
+    [parentCalendarContext, processedData, loading, error, loadEventGroup],
   );
 
   // Create current view info for the header
@@ -124,7 +124,9 @@ export default function EventGroupViewPage({ params }: ViewPageProps) {
 
   return (
     <CalendarV2Context.Provider value={viewContextValue}>
-      <EventsTable currentView={currentViewInfo} />
+      <InventoryContextController>
+        <EventsTable currentView={currentViewInfo} />
+      </InventoryContextController>
     </CalendarV2Context.Provider>
   );
 }
