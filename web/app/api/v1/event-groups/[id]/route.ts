@@ -111,6 +111,8 @@ export async function GET(
       quantity: event.quantity,
       description: event.description,
       event_date: event.event_date.toISOString(),
+      original_text: event.original_text,
+      inventory_metadata: event.inventory_metadata,
       currency: event.currency
         ? {
             id: event.currency.id,

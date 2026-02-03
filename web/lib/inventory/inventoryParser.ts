@@ -9,6 +9,8 @@ import {
   InventoryDetails,
 } from "@expensecal/database/models/Event";
 
+import { routes } from "@/hooks/useRoutes/useRoutes";
+
 export type ParsedInventoryItem = {
   description: string;
   acquisition?: InventoryAcquisition;
@@ -175,34 +177,37 @@ export async function parseInventoryItem(
     const prompt = buildInventoryPrompt(itemText, currentDate);
     const schema = getInventorySchema();
 
-    const response = await fetch(`${apiBase}/v1/responses`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        model,
-        input: [
-          {
-            role: "system",
-            content: getInventoryParsingSystemPrompt(),
-            type: "message",
+    const response = await fetch(
+      `${apiBase}${routes.external.llm.responses()}`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          model,
+          input: [
+            {
+              role: "system",
+              content: getInventoryParsingSystemPrompt(),
+              type: "message",
+            },
+            {
+              role: "user",
+              content: prompt,
+              type: "message",
+            },
+          ],
+          text: {
+            format: {
+              type: "json_schema",
+              name: "InventoryItemParser",
+              schema,
+              strict: true,
+            },
           },
-          {
-            role: "user",
-            content: prompt,
-            type: "message",
-          },
-        ],
-        text: {
-          format: {
-            type: "json_schema",
-            name: "InventoryItemParser",
-            schema,
-            strict: true,
-          },
-        },
-        stream: false,
-      }),
-    });
+          stream: false,
+        }),
+      },
+    );
 
     if (!response.ok) {
       const error = await response.text();

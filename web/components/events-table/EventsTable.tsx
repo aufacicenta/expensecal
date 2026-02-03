@@ -1,4 +1,7 @@
-import { EventAttributes } from "@expensecal/database/models/Event";
+import {
+  EventAttributes,
+  InventoryValuationStatus,
+} from "@expensecal/database/models/Event";
 import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
 import { Chip } from "@heroui/chip";
@@ -18,6 +21,7 @@ import {
   CircleCheckBig,
   CircleX,
   Command,
+  DollarSign,
   FolderPlus,
   Info,
   ListChevronsUpDown,
@@ -60,6 +64,7 @@ import { useEventsContext } from "@/context/Events/useEventsContext";
 import { useEventCategoriesContext } from "@/context/EventCategories/useEventCategoriesContext";
 import { useCurrencyContext } from "@/context/Currency/useCurrencyContext";
 import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
+import { useInventoryContext } from "@/context/Inventory/useInventoryContext";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 import {
   CalendarEvent,
@@ -67,6 +72,22 @@ import {
   MonthStats,
 } from "@/app/api/v2/calendar/types";
 import { DeleteMode } from "@/app/api/v1/events/[id]/types";
+
+// Helper to get color for valuation status chip
+const getValuationStatusColor = (
+  status: InventoryValuationStatus,
+): "success" | "danger" | "warning" | "default" => {
+  switch (status) {
+    case "COMPLETED":
+      return "success";
+    case "FAILED":
+      return "danger";
+    case "IN_PROGRESS":
+      return "warning";
+    default:
+      return "default";
+  }
+};
 
 // @TODO handle an edge case with EventCellDateEdit where editing a recurring event may need to update all the dates in the series.
 export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
@@ -126,8 +147,28 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
   );
   const [isCommandsModalOpen, setIsCommandsModalOpen] = useState(false);
   const [isCreateViewModalOpen, setIsCreateViewModalOpen] = useState(false);
+  const { valuatingEventIds, valuateItem } = useInventoryContext();
   const router = useRouter();
   const routes = useRoutes();
+
+  // Handle inventory valuation
+  const handleValuateEvent = async (eventId: string) => {
+    const result = await valuateItem(eventId);
+
+    if (result.success && result.data?.valuation) {
+      addToast({
+        title: "Valuation complete",
+        description: `Estimated value: $${result.data.valuation.estimated_low || 0} - $${result.data.valuation.estimated_high || 0}`,
+        color: "success",
+      });
+    } else {
+      addToast({
+        title: "Valuation failed",
+        description: result.error || "Unknown error",
+        color: "danger",
+      });
+    }
+  };
 
   const handleEventCategoryUpdate = async (
     eventId: string,
@@ -767,7 +808,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
                                             </Chip>
                                           </div>
                                           <div
-                                            className="w-[210px]"
+                                            className="flex w-[210px] flex-col gap-1"
                                             data-cell-name="event-description"
                                           >
                                             <span>
@@ -776,6 +817,28 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
                                                 ? eventObj.original_text
                                                 : eventObj.description}
                                             </span>
+                                            {/* Valuation status for inventory items */}
+                                            {eventObj.inventory_metadata
+                                              ?.valuation_status && (
+                                              <Chip
+                                                classNames={{
+                                                  content: "text-xs",
+                                                }}
+                                                color={getValuationStatusColor(
+                                                  eventObj.inventory_metadata
+                                                    .valuation_status,
+                                                )}
+                                                size="sm"
+                                                variant="flat"
+                                              >
+                                                {eventObj.inventory_metadata
+                                                  .valuation_status ===
+                                                "COMPLETED"
+                                                  ? `$${eventObj.inventory_metadata.valuation?.estimated_low ?? 0} - $${eventObj.inventory_metadata.valuation?.estimated_high ?? 0}`
+                                                  : eventObj.inventory_metadata
+                                                      .valuation_status}
+                                              </Chip>
+                                            )}
                                           </div>
                                           <div
                                             className="group relative w-[180px] cursor-pointer"
@@ -873,6 +936,52 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
                                                   size={16}
                                                 />
                                               </div>
+                                              {/* Valuate action for inventory items */}
+                                              {eventObj.inventory_metadata &&
+                                                (eventObj.inventory_metadata
+                                                  .valuation_status ===
+                                                  "PENDING" ||
+                                                  eventObj.inventory_metadata
+                                                    .valuation_status ===
+                                                    "FAILED" ||
+                                                  !eventObj.inventory_metadata
+                                                    .valuation_status) && (
+                                                  <div
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    title="Get market valuation"
+                                                    onClick={() =>
+                                                      handleValuateEvent(
+                                                        eventObj.id || "",
+                                                      )
+                                                    }
+                                                    onKeyDown={(e) => {
+                                                      if (
+                                                        e.key === "Enter" ||
+                                                        e.key === " "
+                                                      ) {
+                                                        e.preventDefault();
+                                                        handleValuateEvent(
+                                                          eventObj.id || "",
+                                                        );
+                                                      }
+                                                    }}
+                                                  >
+                                                    {valuatingEventIds.has(
+                                                      eventObj.id || "",
+                                                    ) ? (
+                                                      <Loader2
+                                                        className="stroke-warning animate-spin"
+                                                        size={16}
+                                                      />
+                                                    ) : (
+                                                      <DollarSign
+                                                        className="stroke-default-400 hover:stroke-success cursor-pointer"
+                                                        size={16}
+                                                      />
+                                                    )}
+                                                  </div>
+                                                )}
                                               {/* Event Update Confirm Actions - Show for any dirty event */}
                                               {dirtyEventIds.has(
                                                 eventObj.id || "",

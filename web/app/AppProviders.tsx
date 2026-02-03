@@ -9,6 +9,7 @@ import { EventEditModalContextController } from "@/context/EventEditModal/EventE
 import { EventGroupsContextController } from "@/context/EventGroups/EventGroupsContextController";
 import { EventsContextController } from "@/context/Events/EventsContextController";
 import { ExchangeRatesContextController } from "@/context/ExchangeRates/ExchangeRatesContextController";
+import { InventoryContextController } from "@/context/Inventory/InventoryContextController";
 import { FilteringContextController } from "@/context/Filtering/FilteringContextController";
 import { UserPreferencesContextController } from "@/context/UserPreferences/UserPreferencesContextController";
 
@@ -31,9 +32,11 @@ export function AppProviders({ children }: AppProvidersProps) {
               <CalendarV2ContextController>
                 <EventEditModalContextController>
                   <EventsContextController>
-                    <CurrencyContextController>
-                      <>{children}</>
-                    </CurrencyContextController>
+                    <InventoryContextController>
+                      <CurrencyContextController>
+                        <>{children}</>
+                      </CurrencyContextController>
+                    </InventoryContextController>
                   </EventsContextController>
                 </EventEditModalContextController>
               </CalendarV2ContextController>

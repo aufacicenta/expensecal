@@ -29,6 +29,34 @@ import {
 } from "@/lib/validators";
 import { formatDateForDisplay } from "@/lib/date";
 import { routes } from "@/hooks/useRoutes/useRoutes";
+import { tavilyClient } from "@/lib/inventory/tavilyClient";
+import { valuateItems } from "@/lib/inventory/valuationService";
+
+/**
+ * Trigger background valuation for inventory events
+ * Runs valuations in parallel without blocking the response
+ */
+async function triggerBackgroundValuation(eventIds: string[]): Promise<void> {
+  console.log(`Starting background valuation for ${eventIds.length} items`);
+
+  const results = await valuateItems(eventIds);
+
+  const successful = results.filter((r) => r.success).length;
+  const failed = results.filter((r) => !r.success).length;
+
+  console.log(
+    `Background valuation complete: ${successful} successful, ${failed} failed`,
+  );
+
+  // Log failures for debugging
+  results
+    .filter((r) => !r.success)
+    .forEach((r) => {
+      if (!r.success) {
+        console.error(`Valuation failed for ${r.event_id}: ${r.error}`);
+      }
+    });
+}
 
 /**
  * POST /api/v1/inventory/create-from-text
@@ -238,6 +266,16 @@ export async function POST(
       }
     }
 
+    // Trigger background valuation if Tavily is configured and we have events
+    if (createdEvents.length > 0 && tavilyClient.isConfigured()) {
+      // Fire and forget - don't await
+      triggerBackgroundValuation(createdEvents.map((e) => e.id)).catch(
+        (error) => {
+          console.error("Background valuation trigger error:", error);
+        },
+      );
+    }
+
     // Return response
     return NextResponse.json(
       {
@@ -252,6 +290,7 @@ export async function POST(
             total_created: createdEvents.length,
             total_failed: failures.length,
           },
+          valuation_triggered: tavilyClient.isConfigured(),
         },
       },
       { status: 201 },

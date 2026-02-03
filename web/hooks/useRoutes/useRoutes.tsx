@@ -2,6 +2,11 @@ const origin = process.env.NEXT_PUBLIC_RAILWAY_PUBLIC_DOMAIN;
 
 export const routes = {
   home: () => `/`,
+  external: {
+    llm: {
+      responses: () => `/v1/responses`,
+    },
+  },
   table: {
     index: () => `/table`,
     view: (groupId: string) => `/table/view/${encodeURIComponent(groupId)}`,
@@ -60,6 +65,9 @@ export const routes = {
       },
       inventory: {
         createFromText: () => `/api/v1/inventory/create-from-text`,
+        valuate: () => `/api/v1/inventory/valuate`,
+        valuationStatus: (eventId: string) =>
+          `/api/v1/inventory/valuation-status/${encodeURIComponent(eventId)}`,
       },
     },
     v2: {

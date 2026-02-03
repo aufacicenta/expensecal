@@ -52,6 +52,7 @@ export type CreateInventoryFromTextSuccessResponse = {
       total_created: number;
       total_failed: number;
     };
+    valuation_triggered?: boolean; // Whether background valuation was started
   };
 } & BaseSuccessResponse;
 
