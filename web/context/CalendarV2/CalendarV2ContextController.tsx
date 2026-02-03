@@ -315,6 +315,34 @@ export const CalendarV2ContextController = ({
     setCurrentMonth(newMonth);
   };
 
+  /**
+   * Update a single raw event by ID without reloading entire calendar
+   * Used for polling updates (e.g., inventory valuation status changes)
+   * Merges the updated fields into the existing event
+   */
+  const updateRawEventById = (
+    eventId: string,
+    updatedEvent: Partial<RawCalendarEvent>,
+  ): boolean => {
+    if (!rawEvents) return false;
+
+    const eventIndex = rawEvents.findIndex((e) => e.id === eventId);
+
+    if (eventIndex === -1) return false;
+
+    // Merge updated fields into existing event
+    const newRawEvents = [...rawEvents];
+
+    newRawEvents[eventIndex] = {
+      ...newRawEvents[eventIndex],
+      ...updatedEvent,
+    };
+
+    setRawEvents(newRawEvents);
+
+    return true;
+  };
+
   const props: CalendarV2ContextType = {
     calendarV2Data,
     filteredCalendarData,
@@ -326,6 +354,7 @@ export const CalendarV2ContextController = ({
     goToPreviousMonth,
     goToNextMonth,
     goToMonth,
+    updateRawEventById,
   };
 
   return (

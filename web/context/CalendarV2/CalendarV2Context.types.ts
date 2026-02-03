@@ -1,6 +1,9 @@
 import { ReactNode } from "react";
 
-import { ProcessedCalendarData } from "@/app/api/v2/calendar/types";
+import {
+  ProcessedCalendarData,
+  RawCalendarEvent,
+} from "@/app/api/v2/calendar/types";
 
 export type CalendarV2ContextControllerProps = {
   children: ReactNode;
@@ -75,4 +78,16 @@ export type CalendarV2ContextType = {
    * Navigate to a specific month
    */
   goToMonth: (date: Date) => void;
+
+  /**
+   * Update a single raw event by ID without reloading entire calendar
+   * Used for polling updates (e.g., inventory valuation status changes)
+   * @param eventId - The ID of the event to update
+   * @param updatedEvent - The updated event data (partial or full)
+   * @returns boolean - true if update was successful, false if event not found
+   */
+  updateRawEventById: (
+    eventId: string,
+    updatedEvent: Partial<RawCalendarEvent>,
+  ) => boolean;
 };

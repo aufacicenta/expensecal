@@ -6,6 +6,7 @@ import {
   DrawerHeader,
 } from "@heroui/drawer";
 import Decimal from "decimal.js";
+import { useEffect, useRef } from "react";
 
 import { EventInfoDrawerProps } from "./EventInfoDrawer.types";
 
@@ -18,7 +19,33 @@ export const EventInfoDrawer: React.FC<EventInfoDrawerProps> = ({
   calendarV2Data,
   isOpen,
   onClose,
+  onRefreshEvent,
 }) => {
+  // Track previous isOpen state to detect when drawer opens
+  const wasOpenRef = useRef(isOpen);
+
+  // Fetch event when drawer opens for a PENDING/IN_PROGRESS event
+  useEffect(() => {
+    const wasOpen = wasOpenRef.current;
+
+    wasOpenRef.current = isOpen;
+
+    // Only trigger on open transition (was closed, now open)
+    if (!wasOpen && isOpen && event?.id && onRefreshEvent) {
+      const status = event.inventory_metadata?.valuation_status;
+
+      if (status === "PENDING" || status === "IN_PROGRESS") {
+        // Refresh the event to get latest status
+        onRefreshEvent(event.id);
+      }
+    }
+  }, [
+    isOpen,
+    event?.id,
+    event?.inventory_metadata?.valuation_status,
+    onRefreshEvent,
+  ]);
+
   if (!event) {
     return (
       <Drawer

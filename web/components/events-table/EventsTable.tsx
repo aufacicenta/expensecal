@@ -29,7 +29,7 @@ import {
   Trash,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { CommandsModal } from "../commands-modal/CommandsModal";
 import { FullPageLoadingState } from "../full-page-loading-state/FullPageLoadingState";
@@ -66,6 +66,7 @@ import { useCurrencyContext } from "@/context/Currency/useCurrencyContext";
 import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
 import { useInventoryContext } from "@/context/Inventory/useInventoryContext";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
+import { useEventStatusPolling } from "@/hooks/useEventStatusPolling/useEventStatusPolling";
 import {
   CalendarEvent,
   DayStats,
@@ -160,6 +161,38 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
   } = useInventoryContext();
   const router = useRouter();
   const routes = useRoutes();
+
+  // Compute event IDs that need polling (PENDING or IN_PROGRESS valuation status)
+  const pendingValuationEventIds = useMemo(() => {
+    if (!calendarV2Data) return [];
+
+    const pendingIds: string[] = [];
+
+    // Iterate through all events in the calendar
+    Object.values(calendarV2Data.calendar).forEach((yearObj) => {
+      Object.values(yearObj).forEach((monthObj) => {
+        Object.values(monthObj).forEach((events) => {
+          (events as CalendarEvent[]).forEach((event) => {
+            const status = event.inventory_metadata?.valuation_status;
+
+            if (status === "PENDING" || status === "IN_PROGRESS") {
+              if (event.id) {
+                pendingIds.push(event.id);
+              }
+            }
+          });
+        });
+      });
+    });
+
+    return pendingIds;
+  }, [calendarV2Data]);
+
+  // Poll for status updates on PENDING/IN_PROGRESS events
+  const { fetchEventById } = useEventStatusPolling(pendingValuationEventIds, {
+    pollInterval: 5000, // 5 seconds
+    enabled: pendingValuationEventIds.length > 0,
+  });
 
   // Handle inventory valuation
   const handleValuateEvent = async (eventId: string) => {
@@ -1461,6 +1494,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
         event={selectedEventForInfo}
         isOpen={!!selectedEventForInfo}
         onClose={() => setSelectedEventForInfo(null)}
+        onRefreshEvent={fetchEventById}
       />
 
       {/* Stats Details Drawer */}
