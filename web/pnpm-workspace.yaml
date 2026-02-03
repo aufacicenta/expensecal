@@ -1,5 +1,2 @@
 packages:
   - .
-
-overrides:
-  "@expensecal/database": link:../database
