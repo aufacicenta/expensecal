@@ -4,6 +4,7 @@ import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
+import { useUser } from "@stackframe/stack";
 import {
   ArrowRight,
   Bot,
@@ -29,7 +30,12 @@ import {
 } from "lucide-react";
 import NextLink from "next/link";
 
+import { useRoutes } from "@/hooks/useRoutes/useRoutes";
+
 export default function LandingPage() {
+  const user = useUser();
+  const routes = useRoutes();
+
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
 
@@ -69,22 +75,46 @@ export default function LandingPage() {
               Use Cases
             </button>
             <Divider className="hidden h-6 sm:block" orientation="vertical" />
-            <Button
-              as={NextLink}
-              href="/handler/sign-in"
-              size="sm"
-              variant="light"
-            >
-              Sign In
-            </Button>
-            <Button
-              as={NextLink}
-              color="primary"
-              href="/handler/sign-up"
-              size="sm"
-            >
-              Get Started
-            </Button>
+            {user ? (
+              <>
+                <Button
+                  as={NextLink}
+                  href={routes.table.index()}
+                  size="sm"
+                  variant="light"
+                >
+                  Go to App
+                </Button>
+                <Button
+                  as={NextLink}
+                  color="danger"
+                  href={routes.handler.signOut()}
+                  size="sm"
+                  variant="flat"
+                >
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  as={NextLink}
+                  href={routes.handler.signIn()}
+                  size="sm"
+                  variant="light"
+                >
+                  Sign In
+                </Button>
+                <Button
+                  as={NextLink}
+                  color="primary"
+                  href={routes.handler.signUp()}
+                  size="sm"
+                >
+                  Get Started
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -131,10 +161,10 @@ export default function LandingPage() {
               className="w-full sm:w-auto"
               color="primary"
               endContent={<ArrowRight className="h-4 w-4" />}
-              href="/handler/sign-up"
+              href={user ? routes.table.index() : routes.handler.signUp()}
               size="lg"
             >
-              Start Free
+              {user ? "Go to Table" : "Start Free"}
             </Button>
             <Button
               className="w-full sm:w-auto"
@@ -588,19 +618,10 @@ export default function LandingPage() {
               as={NextLink}
               className="text-primary w-full bg-white hover:bg-white/90 sm:w-auto"
               endContent={<ArrowRight className="h-4 w-4" />}
-              href="/handler/sign-up"
+              href={user ? routes.table.index() : routes.handler.signUp()}
               size="lg"
             >
-              Get Started Free
-            </Button>
-            <Button
-              as={NextLink}
-              className="w-full border-white/30 text-white sm:w-auto"
-              href="/calendar"
-              size="lg"
-              variant="bordered"
-            >
-              View Demo
+              {user ? "Go to App" : "Get Started Free"}
             </Button>
           </div>
         </div>
@@ -617,7 +638,7 @@ export default function LandingPage() {
               <span className="font-semibold">ExpenseCal</span>
             </div>
             <p className="text-default-500 text-sm">
-              Financial tracking for humans and AI agents
+              A very powerful financial forecasting tool
             </p>
           </div>
         </div>

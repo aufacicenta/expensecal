@@ -6,6 +6,11 @@ export const routes = {
     index: () => `/table`,
     view: (groupId: string) => `/table/view/${encodeURIComponent(groupId)}`,
   },
+  handler: {
+    signIn: () => `/handler/sign-in`,
+    signUp: () => `/handler/sign-up`,
+    signOut: () => `/handler/sign-out`,
+  },
   api: {
     v1: {
       example: {
