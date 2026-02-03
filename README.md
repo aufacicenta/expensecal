@@ -1,6 +1,6 @@
 # ExpenseCal
 
-ExpenseCal is a SaaS that lets a person or AI Agent create calendar events for financial forecasting or expense tracking, among other use cases. This is not another calendar service, it is a financial tool.
+ExpenseCal is a SaaS for financial forecasting and expense tracking with AI-powered asset valuation. Track cash flow and inventory to see your complete net worth — a very powerful financial tool.
 
 ## Examples
 

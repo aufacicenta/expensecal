@@ -67,6 +67,7 @@ describe("generateRecurrenceInstances", () => {
         const daysDiff =
           (instances[i].date.getTime() - instances[i - 1].date.getTime()) /
           (1000 * 60 * 60 * 24);
+
         expect(daysDiff).toBe(7);
       }
     });
@@ -84,6 +85,7 @@ describe("generateRecurrenceInstances", () => {
         const daysDiff =
           (instances[i].date.getTime() - instances[i - 1].date.getTime()) /
           (1000 * 60 * 60 * 24);
+
         expect(daysDiff).toBe(14);
       }
     });
@@ -103,6 +105,7 @@ describe("generateRecurrenceInstances", () => {
         const daysDiff =
           (instances[i].date.getTime() - instances[i - 1].date.getTime()) /
           (1000 * 60 * 60 * 24);
+
         expect(daysDiff).toBe(1);
       }
     });
@@ -226,6 +229,7 @@ describe("isValidRRule", () => {
 describe("getRecurrenceCount", () => {
   it("should extract COUNT from RRULE", () => {
     const startDate = new Date("2025-01-01T00:00:00Z");
+
     expect(getRecurrenceCount("FREQ=MONTHLY;COUNT=12", startDate)).toBe(12);
     expect(getRecurrenceCount("FREQ=WEEKLY;COUNT=5", startDate)).toBe(5);
     expect(getRecurrenceCount("FREQ=DAILY;COUNT=30", startDate)).toBe(30);
@@ -235,6 +239,7 @@ describe("getRecurrenceCount", () => {
     const startDate = new Date("2025-01-01T00:00:00Z");
     // Note: In real scenarios, a default end date is applied, but these tests check the logic
     const count = getRecurrenceCount("FREQ=MONTHLY", startDate);
+
     // Since we don't have COUNT or UNTIL, it should eventually timeout or return a count based on default logic
     // The actual behavior depends on the implementation
     expect(typeof count === "number" || count === null).toBe(true);
@@ -243,12 +248,14 @@ describe("getRecurrenceCount", () => {
   it("should calculate count from UNTIL parameter", () => {
     const startDate = new Date("2025-01-01T00:00:00Z");
     const count = getRecurrenceCount("FREQ=MONTHLY;UNTIL=20250401", startDate);
+
     expect(typeof count).toBe("number");
     expect(count).toBeGreaterThan(0);
   });
 
   it("should return null for invalid RRULE", () => {
     const startDate = new Date("2025-01-01T00:00:00Z");
+
     expect(getRecurrenceCount("INVALID_RRULE", startDate)).toBe(null);
   });
 });
@@ -288,6 +295,7 @@ describe("Real-world scenarios", () => {
     // Should span approximately one year
     const yearDiff =
       instances[51].date.getFullYear() - instances[0].date.getFullYear();
+
     expect(yearDiff).toBeGreaterThanOrEqual(0);
     expect(yearDiff).toBeLessThanOrEqual(1);
   });

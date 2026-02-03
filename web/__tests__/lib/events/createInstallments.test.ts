@@ -1,15 +1,16 @@
-import {
-  createInstallments,
-  deleteInstallmentsForParent,
-  getInstallmentsForParent,
-  recreateInstallments,
-} from "@/lib/events/createInstallments";
 import { initModels } from "@expensecal/database/models";
 import { Currency } from "@expensecal/database/models/Currency";
 import { Event, EventType } from "@expensecal/database/models/Event";
 import { EventInstallment } from "@expensecal/database/models/EventInstallment";
 import Decimal from "decimal.js";
 import { Sequelize } from "sequelize";
+
+import {
+  createInstallments,
+  deleteInstallmentsForParent,
+  getInstallmentsForParent,
+  recreateInstallments,
+} from "@/lib/events/createInstallments";
 
 describe("createInstallments Service", () => {
   let sequelize: Sequelize;
@@ -447,10 +448,12 @@ describe("createInstallments Service", () => {
 
       // Verify installments exist
       let installments = await getInstallmentsForParent(parentEvent.id);
+
       expect(installments).toHaveLength(5);
 
       // Delete installments
       const deleted = await deleteInstallmentsForParent(parentEvent.id);
+
       expect(deleted).toBe(true);
 
       // Verify all installments are deleted
@@ -459,11 +462,13 @@ describe("createInstallments Service", () => {
 
       // Verify parent event still exists
       const parent = await Event.findByPk(parentEvent.id);
+
       expect(parent).toBeDefined();
     });
 
     it("should return true for non-existent parent event", async () => {
       const deleted = await deleteInstallmentsForParent("non-existent-id");
+
       expect(deleted).toBe(true);
     });
   });
@@ -497,6 +502,7 @@ describe("createInstallments Service", () => {
       const oldInstallmentsStillExist = await Event.findAll({
         where: { id: initialIds },
       });
+
       expect(oldInstallmentsStillExist).toHaveLength(0);
 
       // Verify new installments exist
@@ -542,11 +548,13 @@ describe("createInstallments Service", () => {
 
       // Create installments
       let result = await createInstallments({ parentEventId: parentEvent.id });
+
       expect(result.success).toBe(true);
       expect(result.installmentCount).toBe(4);
 
       // Retrieve installments
       let installments = await getInstallmentsForParent(parentEvent.id);
+
       expect(installments).toHaveLength(4);
 
       // Verify amounts
@@ -554,12 +562,14 @@ describe("createInstallments Service", () => {
         .dividedBy(4)
         .toDecimalPlaces(8)
         .toString();
+
       installments.forEach((installment) => {
         expect(installment.amount).toBe(expectedAmount);
       });
 
       // Recreate with different end date
       const newEndDate = new Date("2025-06-30T23:59:59Z");
+
       result = await recreateInstallments(parentEvent.id, newEndDate);
       expect(result.success).toBe(true);
 

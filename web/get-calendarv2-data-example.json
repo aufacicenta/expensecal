@@ -1,0 +1,270 @@
+{
+    "calendar": {
+        "2025": {
+            "11": {
+                "11": [
+                    {
+                        "id": "e721fcc9-70cd-462e-846c-801c480bad69",
+                        "user_id": "f8c625c3-0550-4245-8d37-a9e678cf7dc7",
+                        "type": "EXPENSE",
+                        "amount": "25.00000000",
+                        "currency_id": "7948170c-31b8-4c5c-9a68-65a1075c0e8c",
+                        "quantity": 24,
+                        "description": "topito",
+                        "event_date": "2025-11-11T00:00:00.000Z",
+                        "parent_event_id": null,
+                        "recurrence_rule": null,
+                        "recurrence_end_date": null,
+                        "original_text": "24 topito a 25 GTQ cada una.",
+                        "deleted_at": null,
+                        "created_at": "2025-11-12T00:17:49.236Z",
+                        "updated_at": "2025-11-12T16:55:18.713Z",
+                        "createdAt": "2025-11-12T00:17:49.236Z",
+                        "updatedAt": "2025-11-12T16:55:18.713Z",
+                        "deletedAt": null,
+                        "currency": {
+                            "id": "7948170c-31b8-4c5c-9a68-65a1075c0e8c",
+                            "symbol": "GTQ",
+                            "name": "Guatemalan Quetzal"
+                        },
+                        "categories": [
+                            {
+                                "id": "55ec1739-bcd8-49bd-8e1d-4b77b0dab97c",
+                                "user_id": "f8c625c3-0550-4245-8d37-a9e678cf7dc7",
+                                "name": "Comalote Proveedores",
+                                "description": null,
+                                "color": "#FAD900",
+                                "created_at": "2025-11-12T16:54:31.076Z",
+                                "updated_at": "2025-11-12T16:54:31.076Z",
+                                "createdAt": "2025-11-12T16:54:31.076Z",
+                                "updatedAt": "2025-11-12T16:54:31.076Z",
+                                "event_categories": {
+                                    "id": "3a7fa6f8-f836-4e1f-9a00-8a3d3f444711",
+                                    "event_id": "e721fcc9-70cd-462e-846c-801c480bad69",
+                                    "category_id": "55ec1739-bcd8-49bd-8e1d-4b77b0dab97c",
+                                    "created_at": "2025-11-12T16:55:19.334Z",
+                                    "createdAt": "2025-11-12T16:55:19.334Z"
+                                }
+                            }
+                        ],
+                        "exchangeRate": "78.411897698610802546"
+                    },
+                    {
+                        "id": "259e060d-d949-4e11-a284-6f5210c70f6f",
+                        "user_id": "f8c625c3-0550-4245-8d37-a9e678cf7dc7",
+                        "type": "EXPENSE",
+                        "amount": "31.80000000",
+                        "currency_id": "7948170c-31b8-4c5c-9a68-65a1075c0e8c",
+                        "quantity": 24,
+                        "description": "club mate",
+                        "event_date": "2025-11-11T00:00:00.000Z",
+                        "parent_event_id": null,
+                        "recurrence_rule": null,
+                        "recurrence_end_date": null,
+                        "original_text": "24 club mate a 31.80 c/u.",
+                        "deleted_at": null,
+                        "created_at": "2025-11-12T00:24:34.730Z",
+                        "updated_at": "2025-11-12T18:32:43.514Z",
+                        "createdAt": "2025-11-12T00:24:34.730Z",
+                        "updatedAt": "2025-11-12T18:32:43.514Z",
+                        "deletedAt": null,
+                        "currency": {
+                            "id": "7948170c-31b8-4c5c-9a68-65a1075c0e8c",
+                            "symbol": "GTQ",
+                            "name": "Guatemalan Quetzal"
+                        },
+                        "categories": [
+                            {
+                                "id": "55ec1739-bcd8-49bd-8e1d-4b77b0dab97c",
+                                "user_id": "f8c625c3-0550-4245-8d37-a9e678cf7dc7",
+                                "name": "Comalote Proveedores",
+                                "description": null,
+                                "color": "#FAD900",
+                                "created_at": "2025-11-12T16:54:31.076Z",
+                                "updated_at": "2025-11-12T16:54:31.076Z",
+                                "createdAt": "2025-11-12T16:54:31.076Z",
+                                "updatedAt": "2025-11-12T16:54:31.076Z",
+                                "event_categories": {
+                                    "id": "7f4629dd-4003-4b81-b1fc-3ec2628808f6",
+                                    "event_id": "259e060d-d949-4e11-a284-6f5210c70f6f",
+                                    "category_id": "55ec1739-bcd8-49bd-8e1d-4b77b0dab97c",
+                                    "created_at": "2025-11-12T18:32:44.094Z",
+                                    "createdAt": "2025-11-12T18:32:44.094Z"
+                                }
+                            }
+                        ],
+                        "exchangeRate": "99.739933872632940838"
+                    }
+                ],
+                "12": [
+                    {
+                        "id": "4ed548f2-77dc-4fb7-a930-0bfcc61e7eb6",
+                        "user_id": "f8c625c3-0550-4245-8d37-a9e678cf7dc7",
+                        "type": "EXPENSE",
+                        "amount": "1200.00000000",
+                        "currency_id": "e761219b-afe5-4df4-8c80-d1681d34e837",
+                        "quantity": 1,
+                        "description": "house rent",
+                        "event_date": "2025-11-12T00:00:00.000Z",
+                        "parent_event_id": null,
+                        "recurrence_rule": "FREQ=MONTHLY;INTERVAL=1",
+                        "recurrence_end_date": null,
+                        "original_text": "1200 USD each month for house rent",
+                        "deleted_at": null,
+                        "created_at": "2025-11-12T03:07:36.383Z",
+                        "updated_at": "2025-11-12T03:07:36.383Z",
+                        "createdAt": "2025-11-12T03:07:36.383Z",
+                        "updatedAt": "2025-11-12T03:07:36.383Z",
+                        "deletedAt": null,
+                        "currency": {
+                            "id": "e761219b-afe5-4df4-8c80-d1681d34e837",
+                            "symbol": "USD",
+                            "name": "US Dollar"
+                        },
+                        "categories": [],
+                        "exchangeRate": "1200"
+                    },
+                    {
+                        "id": "f350f6ce-adcd-427a-b8e2-935ae5469a2f",
+                        "user_id": "f8c625c3-0550-4245-8d37-a9e678cf7dc7",
+                        "type": "EXPENSE",
+                        "amount": "100.00000000",
+                        "currency_id": "e761219b-afe5-4df4-8c80-d1681d34e837",
+                        "quantity": 1,
+                        "description": "house rent - Installment",
+                        "event_date": "2025-11-12T00:00:00.000Z",
+                        "parent_event_id": "4ed548f2-77dc-4fb7-a930-0bfcc61e7eb6",
+                        "recurrence_rule": null,
+                        "recurrence_end_date": null,
+                        "original_text": null,
+                        "deleted_at": null,
+                        "created_at": "2025-11-12T03:07:37.765Z",
+                        "updated_at": "2025-11-12T03:07:37.765Z",
+                        "createdAt": "2025-11-12T03:07:37.765Z",
+                        "updatedAt": "2025-11-12T03:07:37.765Z",
+                        "deletedAt": null,
+                        "currency": {
+                            "id": "e761219b-afe5-4df4-8c80-d1681d34e837",
+                            "symbol": "USD",
+                            "name": "US Dollar"
+                        },
+                        "categories": [],
+                        "exchangeRate": "100"
+                    }
+                ]
+            },
+            "12": {
+                "12": [
+                    {
+                        "id": "580459be-5bf1-4ec8-9609-ff0d3f537573",
+                        "user_id": "f8c625c3-0550-4245-8d37-a9e678cf7dc7",
+                        "type": "EXPENSE",
+                        "amount": "100.00000000",
+                        "currency_id": "e761219b-afe5-4df4-8c80-d1681d34e837",
+                        "quantity": 1,
+                        "description": "house rent - Installment",
+                        "event_date": "2025-12-12T00:00:00.000Z",
+                        "parent_event_id": "4ed548f2-77dc-4fb7-a930-0bfcc61e7eb6",
+                        "recurrence_rule": null,
+                        "recurrence_end_date": null,
+                        "original_text": null,
+                        "deleted_at": null,
+                        "created_at": "2025-11-12T03:07:38.417Z",
+                        "updated_at": "2025-11-12T03:07:38.417Z",
+                        "createdAt": "2025-11-12T03:07:38.417Z",
+                        "updatedAt": "2025-11-12T03:07:38.417Z",
+                        "deletedAt": null,
+                        "currency": {
+                            "id": "e761219b-afe5-4df4-8c80-d1681d34e837",
+                            "symbol": "USD",
+                            "name": "US Dollar"
+                        },
+                        "categories": [],
+                        "exchangeRate": "100"
+                    }
+                ]
+            }
+        },
+        "2026": {
+            "10": {
+                "12": [
+                    {
+                        "id": "1bd17e57-5ca9-4e30-93a0-20a12c45c7d0",
+                        "user_id": "f8c625c3-0550-4245-8d37-a9e678cf7dc7",
+                        "type": "EXPENSE",
+                        "amount": "100.00000000",
+                        "currency_id": "e761219b-afe5-4df4-8c80-d1681d34e837",
+                        "quantity": 1,
+                        "description": "house rent - Installment",
+                        "event_date": "2026-10-12T00:00:00.000Z",
+                        "parent_event_id": "4ed548f2-77dc-4fb7-a930-0bfcc61e7eb6",
+                        "recurrence_rule": null,
+                        "recurrence_end_date": null,
+                        "original_text": null,
+                        "deleted_at": null,
+                        "created_at": "2025-11-12T03:07:45.580Z",
+                        "updated_at": "2025-11-12T03:07:45.580Z",
+                        "createdAt": "2025-11-12T03:07:45.580Z",
+                        "updatedAt": "2025-11-12T03:07:45.580Z",
+                        "deletedAt": null,
+                        "currency": {
+                            "id": "e761219b-afe5-4df4-8c80-d1681d34e837",
+                            "symbol": "USD",
+                            "name": "US Dollar"
+                        },
+                        "categories": [],
+                        "exchangeRate": "100"
+                    }
+                ]
+            }
+        }
+    },
+    "stats": {
+        "2025": {
+            "11": {
+                "11": {
+                    "totalIncome": "6154.9972996307270414",
+                    "totalExpenses": "178.15183157124374338",
+                    "net": "5976.845468059483298",
+                    "totalIncomePercentChange": "-20.27",
+                    "totalExpensesPercentChange": "-88.61",
+                    "netPercentChange": "-2.89"
+                },
+                "stats": {
+                    "totalIncome": "9900",
+                    "totalExpenses": "6914.5820872326800561",
+                    "net": "2985.4179127673199439",
+                    "totalIncomePercentChange": "0.0",
+                    "totalExpensesPercentChange": "0.0",
+                    "netPercentChange": "0.0"
+                }
+            },
+            "12": {
+                "12": {
+                    "totalIncome": "902.94655387217566879",
+                    "totalExpenses": "100",
+                    "net": "802.94655387217566879",
+                    "totalIncomePercentChange": "-6.46",
+                    "totalExpensesPercentChange": "60.26",
+                    "netPercentChange": "-11.07"
+                },
+                "stats": {
+                    "totalIncome": "3950.7611608494956127",
+                    "totalExpenses": "1037.9962185111539618",
+                    "net": "2912.7649423383416509",
+                    "totalIncomePercentChange": "-60.09",
+                    "totalExpensesPercentChange": "-84.99",
+                    "netPercentChange": "-2.43"
+                }
+            },
+            "stats": {
+                "totalIncome": "10865.343248082175669",
+                "totalExpenses": "7952.5783057438340179",
+                "net": "2912.7649423383416511",
+                "totalIncomePercentChange": "0.0",
+                "totalExpensesPercentChange": "0.0",
+                "netPercentChange": "0.0"
+            }
+        }
+    }
+}
