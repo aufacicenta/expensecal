@@ -27,6 +27,10 @@ import {
   CreateFromFileSuccessResponse,
 } from "@/app/api/v1/events/create-from-file/types";
 import { CreateFromTextSuccessResponse } from "@/app/api/v1/events/create-from-text/types";
+import {
+  CreateInventoryFromTextRequestBody,
+  CreateInventoryFromTextResponse,
+} from "@/app/api/v1/inventory/create-from-text/types";
 import { CreateEventRequestBody } from "@/app/api/v1/events/create/types";
 import {
   CreateInstallmentsRequestBody,
@@ -47,6 +51,7 @@ export const EventsContextController = ({
   const [actionStates, setActionStates] = useState<EventsContextActionStates>({
     createEventFromText: { isLoading: false, error: undefined },
     createEventFromFile: { isLoading: false, error: undefined },
+    createInventoryFromText: { isLoading: false, error: undefined },
     parseEventText: { isLoading: false, error: undefined },
     createEvent: { isLoading: false, error: undefined },
     createInstallments: { isLoading: false, error: undefined },
@@ -156,6 +161,45 @@ export const EventsContextController = ({
         createEventFromFile: { isLoading: false, error: errorMsg },
       }));
       console.error("Error creating events from file:", error);
+      throw error;
+    }
+  };
+
+  const createInventoryFromText = async (
+    body: CreateInventoryFromTextRequestBody,
+  ): Promise<CreateInventoryFromTextResponse> => {
+    setActionStates((prev) => ({
+      ...prev,
+      createInventoryFromText: { isLoading: true, error: undefined },
+    }));
+    try {
+      const response = await fetch(routes.api.v1.inventory.createFromText(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = (await response.json()) as CreateInventoryFromTextResponse;
+
+      // Reload calendar to show new inventory events
+      await reloadCalendar();
+
+      setActionStates((prev) => ({
+        ...prev,
+        createInventoryFromText: { isLoading: false, error: undefined },
+      }));
+
+      return data;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
+      setActionStates((prev) => ({
+        ...prev,
+        createInventoryFromText: { isLoading: false, error: errorMsg },
+      }));
+      console.error("Error creating inventory from text:", error);
       throw error;
     }
   };
@@ -621,6 +665,7 @@ export const EventsContextController = ({
     actionStates,
     createEventFromText,
     createEventFromFile,
+    createInventoryFromText,
     reloadCalendar,
     parseEventText,
     createEvent,

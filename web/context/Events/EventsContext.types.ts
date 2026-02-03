@@ -23,6 +23,10 @@ import {
   CreateFromTextResponse,
 } from "@/app/api/v1/events/create-from-text/types";
 import {
+  CreateInventoryFromTextRequestBody,
+  CreateInventoryFromTextResponse,
+} from "@/app/api/v1/inventory/create-from-text/types";
+import {
   CreateEventRequestBody,
   CreateEventResponse,
 } from "@/app/api/v1/events/create/types";
@@ -48,6 +52,10 @@ export type EventsContextActionStates = {
     error?: string;
   };
   createEventFromFile: {
+    isLoading: boolean;
+    error?: string;
+  };
+  createInventoryFromText: {
     isLoading: boolean;
     error?: string;
   };
@@ -121,6 +129,13 @@ export type EventsContextType = {
   createEventFromFile: (
     body: CreateFromFileRequestBody,
   ) => Promise<CreateFromFileResponse>;
+  /**
+   * Create inventory items from text
+   * Parses natural language descriptions and creates events with inventory_metadata
+   */
+  createInventoryFromText: (
+    body: CreateInventoryFromTextRequestBody,
+  ) => Promise<CreateInventoryFromTextResponse>;
   /**
    * Reload the calendar data. Exposed for batch operations that skip reload.
    */

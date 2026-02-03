@@ -58,6 +58,9 @@ export const routes = {
         get: () => `/api/v1/user-preferences`,
         update: () => `/api/v1/user-preferences`,
       },
+      inventory: {
+        createFromText: () => `/api/v1/inventory/create-from-text`,
+      },
     },
     v2: {
       calendar: {

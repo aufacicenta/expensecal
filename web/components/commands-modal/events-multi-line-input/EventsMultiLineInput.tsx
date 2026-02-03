@@ -5,8 +5,12 @@ import clsx from "clsx";
 import { Paperclip, Send, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
+import { useRouter } from "next/navigation";
 
-import { EventsMultiLineInputProps } from "./EventsMultiLineInput.types";
+import {
+  EventsMultiLineInputMode,
+  EventsMultiLineInputProps,
+} from "./EventsMultiLineInput.types";
 
 import { CreateFromTextSuccessResponse } from "@/app/api/v1/events/create-from-text/types";
 import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
@@ -66,12 +70,16 @@ export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
   className,
   onSubmit,
 }) => {
+  const router = useRouter();
   const eventsController = useEventsContext();
   const calendarContext = useCalendarV2Context();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [fileUploading, setFileUploading] = useState(false);
+  const [mode, setMode] = useState<EventsMultiLineInputMode>("expense");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const isInventoryMode = mode === "inventory";
 
   useEffect(() => {
     // Autofocus the textarea when the component mounts
@@ -202,107 +210,166 @@ export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
   const handleSubmit = async () => {
     if (!input.trim()) return;
 
-    // Split input by newlines and filter empty lines
-    const lines = input
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
-
-    if (lines.length === 0) return;
-
     setLoading(true);
 
     try {
-      // Process all lines in parallel, skipping calendar reload for each
-      const results = await Promise.allSettled(
-        lines.map(async (line): Promise<LineResult> => {
-          try {
-            const response = await eventsController.createEventFromText(
-              {
-                current_date: calendarContext.currentMonth.toISOString(),
-                text: line,
-                create_installments: false,
-              },
-              { skipReload: true },
-            );
+      if (isInventoryMode) {
+        // Inventory mode: send all text at once to inventory endpoint
+        const response = await eventsController.createInventoryFromText({
+          text: input,
+          current_date: calendarContext.currentMonth.toISOString(),
+        });
 
-            if ("error" in response) {
-              return { line, success: false, error: response.error };
-            }
+        if (!response.success) {
+          addToast({
+            title: "Failed to create inventory items",
+            description: response.error || "Unknown error",
+            color: "danger",
+          });
 
-            return { line, success: true, data: response.data };
-          } catch (error) {
-            return {
-              line,
-              success: false,
-              error: error instanceof Error ? error.message : "Unknown error",
-            };
-          }
-        }),
-      );
+          return;
+        }
 
-      // Reload calendar once after all events are processed
-      await eventsController.reloadCalendar();
+        const { summary, failures, redirect_url } = response.data;
 
-      // Aggregate results
-      const successResults: LineResult[] = [];
-      const failedResults: LineResult[] = [];
-
-      results.forEach((result) => {
-        if (result.status === "fulfilled") {
-          if (result.value.success) {
-            successResults.push(result.value);
-          } else {
-            failedResults.push(result.value);
-          }
-        } else {
-          // Promise rejected (shouldn't happen since we catch inside)
-          failedResults.push({
-            line: "Unknown",
-            success: false,
-            error: result.reason?.message || "Unknown error",
+        // Show success toast
+        if (summary.total_created > 0) {
+          addToast({
+            title: `Created ${summary.total_created} inventory item${summary.total_created > 1 ? "s" : ""}`,
+            description:
+              summary.total_failed > 0
+                ? `${summary.total_failed} item(s) failed to parse`
+                : "Valuation pending...",
+            color: "success",
           });
         }
-      });
 
-      // Show success toast if any events were created
-      if (successResults.length > 0) {
-        const descriptions = successResults
-          .map((r) => r.data?.event.description)
-          .filter(Boolean);
+        // Show failures if any
+        if (failures.length > 0) {
+          const failureMessages = failures
+            .slice(0, 3)
+            .map((f) => `"${f.original_text.slice(0, 20)}...": ${f.error}`)
+            .join("; ");
 
-        addToast({
-          title: `Created ${successResults.length} event${successResults.length > 1 ? "s" : ""}`,
-          description:
-            descriptions.length <= 3
-              ? descriptions.join(", ")
-              : `${descriptions.slice(0, 3).join(", ")} and ${descriptions.length - 3} more`,
-          color: "success",
+          addToast({
+            title: `${failures.length} item(s) failed`,
+            description: failureMessages,
+            color: "warning",
+          });
+        }
+
+        // Clear input and close modal
+        if (summary.total_created > 0) {
+          setInput("");
+          if (onSubmit) {
+            onSubmit();
+          }
+
+          // Navigate to the view page if we have a redirect URL
+          if (redirect_url && redirect_url !== "/table") {
+            router.push(redirect_url);
+          }
+        }
+      } else {
+        // Regular expense/income mode: process each line separately
+        const lines = input
+          .split("\n")
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0);
+
+        if (lines.length === 0) return;
+
+        // Process all lines in parallel, skipping calendar reload for each
+        const results = await Promise.allSettled(
+          lines.map(async (line): Promise<LineResult> => {
+            try {
+              const response = await eventsController.createEventFromText(
+                {
+                  current_date: calendarContext.currentMonth.toISOString(),
+                  text: line,
+                  create_installments: false,
+                },
+                { skipReload: true },
+              );
+
+              if ("error" in response) {
+                return { line, success: false, error: response.error };
+              }
+
+              return { line, success: true, data: response.data };
+            } catch (error) {
+              return {
+                line,
+                success: false,
+                error: error instanceof Error ? error.message : "Unknown error",
+              };
+            }
+          }),
+        );
+
+        // Reload calendar once after all events are processed
+        await eventsController.reloadCalendar();
+
+        // Aggregate results
+        const successResults: LineResult[] = [];
+        const failedResults: LineResult[] = [];
+
+        results.forEach((result) => {
+          if (result.status === "fulfilled") {
+            if (result.value.success) {
+              successResults.push(result.value);
+            } else {
+              failedResults.push(result.value);
+            }
+          } else {
+            // Promise rejected (shouldn't happen since we catch inside)
+            failedResults.push({
+              line: "Unknown",
+              success: false,
+              error: result.reason?.message || "Unknown error",
+            });
+          }
         });
-      }
 
-      // Show error toast if any events failed
-      if (failedResults.length > 0) {
-        const errorMessages = failedResults
-          .map(
-            (r) =>
-              `"${r.line.slice(0, 30)}${r.line.length > 30 ? "..." : ""}": ${r.error}`,
-          )
-          .slice(0, 3);
+        // Show success toast if any events were created
+        if (successResults.length > 0) {
+          const descriptions = successResults
+            .map((r) => r.data?.event.description)
+            .filter(Boolean);
 
-        addToast({
-          title: `Failed to create ${failedResults.length} event${failedResults.length > 1 ? "s" : ""}`,
-          description: errorMessages.join("; "),
-          color: "danger",
-        });
-      }
+          addToast({
+            title: `Created ${successResults.length} event${successResults.length > 1 ? "s" : ""}`,
+            description:
+              descriptions.length <= 3
+                ? descriptions.join(", ")
+                : `${descriptions.slice(0, 3).join(", ")} and ${descriptions.length - 3} more`,
+            color: "success",
+          });
+        }
 
-      // Clear input and call callback only if at least one succeeded
-      if (successResults.length > 0) {
-        setInput("");
+        // Show error toast if any events failed
+        if (failedResults.length > 0) {
+          const errorMessages = failedResults
+            .map(
+              (r) =>
+                `"${r.line.slice(0, 30)}${r.line.length > 30 ? "..." : ""}": ${r.error}`,
+            )
+            .slice(0, 3);
 
-        if (onSubmit) {
-          onSubmit();
+          addToast({
+            title: `Failed to create ${failedResults.length} event${failedResults.length > 1 ? "s" : ""}`,
+            description: errorMessages.join("; "),
+            color: "danger",
+          });
+        }
+
+        // Clear input and call callback only if at least one succeeded
+        if (successResults.length > 0) {
+          setInput("");
+
+          if (onSubmit) {
+            onSubmit();
+          }
         }
       }
     } catch (error) {
@@ -329,10 +396,46 @@ export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
     fileUploading ||
     eventsController.actionStates.createEventFromText.isLoading ||
     eventsController.actionStates.createEventFromFile.isLoading ||
+    eventsController.actionStates.createInventoryFromText.isLoading ||
     calendarContext.actionStates.loadCalendarV2.isLoading;
+
+  const textareaLabel = isInventoryMode
+    ? "Enter inventory items (one per line)"
+    : "Enter expenses or income";
+
+  const textareaPlaceholder = isInventoryMode
+    ? "e.g., 1965 Fender Stratocaster sunburst, bought in 2018 for $12,000. Vintage Rolex Submariner from grandfather. MacBook Pro M3 Max, purchased last month for $3500"
+    : "e.g., Spent $50 on groceries tomorrow. Got paid $2000 next Friday. Or drop a file (.txt, .csv, .json, .pdf, or image)";
+
+  const submitButtonLabel = () => {
+    if (fileUploading) return "Processing file...";
+    if (loading) return isInventoryMode ? "Adding items..." : "Creating...";
+    if (calendarContext.actionStates.loadCalendarV2.isLoading)
+      return "Refreshing Calendar";
+
+    return isInventoryMode ? "Add Inventory Items" : "Create Events";
+  };
 
   return (
     <div className={clsx("flex flex-col gap-3", className)}>
+      {/* Mode toggle */}
+      <div className="flex items-center gap-2">
+        <Button
+          className="transition-all"
+          color={isInventoryMode ? "secondary" : "default"}
+          size="sm"
+          variant={isInventoryMode ? "solid" : "bordered"}
+          onPress={() => setMode(isInventoryMode ? "expense" : "inventory")}
+        >
+          🔮 Inventory Valuation
+        </Button>
+        {isInventoryMode && (
+          <span className="text-foreground-500 text-xs">
+            AI will estimate market values
+          </span>
+        )}
+      </div>
+
       <div
         {...getRootProps()}
         className={clsx(
@@ -355,13 +458,17 @@ export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
         <Textarea
           ref={textareaRef}
           className="w-full"
-          description="Ctrl+Enter to submit | Drag & drop or click clip icon to upload file"
+          description={
+            isInventoryMode
+              ? "Ctrl+Enter to submit | Each line is a separate inventory item"
+              : "Ctrl+Enter to submit | Drag & drop or click clip icon to upload file"
+          }
           disabled={isLoading}
           isDisabled={isLoading}
-          label="Enter expenses or income"
+          label={textareaLabel}
           maxRows={8}
           minRows={4}
-          placeholder="e.g., Spent $50 on groceries tomorrow&#10;Got paid $2000 next Friday&#10;&#10;Or drop a file (.txt, .csv, .json, .pdf, or image)"
+          placeholder={textareaPlaceholder}
           value={input}
           variant="bordered"
           onKeyDown={handleKeyDown}
@@ -370,35 +477,31 @@ export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
       </div>
 
       <div className="flex gap-2">
-        <Button
-          isIconOnly
-          aria-label="Upload file"
-          color="default"
-          isDisabled={isLoading}
-          isLoading={fileUploading}
-          title="Upload file (.txt, .csv, .json, .pdf, or image)"
-          variant="bordered"
-          onPress={open}
-        >
-          {!fileUploading && <Paperclip size={16} />}
-        </Button>
+        {!isInventoryMode && (
+          <Button
+            isIconOnly
+            aria-label="Upload file"
+            color="default"
+            isDisabled={isLoading}
+            isLoading={fileUploading}
+            title="Upload file (.txt, .csv, .json, .pdf, or image)"
+            variant="bordered"
+            onPress={open}
+          >
+            {!fileUploading && <Paperclip size={16} />}
+          </Button>
+        )}
 
         <Button
           className="flex-1"
-          color="primary"
+          color={isInventoryMode ? "secondary" : "primary"}
           endContent={isLoading ? undefined : <Send size={16} />}
           isDisabled={!input.trim() && !isLoading}
           isLoading={isLoading && !fileUploading}
           variant="bordered"
           onPress={handleSubmit}
         >
-          {fileUploading
-            ? "Processing file..."
-            : loading
-              ? "Creating..."
-              : calendarContext.actionStates.loadCalendarV2.isLoading
-                ? "Refreshing Calendar"
-                : "Create Events"}
+          {submitButtonLabel()}
         </Button>
       </div>
     </div>
