@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
-    "@expensecal/database": "1.4.0",
+    "@expensecal/database": "1.5.0",
     "@heroui/accordion": "2.2.26",
     "@heroui/alert": "2.2.29",
     "@heroui/autocomplete": "2.3.31",
@@ -59,6 +59,7 @@
     "@react-aria/ssr": "3.9.10",
     "@react-aria/visually-hidden": "3.8.28",
     "@stackframe/stack": "^2.8.41",
+    "@tavily/core": "^0.7.1",
     "animejs": "^4.2.2",
     "clsx": "2.1.1",
     "decimal.js": "^10.6.0",

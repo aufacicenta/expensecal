@@ -3,7 +3,7 @@ import { StackProvider, StackTheme } from "@stackframe/stack";
 import clsx from "clsx";
 import { Metadata, Viewport } from "next";
 
-import { Providers } from "./providers";
+import { BaseProviders } from "./BaseProviders";
 
 import { fontSans } from "@/config/fonts";
 import { siteConfig } from "@/config/site";
@@ -43,7 +43,7 @@ export default function RootLayout({
       >
         <StackProvider app={stackClientApp}>
           <StackTheme>
-            <Providers
+            <BaseProviders
               themeProps={{ attribute: "class", defaultTheme: "dark" }}
             >
               <div className="relative flex h-screen flex-col">
@@ -51,7 +51,7 @@ export default function RootLayout({
                   {children}
                 </main>
               </div>
-            </Providers>
+            </BaseProviders>
           </StackTheme>
         </StackProvider>
       </body>

@@ -8,6 +8,8 @@ import Event, { EventAttributes } from "@expensecal/database/models/Event";
 import { buildFilePrompt, buildPrompt } from "./buildPrompt";
 import { getFileParsingSystemPrompt, getSystemPrompt } from "./systemPrompt";
 
+import { routes } from "@/hooks/useRoutes/useRoutes";
+
 export interface ParsedExpenseEvent {
   type: "EXPENSE" | "INCOME";
   amount: EventAttributes["amount"];
@@ -76,34 +78,37 @@ export class LiteLLMParser {
         headers["Authorization"] = `Bearer ${this.apiKey}`;
       }
 
-      const response = await fetch(`${this.apiBase}/v1/responses`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          model: this.model,
-          input: [
-            {
-              role: "system",
-              content: getSystemPrompt(),
-              type: "message",
+      const response = await fetch(
+        `${this.apiBase}${routes.external.llm.responses()}`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            model: this.model,
+            input: [
+              {
+                role: "system",
+                content: getSystemPrompt(),
+                type: "message",
+              },
+              {
+                role: "user",
+                content: prompt,
+                type: "message",
+              },
+            ],
+            text: {
+              format: {
+                type: "json_schema",
+                name: "EventParser",
+                schema: this.schema,
+                strict: true,
+              },
             },
-            {
-              role: "user",
-              content: prompt,
-              type: "message",
-            },
-          ],
-          text: {
-            format: {
-              type: "json_schema",
-              name: "EventParser",
-              schema: this.schema,
-              strict: true,
-            },
-          },
-          stream: false,
-        }),
-      });
+            stream: false,
+          }),
+        },
+      );
 
       if (!response.ok) {
         const error = await response.text();
@@ -343,34 +348,37 @@ export class LiteLLMParser {
       // For text files, continue using /v1/responses API
       const prompt = buildFilePrompt(fileContent, fileName, referenceDate);
 
-      const response = await fetch(`${this.apiBase}/v1/responses`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          model: modelToUse,
-          input: [
-            {
-              role: "system",
-              content: getFileParsingSystemPrompt(),
-              type: "message",
+      const response = await fetch(
+        `${this.apiBase}${routes.external.llm.responses()}`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            model: modelToUse,
+            input: [
+              {
+                role: "system",
+                content: getFileParsingSystemPrompt(),
+                type: "message",
+              },
+              {
+                role: "user",
+                content: prompt,
+                type: "message",
+              },
+            ],
+            text: {
+              format: {
+                type: "json_schema",
+                name: "FileParser",
+                schema: fileSchema,
+                strict: true,
+              },
             },
-            {
-              role: "user",
-              content: prompt,
-              type: "message",
-            },
-          ],
-          text: {
-            format: {
-              type: "json_schema",
-              name: "FileParser",
-              schema: fileSchema,
-              strict: true,
-            },
-          },
-          stream: false,
-        }),
-      });
+            stream: false,
+          }),
+        },
+      );
 
       if (!response.ok) {
         const error = await response.text();

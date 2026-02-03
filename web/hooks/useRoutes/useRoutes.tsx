@@ -2,9 +2,19 @@ const origin = process.env.NEXT_PUBLIC_RAILWAY_PUBLIC_DOMAIN;
 
 export const routes = {
   home: () => `/`,
+  external: {
+    llm: {
+      responses: () => `/v1/responses`,
+    },
+  },
   table: {
     index: () => `/table`,
     view: (groupId: string) => `/table/view/${encodeURIComponent(groupId)}`,
+  },
+  handler: {
+    signIn: () => `/handler/sign-in`,
+    signUp: () => `/handler/sign-up`,
+    signOut: () => `/handler/sign-out`,
   },
   api: {
     v1: {
@@ -52,6 +62,12 @@ export const routes = {
       userPreferences: {
         get: () => `/api/v1/user-preferences`,
         update: () => `/api/v1/user-preferences`,
+      },
+      inventory: {
+        createFromText: () => `/api/v1/inventory/create-from-text`,
+        valuate: () => `/api/v1/inventory/valuate`,
+        valuationStatus: (eventId: string) =>
+          `/api/v1/inventory/valuation-status/${encodeURIComponent(eventId)}`,
       },
     },
     v2: {

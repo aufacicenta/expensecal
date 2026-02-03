@@ -3,6 +3,8 @@
  * Types for single event group operations (GET, PUT, DELETE)
  */
 
+import { InventoryMetadata } from "@expensecal/database/models/Event";
+
 import { BaseErrorResponse, BaseSuccessResponse } from "../../types";
 import { EventGroupData } from "../types";
 
@@ -15,6 +17,8 @@ export type EventGroupEventData = {
   quantity: number;
   description: string;
   event_date: string;
+  original_text?: string | null;
+  inventory_metadata?: InventoryMetadata | null;
   currency?: {
     id: string;
     symbol: string;
