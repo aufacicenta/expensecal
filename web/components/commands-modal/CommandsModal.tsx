@@ -10,6 +10,7 @@ export const CommandsModal: React.FC<CommandsModalProps> = ({
   className,
   isOpen: controlledIsOpen,
   onOpenChange,
+  eventGroupId,
 }) => {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
 
@@ -79,7 +80,10 @@ export const CommandsModal: React.FC<CommandsModalProps> = ({
           Quick Commands
         </ModalHeader>
         <ModalBody className="pb-6">
-          <EventsMultiLineInput onSubmit={handleSubmit} />
+          <EventsMultiLineInput
+            eventGroupId={eventGroupId}
+            onSubmit={handleSubmit}
+          />
         </ModalBody>
       </ModalContent>
     </Modal>

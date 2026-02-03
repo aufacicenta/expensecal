@@ -1507,6 +1507,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
 
       {/* Commands Modal */}
       <CommandsModal
+        eventGroupId={currentView?.id}
         isOpen={isCommandsModalOpen}
         onOpenChange={setIsCommandsModalOpen}
       />

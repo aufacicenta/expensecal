@@ -69,6 +69,7 @@ const readFileAsBase64 = (file: File): Promise<string> => {
 export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
   className,
   onSubmit,
+  eventGroupId,
 }) => {
   const router = useRouter();
   const eventsController = useEventsContext();
@@ -218,6 +219,7 @@ export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
         const response = await eventsController.createInventoryFromText({
           text: input,
           current_date: calendarContext.currentMonth.toISOString(),
+          event_group_id: eventGroupId,
         });
 
         if (!response.success) {
@@ -261,12 +263,20 @@ export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
         // Clear input and close modal
         if (summary.total_created > 0) {
           setInput("");
+
+          // If we're on a view page (eventGroupId exists), reload the view data
+          // This calls loadEventGroup on the view page since the context is overridden
+          if (eventGroupId) {
+            await eventsController.reloadCalendar();
+          }
+
           if (onSubmit) {
             onSubmit();
           }
 
           // Navigate to the view page if we have a redirect URL
-          if (redirect_url && redirect_url !== "/table") {
+          // Skip redirect if we already have an eventGroupId (we're already on the view page)
+          if (redirect_url && redirect_url !== "/table" && !eventGroupId) {
             router.push(redirect_url);
           }
         }
@@ -400,8 +410,12 @@ export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
     calendarContext.actionStates.loadCalendarV2.isLoading;
 
   const textareaLabel = isInventoryMode
-    ? "Enter inventory items (one per line)"
-    : "Enter expenses or income";
+    ? eventGroupId
+      ? "Add to current view (one item per line)"
+      : "Enter inventory items (one per line)"
+    : eventGroupId
+      ? "Add to current view"
+      : "Enter expenses or income";
 
   const textareaPlaceholder = isInventoryMode
     ? "e.g., 1965 Fender Stratocaster sunburst, bought in 2018 for $12,000. Vintage Rolex Submariner from grandfather. MacBook Pro M3 Max, purchased last month for $3500"

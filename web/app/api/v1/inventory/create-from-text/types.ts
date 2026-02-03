@@ -16,6 +16,7 @@ export type CreateInventoryFromTextRequestBody = {
   text: string; // Multi-line text with one item per line
   current_date?: string; // ISO 8601 format date for context
   group_name?: string; // Optional name for the EventGroup (defaults to "Inventory - {date}")
+  event_group_id?: string; // If provided, add items to this existing group instead of creating a new one
 };
 
 // Parsed inventory item from LLM

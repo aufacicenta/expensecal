@@ -228,39 +228,76 @@ export async function POST(
       }
     }
 
-    // Create EventGroup if we have any successful events
+    // Create EventGroup or add to existing one if we have any successful events
     let eventGroup: { id: string; name: string } | null = null;
     let redirectUrl = routes.table.index();
 
     if (createdEvents.length > 0) {
       try {
-        // Generate group name
-        const groupName =
-          body.group_name?.trim() ||
-          `Inventory - ${formatDateForDisplay(currentDate)}`;
+        // Check if we should add to an existing group
+        if (body.event_group_id) {
+          // Verify the group exists and belongs to this user
+          const existingGroup = await EventGroup.findOne({
+            where: {
+              id: body.event_group_id,
+              user_id: user.id,
+            },
+          });
 
-        // Create the EventGroup
-        const group = await EventGroup.create({
-          user_id: user.id,
-          name: groupName,
-        });
+          if (existingGroup) {
+            // Associate events with the existing group
+            const eventGroupEventsData = createdEvents.map((event) => ({
+              event_group_id: existingGroup.id,
+              event_id: event.id,
+            }));
 
-        // Associate events with the group
-        const eventGroupEventsData = createdEvents.map((event) => ({
-          event_group_id: group.id,
-          event_id: event.id,
-        }));
+            await EventGroupEvents.bulkCreate(eventGroupEventsData);
 
-        await EventGroupEvents.bulkCreate(eventGroupEventsData);
+            eventGroup = {
+              id: existingGroup.id,
+              name: existingGroup.name,
+            };
 
-        eventGroup = {
-          id: group.id,
-          name: group.name,
-        };
+            redirectUrl = routes.table.view(existingGroup.id);
+          } else {
+            // Group not found or doesn't belong to user, create a new one
+            console.warn(
+              `Event group ${body.event_group_id} not found or unauthorized, creating new group`,
+            );
+            // Fall through to create new group
+          }
+        }
 
-        redirectUrl = routes.table.view(group.id);
+        // Create a new group if we don't have one yet
+        if (!eventGroup) {
+          // Generate group name
+          const groupName =
+            body.group_name?.trim() ||
+            `Inventory - ${formatDateForDisplay(currentDate)}`;
+
+          // Create the EventGroup
+          const group = await EventGroup.create({
+            user_id: user.id,
+            name: groupName,
+          });
+
+          // Associate events with the group
+          const eventGroupEventsData = createdEvents.map((event) => ({
+            event_group_id: group.id,
+            event_id: event.id,
+          }));
+
+          await EventGroupEvents.bulkCreate(eventGroupEventsData);
+
+          eventGroup = {
+            id: group.id,
+            name: group.name,
+          };
+
+          redirectUrl = routes.table.view(group.id);
+        }
       } catch (error) {
-        console.error("Error creating event group:", error);
+        console.error("Error creating/updating event group:", error);
         // Events were created but group failed - still return success with events
         // Just won't have a group redirect
       }

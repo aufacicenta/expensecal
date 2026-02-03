@@ -13,6 +13,7 @@ import { CalendarV2ContextType } from "@/context/CalendarV2/CalendarV2Context.ty
 import { useCalendarV2Context } from "@/context/CalendarV2/useCalendarV2Context";
 import { useEventGroupsContext } from "@/context/EventGroups/useEventGroupsContext";
 import { useExchangeRatesContext } from "@/context/ExchangeRates/useExchangeRatesContext";
+import { EventsContextController } from "@/context/Events/EventsContextController";
 import { InventoryContextController } from "@/context/Inventory/InventoryContextController";
 import { useUserPreferencesContext } from "@/context/UserPreferences/useUserPreferencesContext";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
@@ -124,9 +125,11 @@ export default function EventGroupViewPage({ params }: ViewPageProps) {
 
   return (
     <CalendarV2Context.Provider value={viewContextValue}>
-      <InventoryContextController>
-        <EventsTable currentView={currentViewInfo} />
-      </InventoryContextController>
+      <EventsContextController>
+        <InventoryContextController>
+          <EventsTable currentView={currentViewInfo} />
+        </InventoryContextController>
+      </EventsContextController>
     </CalendarV2Context.Provider>
   );
 }
