@@ -91,8 +91,12 @@ const getValuationStatusColor = (
 
 // @TODO handle an edge case with EventCellDateEdit where editing a recurring event may need to update all the dates in the series.
 export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
-  const { calendarV2Data, filteredCalendarData, loadCalendarV2 } =
-    useCalendarV2Context();
+  const {
+    calendarV2Data,
+    filteredCalendarData,
+    loadCalendarV2,
+    actionStates: calendarV2ActionStates,
+  } = useCalendarV2Context();
   const {
     updateEvent,
     updateEventMultiple,
@@ -147,7 +151,13 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
   );
   const [isCommandsModalOpen, setIsCommandsModalOpen] = useState(false);
   const [isCreateViewModalOpen, setIsCreateViewModalOpen] = useState(false);
-  const { valuatingEventIds, valuateItem } = useInventoryContext();
+  const [headerHeight, setHeaderHeight] = useState(68); // Default height, will be updated dynamically
+  const {
+    valuatingEventIds,
+    valuateItem,
+    valuateMultiple,
+    actionStates: inventoryActionStates,
+  } = useInventoryContext();
   const router = useRouter();
   const routes = useRoutes();
 
@@ -329,6 +339,52 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
     clearSelection();
   };
 
+  const handleBulkValuate = async () => {
+    if (selectedEventIds.size === 0) return;
+    if (selectedEventIds.size > 10) {
+      addToast({
+        title: "Too many items selected",
+        description: "Maximum 10 items can be valuated at once",
+        color: "warning",
+      });
+
+      return;
+    }
+
+    const eventIds = Array.from(selectedEventIds);
+    const result = await valuateMultiple(eventIds);
+
+    if (result.success && result.data) {
+      const successCount = result.data.results.filter((r) => r.success).length;
+      const failedCount = result.data.results.filter((r) => !r.success).length;
+
+      if (successCount > 0) {
+        addToast({
+          title: `Valuated ${successCount} item${successCount > 1 ? "s" : ""}`,
+          description: "Valuation complete",
+          color: "success",
+        });
+      }
+
+      if (failedCount > 0) {
+        addToast({
+          title: `Failed to valuate ${failedCount} item${failedCount > 1 ? "s" : ""}`,
+          description: "Some items could not be valuated",
+          color: "warning",
+        });
+      }
+
+      // Clear selection after successful valuation
+      clearSelection();
+    } else {
+      addToast({
+        title: "Valuation failed",
+        description: result.error || "Unknown error",
+        color: "danger",
+      });
+    }
+  };
+
   const handleCreateViewSuccess = (viewId: string) => {
     clearSelection();
     // Optionally navigate to the new view
@@ -476,10 +532,12 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
   if (!calendarV2Data) return <FullPageLoadingState />;
 
   return (
-    <section className="relative w-fit overflow-x-auto pt-[58px]">
-      {/* Loading State Over Existing Calendar*/}
-      {(eventsContextActionStates.deleteEvent.isLoading ||
-        eventsContextActionStates.deleteEventMultiple.isLoading) && (
+    <section
+      className="relative w-fit overflow-x-auto"
+      style={{ paddingTop: headerHeight }}
+    >
+      {/* Loading State Over Existing Calendar - shows during full reload */}
+      {calendarV2ActionStates.loadCalendarV2.isLoading && (
         <FullPageLoadingState />
       )}
 
@@ -488,6 +546,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
         categories={categories}
         currencies={currencies}
         currentView={currentView}
+        isBulkValuating={inventoryActionStates.valuateMultiple.isLoading}
         selectedCategoryIds={selectedCategoryIds}
         selectedCount={selectedEventIds.size}
         selectedEventIds={selectedEventIds}
@@ -496,8 +555,10 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
         onBulkCategoryUpdate={handleBulkCategoryUpdate}
         onBulkCurrencyUpdate={handleBulkCurrencyUpdate}
         onBulkDateUpdate={handleBulkDateUpdate}
+        onBulkValuate={handleBulkValuate}
         onCategoryFilterChange={setSelectedCategoryIds}
         onCreateViewClick={() => setIsCreateViewModalOpen(true)}
+        onHeightChange={setHeaderHeight}
         onToggleAll={handleToggleAllSelection}
         onToggleTextMode={() => setShowOriginalText(!showOriginalText)}
       />

@@ -46,4 +46,17 @@ export type EventsTableHeaderProps = {
    * Information about the currently displayed view (if viewing a saved view)
    */
   currentView?: CurrentViewInfo;
+  // Bulk valuation props
+  /**
+   * Callback to valuate selected inventory items
+   */
+  onBulkValuate: () => void;
+  /**
+   * Whether bulk valuation is currently in progress
+   */
+  isBulkValuating?: boolean;
+  /**
+   * Callback to report the header height for dynamic padding
+   */
+  onHeightChange?: (height: number) => void;
 };

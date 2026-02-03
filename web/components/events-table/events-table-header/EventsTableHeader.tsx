@@ -19,14 +19,16 @@ import {
   CircleCheckBig,
   CircleDashed,
   Coins,
+  DollarSign,
   FolderOpen,
   FolderPlus,
   ListFilter,
+  Loader2,
   Table,
   Tag,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { EventsTableHeaderProps } from "./EventsTableHeader.types";
 
@@ -54,10 +56,32 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
   selectedEventIds,
   onCreateViewClick,
   currentView,
+  onBulkValuate,
+  isBulkValuating,
+  onHeightChange,
 }) => {
   const { baseCurrency } = useUserPreferencesContext();
   const { eventGroups } = useEventGroupsContext();
   const routes = useRoutes();
+  const navRef = useRef<HTMLElement>(null);
+
+  // Report header height changes to parent for dynamic padding
+  useEffect(() => {
+    if (!navRef.current || !onHeightChange) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        onHeightChange(entry.contentRect.height);
+      }
+    });
+
+    resizeObserver.observe(navRef.current);
+
+    // Report initial height
+    onHeightChange(navRef.current.offsetHeight);
+
+    return () => resizeObserver.disconnect();
+  }, [onHeightChange]);
   const isAllSelected = selectedCount > 0 && selectedCount === totalCount;
   const isIndeterminate = selectedCount > 0 && selectedCount < totalCount;
 
@@ -138,7 +162,7 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
   };
 
   return (
-    <nav className="bg-background fixed top-0 left-0 z-50 text-xs">
+    <nav ref={navRef} className="bg-background fixed top-0 left-0 z-50 text-xs">
       {/* App Top Bar */}
       <div className="flex w-screen items-center justify-between px-2 [&>div]:p-1">
         <div className="flex items-center gap-3 font-mono">
@@ -271,6 +295,25 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
               onPress={onCreateViewClick}
             >
               Create View
+            </Button>
+            <Button
+              color="warning"
+              isDisabled={isBulkValuating || selectedEventIds.size > 10}
+              isLoading={isBulkValuating}
+              size="sm"
+              spinner={<Loader2 className="animate-spin" size={14} />}
+              startContent={!isBulkValuating && <DollarSign size={14} />}
+              title={
+                selectedEventIds.size > 10
+                  ? "Maximum 10 items can be valuated at once"
+                  : `Valuate ${selectedEventIds.size} selected item${selectedEventIds.size !== 1 ? "s" : ""}`
+              }
+              variant="flat"
+              onPress={onBulkValuate}
+            >
+              {selectedEventIds.size > 10
+                ? "Max 10 items"
+                : `Valuate${selectedEventIds.size > 1 ? ` (${selectedEventIds.size})` : ""}`}
             </Button>
           </div>
           <div className="flex items-center gap-2">
