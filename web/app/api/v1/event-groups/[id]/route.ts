@@ -135,7 +135,6 @@ export async function GET(
             id: eventGroup.id,
             user_id: eventGroup.user_id,
             name: eventGroup.name,
-            event_count: events.length,
             created_at: eventGroup.created_at.toISOString(),
             updated_at: eventGroup.updated_at.toISOString(),
           },
@@ -235,8 +234,6 @@ export async function PUT(
     }
 
     // Update events if provided (replace all)
-    let eventCount = 0;
-
     if (body.eventIds !== undefined) {
       // Remove all existing event associations
       await EventGroupEvents.destroy({
@@ -260,14 +257,8 @@ export async function PUT(
           }));
 
           await EventGroupEvents.bulkCreate(eventGroupEventsData);
-          eventCount = events.length;
         }
       }
-    } else {
-      // Count existing events
-      eventCount = await EventGroupEvents.count({
-        where: { event_group_id: id },
-      });
     }
 
     return NextResponse.json(
@@ -277,7 +268,6 @@ export async function PUT(
           id: eventGroup.id,
           user_id: eventGroup.user_id,
           name: eventGroup.name,
-          event_count: eventCount,
           created_at: eventGroup.created_at.toISOString(),
           updated_at: eventGroup.updated_at.toISOString(),
         },

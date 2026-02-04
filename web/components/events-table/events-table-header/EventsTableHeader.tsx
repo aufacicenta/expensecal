@@ -248,7 +248,7 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
                           ? "bg-primary/10"
                           : undefined
                       }
-                      description={`${group.event_count || 0} events`}
+                      description="Saved view"
                       href={routes.table.view(group.id)}
                       startContent={
                         <FolderOpen

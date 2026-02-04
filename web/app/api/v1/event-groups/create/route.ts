@@ -85,7 +85,6 @@ export async function POST(
           id: eventGroup.id,
           user_id: eventGroup.user_id,
           name: eventGroup.name,
-          event_count: eventsAdded,
           events_added: eventsAdded,
           created_at: eventGroup.created_at.toISOString(),
           updated_at: eventGroup.updated_at.toISOString(),

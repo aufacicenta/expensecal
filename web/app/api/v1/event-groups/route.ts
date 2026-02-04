@@ -33,20 +33,10 @@ export async function GET(
     // Initialize database models
     initModels(db);
 
-    // Fetch all event groups for the user with event counts
+    // Fetch all event groups for the user
     const eventGroups = await EventGroup.findAll({
       where: {
         user_id: user.id,
-      },
-      attributes: {
-        include: [
-          [
-            db.literal(
-              `(SELECT COUNT(*) FROM event_group_events WHERE event_group_events.event_group_id = "event_groups".id)`,
-            ),
-            "event_count",
-          ],
-        ],
       },
       order: [["created_at", "DESC"]],
     });
@@ -59,7 +49,6 @@ export async function GET(
           id: group.id,
           user_id: group.user_id,
           name: group.name,
-          event_count: (group.get("event_count") as number) || 0,
           created_at: group.created_at.toISOString(),
           updated_at: group.updated_at.toISOString(),
         })),
