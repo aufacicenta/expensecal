@@ -65,7 +65,7 @@ export const ThemeSwitch: FC<ThemeSwitchProps> = ({
   const isSSR = useIsSSR();
 
   // Get current theme index, default to 0 (light) if not found
-  const currentTheme = (theme as ThemeName) || "light";
+  const currentTheme = (theme as ThemeName) || "lavender";
   const currentIndex = THEMES.indexOf(currentTheme);
   const validIndex = currentIndex === -1 ? 0 : currentIndex;
 
