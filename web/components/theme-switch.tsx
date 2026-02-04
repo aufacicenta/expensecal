@@ -14,6 +14,10 @@ import {
   TreePine,
   Sunset,
   Flower2,
+  Zap,
+  Coffee,
+  Snowflake,
+  Heart,
 } from "lucide-react";
 
 import { THEMES, ThemeName } from "@/config/themes";
@@ -27,6 +31,10 @@ const THEME_ICONS: Record<ThemeName, React.ReactNode> = {
   forest: <TreePine size={16} />,
   sunset: <Sunset size={16} />,
   lavender: <Flower2 size={16} />,
+  cyberpunk: <Zap size={16} />,
+  mocha: <Coffee size={16} />,
+  nord: <Snowflake size={16} />,
+  rose: <Heart size={16} />,
 };
 
 // Labels for each theme
@@ -38,6 +46,10 @@ const THEME_LABELS: Record<ThemeName, string> = {
   forest: "Forest",
   sunset: "Sunset",
   lavender: "Lavender",
+  cyberpunk: "Cyberpunk",
+  mocha: "Mocha",
+  nord: "Nord",
+  rose: "Rose",
 };
 
 export interface ThemeSwitchProps {
