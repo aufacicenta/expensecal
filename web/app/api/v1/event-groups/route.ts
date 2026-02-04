@@ -42,7 +42,7 @@ export async function GET(
         include: [
           [
             db.literal(
-              `(SELECT COUNT(*) FROM event_group_events WHERE event_group_events.event_group_id = "EventGroup".id)`,
+              `(SELECT COUNT(*) FROM event_group_events WHERE event_group_events.event_group_id = "event_groups".id)`,
             ),
             "event_count",
           ],
