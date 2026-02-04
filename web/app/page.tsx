@@ -56,24 +56,30 @@ export default function LandingPage() {
             <span className="text-xl font-bold">ExpenseCal</span>
           </div>
           <div className="flex items-center gap-4">
-            <button
-              className="text-default-600 hover:text-foreground hidden text-sm font-medium hover:cursor-pointer sm:block"
-              onClick={() => scrollToSection("features")}
+            <Button
+              className="hidden sm:flex"
+              size="sm"
+              variant="light"
+              onPress={() => scrollToSection("features")}
             >
               Features
-            </button>
-            <button
-              className="text-default-600 hover:text-foreground hidden text-sm font-medium hover:cursor-pointer sm:block"
-              onClick={() => scrollToSection("inventory")}
+            </Button>
+            <Button
+              className="hidden sm:flex"
+              size="sm"
+              variant="light"
+              onPress={() => scrollToSection("inventory")}
             >
               Inventory
-            </button>
-            <button
-              className="text-default-600 hover:text-foreground hidden text-sm font-medium hover:cursor-pointer sm:block"
-              onClick={() => scrollToSection("use-cases")}
+            </Button>
+            <Button
+              className="hidden sm:flex"
+              size="sm"
+              variant="light"
+              onPress={() => scrollToSection("use-cases")}
             >
               Use Cases
-            </button>
+            </Button>
             <Divider className="hidden h-6 sm:block" orientation="vertical" />
             {user ? (
               <>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useDraggable } from "@dnd-kit/core";
+import { Button } from "@heroui/button";
 import { Divider } from "@heroui/divider";
 import clsx from "clsx";
 import { Grip, X } from "lucide-react";
@@ -55,13 +56,15 @@ export const DayModal: React.FC<DayModalProps> = ({
           <Grip className="[&>circle]:fill-content3" size={16} />
         </div>
         <h3 className="flex-1 px-2 text-sm font-semibold">{displayDate}</h3>
-        <button
+        <Button
+          isIconOnly
           aria-label="Close modal"
-          className="hover:bg-content2 rounded p-1 transition-colors"
-          onClick={onClose}
+          size="sm"
+          variant="light"
+          onPress={onClose}
         >
           <X size={16} />
-        </button>
+        </Button>
       </div>
 
       <Divider className="mb-3" />

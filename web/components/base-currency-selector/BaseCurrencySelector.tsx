@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@heroui/button";
 import {
   Dropdown,
   DropdownItem,
@@ -39,9 +40,11 @@ export const BaseCurrencySelector: FC<BaseCurrencySelectorProps> = ({
   return (
     <Dropdown>
       <DropdownTrigger>
-        <button
-          className={`flex cursor-pointer items-center gap-1 px-1 transition-opacity hover:opacity-80 ${className || ""}`}
-          disabled={isLoading}
+        <Button
+          className={`flex h-auto min-w-0 items-center gap-1 px-1 ${className || ""}`}
+          isDisabled={isLoading}
+          size="sm"
+          variant="light"
         >
           {isLoading ? (
             <Spinner size="sm" />
@@ -54,7 +57,7 @@ export const BaseCurrencySelector: FC<BaseCurrencySelectorProps> = ({
               <ChevronDown className="text-default-400" size={12} />
             </>
           )}
-        </button>
+        </Button>
       </DropdownTrigger>
       <DropdownMenu
         aria-label="Base currency selection"

@@ -186,7 +186,11 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
           {/* Views Dropdown */}
           <Dropdown>
             <DropdownTrigger>
-              <button className="hover:bg-default-100 flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 transition-colors">
+              <Button
+                className="hover:bg-default-100 flex h-auto min-w-0 items-center gap-1 rounded-md px-2 py-1"
+                size="sm"
+                variant="light"
+              >
                 <FolderOpen
                   className={currentView ? "text-primary" : "text-default-500"}
                   size={14}
@@ -213,7 +217,7 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
                   )
                 )}
                 <ChevronDown className="text-default-400" size={12} />
-              </button>
+              </Button>
             </DropdownTrigger>
             <DropdownMenu
               aria-label="Event views"
@@ -320,7 +324,11 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
             {/* Bulk Category Dropdown */}
             <Dropdown>
               <DropdownTrigger>
-                <button className="flex cursor-pointer items-center gap-1 px-1 transition-opacity hover:opacity-80">
+                <Button
+                  className="flex h-auto min-w-0 items-center gap-1 px-1"
+                  size="sm"
+                  variant="light"
+                >
                   <Tag className="text-default-500" size={14} />
                   <span className="text-default-500 text-xs">
                     {bulkCategoryIds.size > 0
@@ -328,7 +336,7 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
                       : "Set categories..."}
                   </span>
                   <ChevronDown className="text-default-400" size={12} />
-                </button>
+                </Button>
               </DropdownTrigger>
               <DropdownMenu
                 aria-label="Bulk category selection"
@@ -368,7 +376,11 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
             {/* Bulk Currency Dropdown */}
             <Dropdown>
               <DropdownTrigger>
-                <button className="flex cursor-pointer items-center gap-1 px-1 transition-opacity hover:opacity-80">
+                <Button
+                  className="flex h-auto min-w-0 items-center gap-1 px-1"
+                  size="sm"
+                  variant="light"
+                >
                   <Coins className="text-default-500" size={14} />
                   <span className="text-default-500 text-xs">
                     {bulkCurrencyId
@@ -377,7 +389,7 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
                       : "Set currency..."}
                   </span>
                   <ChevronDown className="text-default-400" size={12} />
-                </button>
+                </Button>
               </DropdownTrigger>
               <DropdownMenu
                 aria-label="Bulk currency selection"
@@ -415,7 +427,11 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
               onOpenChange={setIsDatePopoverOpen}
             >
               <PopoverTrigger>
-                <button className="flex cursor-pointer items-center gap-1 px-1 transition-opacity hover:opacity-80">
+                <Button
+                  className="flex h-auto min-w-0 items-center gap-1 px-1"
+                  size="sm"
+                  variant="light"
+                >
                   <Calendar className="text-default-500" size={14} />
                   <span className="text-default-500 text-xs">
                     {bulkDate
@@ -423,7 +439,7 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
                       : "Set date..."}
                   </span>
                   <ChevronDown className="text-default-400" size={12} />
-                </button>
+                </Button>
               </PopoverTrigger>
               <PopoverContent className="p-2">
                 <DatePicker
