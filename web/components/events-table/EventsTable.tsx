@@ -31,7 +31,7 @@ import {
   Trash,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CommandsModal } from "../commands-modal/CommandsModal";
 import { FullPageLoadingState } from "../full-page-loading-state/FullPageLoadingState";
@@ -60,6 +60,7 @@ import { EventCellDateEdit } from "./event-cell-date-edit/EventCellDateEdit";
 import { EventCellQuantityEdit } from "./event-cell-quantity-edit/EventCellQuantityEdit";
 
 import { getStructureType } from "@/lib/events/getStructureType";
+import { toDateString } from "@/lib/date";
 import { formatDayShort, formatMonthShort } from "@/lib/date/formatters";
 import { formatCurrency } from "@/lib/currency/formatter";
 import { useEventsContext } from "@/context/Events/useEventsContext";
@@ -154,6 +155,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
   );
   const [isCommandsModalOpen, setIsCommandsModalOpen] = useState(false);
   const [isCreateViewModalOpen, setIsCreateViewModalOpen] = useState(false);
+  const [scrollToEventId, setScrollToEventId] = useState<string | null>(null);
   const [headerHeight, setHeaderHeight] = useState(68); // Default height, will be updated dynamically
   const {
     valuatingEventIds,
@@ -564,6 +566,81 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
     loadCalendarV2();
   }, []);
 
+  // Scroll to the first created event after calendar data re-renders
+  useEffect(() => {
+    if (!scrollToEventId || !calendarV2Data) return;
+
+    // Use requestAnimationFrame to ensure the DOM has rendered the new events
+    const rafId = requestAnimationFrame(() => {
+      const element = document.getElementById(`event-${scrollToEventId}`);
+
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        // Brief highlight effect
+        element.classList.add("bg-primary/10");
+        setTimeout(() => {
+          element.classList.remove("bg-primary/10");
+        }, 2000);
+      }
+
+      setScrollToEventId(null);
+    });
+
+    return () => cancelAnimationFrame(rafId);
+  }, [scrollToEventId, calendarV2Data]);
+
+  const handleEventsCreated = useCallback((firstEventId: string) => {
+    setScrollToEventId(firstEventId);
+  }, []);
+
+  const handleScrollToToday = useCallback(() => {
+    const today = toDateString(new Date());
+    const allDateElements =
+      document.querySelectorAll<HTMLElement>("[data-date]");
+
+    if (allDateElements.length === 0) return;
+
+    let closestElement: HTMLElement | null = null;
+    let closestDiff = Infinity;
+
+    allDateElements.forEach((el) => {
+      const dateStr = el.dataset.date;
+
+      if (!dateStr) return;
+
+      // For exact match, use it immediately
+      if (dateStr === today) {
+        closestElement = el;
+        closestDiff = 0;
+
+        return;
+      }
+
+      const diff = Math.abs(
+        new Date(dateStr).getTime() - new Date(today).getTime(),
+      );
+
+      if (diff < closestDiff) {
+        closestDiff = diff;
+        closestElement = el;
+      }
+    });
+
+    if (closestElement) {
+      (closestElement as HTMLElement).scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+
+      // Brief highlight effect
+      (closestElement as HTMLElement).classList.add("bg-primary/10");
+      setTimeout(() => {
+        (closestElement as HTMLElement)?.classList.remove("bg-primary/10");
+      }, 2000);
+    }
+  }, []);
+
   if (!calendarV2Data) return <FullPageLoadingState />;
 
   return (
@@ -594,6 +671,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
         onCategoryFilterChange={setSelectedCategoryIds}
         onCreateViewClick={() => setIsCreateViewModalOpen(true)}
         onHeightChange={setHeaderHeight}
+        onScrollToToday={handleScrollToToday}
         onToggleAll={handleToggleAllSelection}
         onToggleTextMode={() => setShowOriginalText(!showOriginalText)}
       />
@@ -678,6 +756,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
                               <div
                                 key={`${year}-${month}-${day}`}
                                 className="group border-b-default-300 last-of-type:border-b-0"
+                                data-date={`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`}
                               >
                                 <div className="flex">
                                   <div
@@ -712,6 +791,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
                                             eventObj.id || "",
                                           ) && "border-primary border-[0.5px]",
                                         )}
+                                        id={`event-${eventObj.id}`}
                                       >
                                         <div
                                           className={clsx(
@@ -1573,6 +1653,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
       <CommandsModal
         eventGroupId={currentView?.id}
         isOpen={isCommandsModalOpen}
+        onEventsCreated={handleEventsCreated}
         onOpenChange={setIsCommandsModalOpen}
       />
     </section>

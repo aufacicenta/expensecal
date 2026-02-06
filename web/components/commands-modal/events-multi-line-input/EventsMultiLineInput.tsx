@@ -271,7 +271,9 @@ export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
           }
 
           if (onSubmit) {
-            onSubmit();
+            const firstEventId = response.data.events?.[0]?.id;
+
+            onSubmit(firstEventId);
           }
 
           // Navigate to the view page if we have a redirect URL
@@ -378,7 +380,9 @@ export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
           setInput("");
 
           if (onSubmit) {
-            onSubmit();
+            const firstEventId = successResults[0]?.data?.event.id;
+
+            onSubmit(firstEventId);
           }
         }
       }

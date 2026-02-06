@@ -59,4 +59,8 @@ export type EventsTableHeaderProps = {
    * Callback to report the header height for dynamic padding
    */
   onHeightChange?: (height: number) => void;
+  /**
+   * Callback to scroll to today's date (or closest) in the table
+   */
+  onScrollToToday?: () => void;
 };

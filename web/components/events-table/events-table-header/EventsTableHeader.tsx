@@ -14,6 +14,7 @@ import {
   ArrowLeft,
   ArrowLeftRight,
   Calendar,
+  CalendarSearch,
   ChevronDown,
   Circle,
   CircleCheckBig,
@@ -59,6 +60,7 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
   onBulkValuate,
   isBulkValuating,
   onHeightChange,
+  onScrollToToday,
 }) => {
   const { baseCurrency } = useUserPreferencesContext();
   const { eventGroups } = useEventGroupsContext();
@@ -279,6 +281,16 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
         </div>
         <div className="flex items-center gap-2 text-right">
           <BaseCurrencySelector />
+          <Button
+            isIconOnly
+            aria-label="Scroll to today"
+            size="sm"
+            title="Scroll to today"
+            variant="light"
+            onPress={onScrollToToday}
+          >
+            <CalendarSearch className="text-default-500" size={16} />
+          </Button>
           <ThemeSwitch />
         </div>
       </div>
