@@ -6,6 +6,8 @@ import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
+import { Alert } from "@heroui/alert";
+import { Kbd } from "@heroui/kbd";
 import {
   Dropdown,
   DropdownItem,
@@ -595,6 +597,34 @@ export const EventsTable: React.FC<EventsTableProps> = ({ currentView }) => {
         onToggleAll={handleToggleAllSelection}
         onToggleTextMode={() => setShowOriginalText(!showOriginalText)}
       />
+
+      {/* Empty State */}
+      {Object.keys(filteredCalendarData?.calendar || {}).length === 0 && (
+        <div className="flex h-[350px] w-screen flex-col items-center justify-center">
+          <Alert
+            hideIcon
+            className="max-w-xl"
+            classNames={{ base: "flex-grow-0" }}
+            description="Add your first expense or income to get started"
+            endContent={
+              <Button
+                color="primary"
+                size="sm"
+                onPress={() => setIsCommandsModalOpen(true)}
+              >
+                Quick Commands
+              </Button>
+            }
+            title="No Events Yet"
+            variant="faded"
+          >
+            <p className="text-default text-xs">
+              or press <Kbd keys={["command"]}>K</Kbd> on Mac /{" "}
+              <Kbd keys={["ctrl"]}>K</Kbd> on Windows
+            </p>
+          </Alert>
+        </div>
+      )}
 
       {Object.entries(filteredCalendarData?.calendar || {}).map(
         ([year, yearObj]) => (
