@@ -18,6 +18,12 @@ import {
   Coffee,
   Snowflake,
   Heart,
+  CloudFog,
+  Pyramid,
+  IceCreamCone,
+  Leaf,
+  Monitor,
+  Gamepad2,
 } from "lucide-react";
 
 import { THEMES, ThemeName } from "@/config/themes";
@@ -35,6 +41,12 @@ const THEME_ICONS: Record<ThemeName, React.ReactNode> = {
   mocha: <Coffee size={16} />,
   nord: <Snowflake size={16} />,
   rose: <Heart size={16} />,
+  mist: <CloudFog size={16} />,
+  desert: <Pyramid size={16} />,
+  icecream: <IceCreamCone size={16} />,
+  "light-forest": <Leaf size={16} />,
+  win98: <Monitor size={16} />,
+  retro64: <Gamepad2 size={16} />,
 };
 
 // Labels for each theme
@@ -50,6 +62,12 @@ const THEME_LABELS: Record<ThemeName, string> = {
   mocha: "Mocha",
   nord: "Nord",
   rose: "Rose",
+  mist: "Mist",
+  desert: "Desert",
+  icecream: "Ice Cream",
+  "light-forest": "Light Forest",
+  win98: "Windows 98",
+  retro64: "64-Bit",
 };
 
 export interface ThemeSwitchProps {
