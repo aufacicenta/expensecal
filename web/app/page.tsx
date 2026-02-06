@@ -14,19 +14,22 @@ import {
   Coins,
   CreditCard,
   DollarSign,
+  FileText,
   Gem,
   Guitar,
   Home,
+  Image as ImageIcon,
   LineChart,
   MessageSquare,
   Package,
+  Palette,
   PiggyBank,
   Repeat,
+  ScanText,
   Sparkles,
   TrendingUp,
   Wallet,
   Watch,
-  Zap,
 } from "lucide-react";
 import NextLink from "next/link";
 
@@ -76,9 +79,9 @@ export default function LandingPage() {
               className="hidden sm:flex"
               size="sm"
               variant="light"
-              onPress={() => scrollToSection("use-cases")}
+              onPress={() => scrollToSection("scheduling")}
             >
-              Use Cases
+              Scheduling
             </Button>
             <Divider className="hidden h-6 sm:block" orientation="vertical" />
             {user ? (
@@ -146,19 +149,19 @@ export default function LandingPage() {
             startContent={<Sparkles className="h-3 w-3" />}
             variant="flat"
           >
-            AI-Powered Financial Tracking
+            Powered by Gemini 3 AI from Google
           </Chip>
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-            Track expenses with
+            The future of
             <span className="from-primary to-secondary bg-gradient-to-r bg-clip-text text-transparent">
               {" "}
-              natural language
+              expense tracking, inventory valuation & financial forecasting
             </span>
           </h1>
           <p className="text-default-600 mx-auto mt-6 max-w-2xl text-lg">
-            Just type what you spent or earned. ExpenseCal understands dates,
-            amounts, currencies, installments, and recurring payments — all from
-            a simple sentence.
+            Know your wealth across time to make better decisions. Process
+            expenses from natural language, images, PDFs, and bank statements —
+            in any of the major FIAT and crypto currencies.
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -170,7 +173,7 @@ export default function LandingPage() {
               href={user ? routes.table.index() : routes.handler.signUp()}
               size="lg"
             >
-              {user ? "Go to Table" : "Start Free"}
+              {user ? "Go to App" : "Start Free"}
             </Button>
             <Button
               className="w-full sm:w-auto"
@@ -224,11 +227,12 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <h2 className="text-3xl font-bold sm:text-4xl">
-              Smart Financial Tracking
+              Intelligent Financial Tracking
             </h2>
             <p className="text-default-600 mx-auto mt-4 max-w-2xl">
-              Not another calendar. ExpenseCal is a very powerful financial
-              forecasting tool that understands your money.
+              Not another spreadsheet. ExpenseCal is a powerful financial
+              forecasting tool that understands your money — powered by Gemini 3
+              AI from Google.
             </p>
           </div>
 
@@ -239,16 +243,17 @@ export default function LandingPage() {
                   <Bot className="text-primary h-6 w-6" />
                 </div>
                 <div className="flex flex-col">
-                  <p className="text-lg font-semibold">AI-Powered Parsing</p>
+                  <p className="text-lg font-semibold">Gemini 3 AI Parsing</p>
                   <p className="text-small text-default-500">
-                    Natural language understanding
+                    Text, images, PDFs & CSV
                   </p>
                 </div>
               </CardHeader>
               <CardBody className="pt-0">
                 <p className="text-default-600">
-                  Just describe your expense or income. Our AI extracts amounts,
-                  currencies, dates, and descriptions automatically.
+                  Powered by Google&apos;s Gemini 3 AI. Type naturally, upload
+                  bank statements, snap photos of receipts, or import CSV files
+                  — it extracts everything automatically.
                 </p>
               </CardBody>
             </Card>
@@ -267,8 +272,9 @@ export default function LandingPage() {
               </CardHeader>
               <CardBody className="pt-0">
                 <p className="text-default-600">
-                  Track expenses in USD, EUR, MXN, BTC, or any currency.
-                  Automatic conversion to your base currency.
+                  All major FIAT and crypto currencies — USD, EUR, MXN, BTC,
+                  ETH, and more. Exchange rates calculated for each of your
+                  assets automatically.
                 </p>
               </CardBody>
             </Card>
@@ -327,8 +333,8 @@ export default function LandingPage() {
               </CardHeader>
               <CardBody className="pt-0">
                 <p className="text-default-600">
-                  Plan ahead with future expenses. Know exactly where your money
-                  will be weeks or months from now.
+                  Know your wealth across time to make better decisions. See
+                  exactly where your money will be weeks or months from now.
                 </p>
               </CardBody>
             </Card>
@@ -336,19 +342,18 @@ export default function LandingPage() {
             <Card className="border-divider bg-content1 border">
               <CardHeader className="flex gap-3">
                 <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-xl">
-                  <Zap className="text-primary h-6 w-6" />
+                  <Palette className="text-primary h-6 w-6" />
                 </div>
                 <div className="flex flex-col">
-                  <p className="text-lg font-semibold">AI Agent Ready</p>
-                  <p className="text-small text-default-500">
-                    Programmatic access
-                  </p>
+                  <p className="text-lg font-semibold">Make It Your Own</p>
+                  <p className="text-small text-default-500">11 color themes</p>
                 </div>
               </CardHeader>
               <CardBody className="pt-0">
                 <p className="text-default-600">
-                  Built for both humans and AI agents. Automate your financial
-                  tracking with our API.
+                  Choose from 11 stunning themes — Lavender, Cyberpunk, Ocean,
+                  Sunset, and more. Financial tools should match your
+                  personality.
                 </p>
               </CardBody>
             </Card>
@@ -420,6 +425,160 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Gemini 3 AI Showcase Section */}
+      <section className="from-primary/5 via-background to-secondary/5 bg-gradient-to-r px-4 py-20 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            <div>
+              <Chip
+                className="mb-4"
+                color="primary"
+                startContent={<Sparkles className="h-3 w-3" />}
+                variant="flat"
+              >
+                Powered by Google
+              </Chip>
+              <h2 className="text-3xl font-bold sm:text-4xl">
+                Gemini 3 AI Does the Heavy Lifting
+              </h2>
+              <p className="text-default-600 mt-4 text-lg">
+                Intelligently and seamlessly parse all kinds of content. Gemini
+                3 AI from Google processes your financial data with unmatched
+                accuracy — no forms, no dropdowns, no manual entry.
+              </p>
+
+              <div className="mt-8 space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="bg-primary/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+                    <MessageSquare className="text-primary h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Natural Language</p>
+                    <p className="text-default-600 text-sm">
+                      &quot;100 USD for yesterday&apos;s dinner&quot; — amounts,
+                      dates, currencies, installments, and recurrence parsed
+                      instantly.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="bg-success/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+                    <ImageIcon className="text-success h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Images & Photos</p>
+                    <p className="text-default-600 text-sm">
+                      Snap a photo of a receipt or screenshot a transaction.
+                      Gemini 3 reads and extracts every line item.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="bg-warning/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+                    <FileText className="text-warning h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">PDFs & Bank Statements</p>
+                    <p className="text-default-600 text-sm">
+                      Upload a bank statement PDF and watch dozens of
+                      transactions appear in your calendar — categorized and
+                      dated.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="bg-secondary/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+                    <ScanText className="text-secondary h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">CSV & Spreadsheets</p>
+                    <p className="text-default-600 text-sm">
+                      Import CSV exports from any bank or financial app.
+                      Automatic column mapping and bulk event creation.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-divider bg-content1 rounded-2xl border p-6 shadow-xl">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="from-primary to-secondary flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br">
+                  <Bot className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-lg font-semibold">Gemini 3 AI</p>
+                  <p className="text-default-500 text-sm">
+                    Google&apos;s most capable model
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="border-divider rounded-xl border border-dashed p-4">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="text-primary h-4 w-4" />
+                    <p className="text-default-500 text-xs font-medium uppercase">
+                      Text Input
+                    </p>
+                  </div>
+                  <p className="mt-2 font-mono text-sm">
+                    &quot;12000 euros in 10 monthly installments for a new
+                    guitar&quot;
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <Chip color="success" size="sm" variant="flat">
+                      1200 EUR × 10
+                    </Chip>
+                    <Chip color="warning" size="sm" variant="flat">
+                      Monthly
+                    </Chip>
+                  </div>
+                </div>
+                <div className="border-divider rounded-xl border border-dashed p-4">
+                  <div className="flex items-center gap-2">
+                    <FileText className="text-warning h-4 w-4" />
+                    <p className="text-default-500 text-xs font-medium uppercase">
+                      PDF Upload
+                    </p>
+                  </div>
+                  <p className="mt-2 font-mono text-sm">
+                    bank_statement_jan.pdf
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <Chip color="success" size="sm" variant="flat">
+                      47 transactions found
+                    </Chip>
+                    <Chip color="secondary" size="sm" variant="flat">
+                      Auto-categorized
+                    </Chip>
+                  </div>
+                </div>
+                <div className="border-divider rounded-xl border border-dashed p-4">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="text-success h-4 w-4" />
+                    <p className="text-default-500 text-xs font-medium uppercase">
+                      Image Scan
+                    </p>
+                  </div>
+                  <p className="mt-2 font-mono text-sm">receipt_photo.jpg</p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <Chip color="success" size="sm" variant="flat">
+                      $43.50
+                    </Chip>
+                    <Chip color="warning" size="sm" variant="flat">
+                      Feb 5, 2026
+                    </Chip>
+                    <Chip color="secondary" size="sm" variant="flat">
+                      Restaurant
+                    </Chip>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Inventory Feature Section */}
       <section
         className="from-content2/50 to-background bg-gradient-to-b px-4 py-20 sm:px-6 lg:px-8"
@@ -428,14 +587,6 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
-              <Chip
-                className="mb-4"
-                color="secondary"
-                startContent={<Gem className="h-3 w-3" />}
-                variant="flat"
-              >
-                Coming Soon
-              </Chip>
               <h2 className="text-3xl font-bold sm:text-4xl">
                 Know Your True Net Worth
               </h2>
@@ -552,58 +703,156 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Use Cases Section */}
-      <section className="px-4 py-20 sm:px-6 lg:px-8" id="use-cases">
+      {/* Recurring & Installments Section */}
+      <section className="px-4 py-20 sm:px-6 lg:px-8" id="scheduling">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
-            <h2 className="text-3xl font-bold sm:text-4xl">Built For</h2>
+            <h2 className="text-3xl font-bold sm:text-4xl">
+              Recurring Payments & Installments
+            </h2>
             <p className="text-default-600 mx-auto mt-4 max-w-2xl">
-              Whether you&apos;re tracking daily expenses or managing valuable
-              collections
+              Real finances aren&apos;t one-off transactions. ExpenseCal handles
+              the schedules that shape your budget.
             </p>
           </div>
 
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              {
-                title: "Musicians & Producers",
-                description:
-                  "Track studio gear, vintage instruments, and know your equipment's worth",
-                icon: <Guitar className="h-6 w-6" />,
-              },
-              {
-                title: "Collectors",
-                description:
-                  "Antiques, watches, art, vinyl — track provenance and market values",
-                icon: <Gem className="h-6 w-6" />,
-              },
-              {
-                title: "Freelancers",
-                description:
-                  "Income tracking, expense forecasting, and equipment depreciation",
-                icon: <Calculator className="h-6 w-6" />,
-              },
-              {
-                title: "Homeowners",
-                description:
-                  "Insurance inventory, room-by-room documentation, replacement costs",
-                icon: <Home className="h-6 w-6" />,
-              },
-            ].map((useCase, index) => (
-              <Card
-                key={index}
-                className="border-divider bg-content1 border text-center"
-              >
-                <CardBody className="pt-6">
-                  <div className="bg-primary/10 text-primary mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full">
-                    {useCase.icon}
-                  </div>
-                  <p className="text-lg font-semibold">{useCase.title}</p>
-                  <p className="text-default-600 mt-2 text-sm">
-                    {useCase.description}
+          <div className="mt-12 grid gap-8 lg:grid-cols-2">
+            <div className="border-divider bg-content1 rounded-2xl border p-6">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="bg-secondary/10 flex h-12 w-12 items-center justify-center rounded-xl">
+                  <Repeat className="text-secondary h-6 w-6" />
+                </div>
+                <div>
+                  <p className="text-lg font-semibold">Recurring Instances</p>
+                  <p className="text-default-500 text-sm">
+                    Weekly, monthly, quarterly, yearly
                   </p>
-                </CardBody>
-              </Card>
+                </div>
+              </div>
+              <p className="text-default-600 mb-6">
+                Say it once and it repeats. Rent, subscriptions, salary,
+                insurance — set the frequency and let ExpenseCal project them
+                into the future.
+              </p>
+              <div className="space-y-3">
+                {[
+                  {
+                    input: "Monthly rent of 1500 USD starting today",
+                    result: "1500 USD • Every month",
+                  },
+                  {
+                    input: "Weekly gym membership 25 CHF",
+                    result: "25 CHF • Every week",
+                  },
+                  {
+                    input: "50 USD quarterly insurance for 3 years",
+                    result: "50 USD • Every 3 months × 12",
+                  },
+                ].map((example, index) => (
+                  <div
+                    key={index}
+                    className="border-divider rounded-lg border border-dashed p-3"
+                  >
+                    <p className="text-default-700 font-mono text-sm">
+                      &quot;{example.input}&quot;
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Chip color="success" size="sm" variant="flat">
+                        {example.result}
+                      </Chip>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-divider bg-content1 rounded-2xl border p-6">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="bg-warning/10 flex h-12 w-12 items-center justify-center rounded-xl">
+                  <CreditCard className="text-warning h-6 w-6" />
+                </div>
+                <div>
+                  <p className="text-lg font-semibold">Installment Plans</p>
+                  <p className="text-default-500 text-sm">
+                    Split purchases across months
+                  </p>
+                </div>
+              </div>
+              <p className="text-default-600 mb-6">
+                Big purchase? Just describe the installment plan. ExpenseCal
+                creates linked events for each payment, all tied to a parent
+                purchase so you never lose track.
+              </p>
+              <div className="space-y-3">
+                {[
+                  {
+                    input:
+                      "12000 euros in 10 monthly installments for a new guitar",
+                    result: "1200 EUR × 10 months",
+                  },
+                  {
+                    input: "iPhone 1200 USD in 24 installments",
+                    result: "50 USD × 24 months",
+                  },
+                  {
+                    input: "Furniture 3000 GBP in 6 payments",
+                    result: "500 GBP × 6 months",
+                  },
+                ].map((example, index) => (
+                  <div
+                    key={index}
+                    className="border-divider rounded-lg border border-dashed p-3"
+                  >
+                    <p className="text-default-700 font-mono text-sm">
+                      &quot;{example.input}&quot;
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Chip color="warning" size="sm" variant="flat">
+                        {example.result}
+                      </Chip>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Themes Section */}
+      <section className="bg-content2/50 px-4 py-20 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl text-center">
+          <div className="bg-primary/10 mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full">
+            <Palette className="text-primary h-7 w-7" />
+          </div>
+          <h2 className="text-3xl font-bold sm:text-4xl">Make It Your Own</h2>
+          <p className="text-default-600 mx-auto mt-4 max-w-2xl text-lg">
+            Choose from 11 stunning color themes to match your personality.
+            Financial tools are cool — they should look the part.
+          </p>
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+            {[
+              { name: "Lavender", color: "bg-purple-400" },
+              { name: "Cyberpunk", color: "bg-fuchsia-500" },
+              { name: "Ocean", color: "bg-cyan-500" },
+              { name: "Sunset", color: "bg-orange-500" },
+              { name: "Forest", color: "bg-emerald-600" },
+              { name: "Rose", color: "bg-rose-500" },
+              { name: "Mocha", color: "bg-amber-700" },
+              { name: "Nord", color: "bg-sky-400" },
+              { name: "Purple", color: "bg-violet-600" },
+              { name: "Light", color: "bg-gray-200" },
+              { name: "Dark", color: "bg-gray-800" },
+            ].map((theme) => (
+              <div
+                key={theme.name}
+                className="flex flex-col items-center gap-2"
+              >
+                <div
+                  className={`${theme.color} h-10 w-10 rounded-full border-2 border-white shadow-md transition-transform hover:scale-110`}
+                />
+                <span className="text-default-500 text-xs">{theme.name}</span>
+              </div>
             ))}
           </div>
         </div>
@@ -613,11 +862,11 @@ export default function LandingPage() {
       <section className="px-4 py-20 sm:px-6 lg:px-8">
         <div className="from-primary to-secondary mx-auto max-w-4xl rounded-3xl bg-gradient-to-r p-8 text-center text-white sm:p-12">
           <h2 className="text-3xl font-bold sm:text-4xl">
-            Start Tracking Smarter
+            The Future of Financial Intelligence
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-white/80">
-            Join the future of financial tracking. Natural language in, clear
-            insights out.
+            Expense tracking, inventory valuation, and financial forecasting —
+            all powered by Gemini 3 AI. Know your wealth across time.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button
@@ -644,7 +893,8 @@ export default function LandingPage() {
               <span className="font-semibold">ExpenseCal</span>
             </div>
             <p className="text-default-500 text-sm">
-              A very powerful financial forecasting tool
+              The future of expense tracking, inventory valuation & financial
+              forecasting — powered by Gemini 3 AI
             </p>
           </div>
         </div>
