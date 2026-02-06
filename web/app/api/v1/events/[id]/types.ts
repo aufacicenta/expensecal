@@ -1,11 +1,29 @@
 /**
  * API Types for /api/v1/events/[id]
- * Protected endpoint for updating and deleting events
+ * Protected endpoint for getting, updating and deleting events
  */
 
 import { EventAttributes } from "@expensecal/database/models/Event";
 
 import { BaseErrorResponse, BaseSuccessResponse } from "../../types";
+
+// =============================================================================
+// GET /api/v1/events/[id]
+// =============================================================================
+
+export type GetEventSuccessResponse = {
+  data: EventAttributes;
+} & BaseSuccessResponse;
+
+export type GetEventErrorResponse = {
+  details?: string;
+} & BaseErrorResponse;
+
+export type GetEventResponse = GetEventSuccessResponse | GetEventErrorResponse;
+
+// =============================================================================
+// PUT /api/v1/events/[id]
+// =============================================================================
 
 export type DeleteMode = "single" | "all-future";
 

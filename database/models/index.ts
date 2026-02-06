@@ -3,11 +3,25 @@ import Category from "./Category";
 import Currency from "./Currency";
 import Event from "./Event";
 import EventCategories from "./EventCategories";
+import EventGroup from "./EventGroup";
+import EventGroupEvents from "./EventGroupEvents";
 import EventInstallment from "./EventInstallment";
 import ExampleModel from "./ExampleModel";
 import ExchangeRate from "./ExchangeRate";
+import UserPreferences from "./UserPreferences";
 
-export { Category, Currency, Event, EventCategories, EventInstallment, ExampleModel, ExchangeRate };
+export {
+  Category,
+  Currency,
+  Event,
+  EventCategories,
+  EventGroup,
+  EventGroupEvents,
+  EventInstallment,
+  ExampleModel,
+  ExchangeRate,
+  UserPreferences,
+};
 
 export function initModels(sequelize: Sequelize) {
   ExampleModel.initModel(sequelize);
@@ -17,6 +31,9 @@ export function initModels(sequelize: Sequelize) {
   ExchangeRate.initModel(sequelize);
   Category.initModel(sequelize);
   EventCategories.initModel(sequelize);
+  EventGroup.initModel(sequelize);
+  EventGroupEvents.initModel(sequelize);
+  UserPreferences.initModel(sequelize);
 
   ExampleModel.associate();
   Currency.associate();
@@ -25,6 +42,9 @@ export function initModels(sequelize: Sequelize) {
   ExchangeRate.associate();
   Category.associate();
   EventCategories.associate();
+  EventGroup.associate();
+  EventGroupEvents.associate();
+  UserPreferences.associate();
 
   return {
     ExampleModel,
@@ -34,5 +54,8 @@ export function initModels(sequelize: Sequelize) {
     ExchangeRate,
     Category,
     EventCategories,
+    EventGroup,
+    EventGroupEvents,
+    UserPreferences,
   };
 }

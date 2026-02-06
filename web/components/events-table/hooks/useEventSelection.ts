@@ -2,11 +2,11 @@ import { useState, useCallback } from "react";
 
 import {
   CalendarEvent,
-  GetCalendarV2SuccessResponse,
+  ProcessedCalendarData,
 } from "@/app/api/v2/calendar/types";
 
 type UseEventSelectionParams = {
-  calendarV2Data: GetCalendarV2SuccessResponse["data"] | undefined;
+  calendarV2Data: ProcessedCalendarData | undefined;
 };
 
 export const useEventSelection = ({
@@ -29,6 +29,18 @@ export const useEventSelection = ({
       )
       .filter((id): id is string => id !== undefined);
   }, [calendarV2Data]);
+
+  const getSelectedEvents = useCallback((): CalendarEvent[] => {
+    if (!calendarV2Data?.calendar || selectedEventIds.size === 0) return [];
+
+    return Object.values(calendarV2Data.calendar).flatMap((yearObj) =>
+      Object.values(yearObj).flatMap((monthObj) =>
+        Object.values(monthObj).flatMap((events) =>
+          events.filter((event) => event.id && selectedEventIds.has(event.id)),
+        ),
+      ),
+    );
+  }, [calendarV2Data, selectedEventIds]);
 
   const handleToggleEventSelection = useCallback((eventId: string) => {
     setSelectedEventIds((prev) => {
@@ -149,6 +161,7 @@ export const useEventSelection = ({
   return {
     selectedEventIds,
     getAllEventIds,
+    getSelectedEvents,
     handleToggleEventSelection,
     handleToggleDaySelection,
     handleToggleMonthSelection,

@@ -1,6 +1,6 @@
 import { StatsCellVariant } from "./StatsCell.types";
 
-import { GetCalendarV2SuccessResponse } from "@/app/api/v2/calendar/types";
+import { ProcessedCalendarData } from "@/app/api/v2/calendar/types";
 
 export type StatsDetailsType = "income" | "expense";
 
@@ -27,7 +27,7 @@ export type CategoryBreakdown = {
 export type StatsDetailsDrawerProps = {
   isOpen: boolean;
   onClose: () => void;
-  calendarV2Data: GetCalendarV2SuccessResponse["data"];
+  calendarV2Data: ProcessedCalendarData;
   variant: StatsCellVariant;
   period: StatsDetailsPeriod;
   type: StatsDetailsType;

@@ -10,6 +10,8 @@ export const CommandsModal: React.FC<CommandsModalProps> = ({
   className,
   isOpen: controlledIsOpen,
   onOpenChange,
+  onEventsCreated,
+  eventGroupId,
 }) => {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
 
@@ -62,8 +64,12 @@ export const CommandsModal: React.FC<CommandsModalProps> = ({
     setIsOpen(false);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (firstEventId?: string) => {
     handleClose();
+
+    if (firstEventId && onEventsCreated) {
+      onEventsCreated(firstEventId);
+    }
   };
 
   return (
@@ -79,7 +85,10 @@ export const CommandsModal: React.FC<CommandsModalProps> = ({
           Quick Commands
         </ModalHeader>
         <ModalBody className="pb-6">
-          <EventsMultiLineInput onSubmit={handleSubmit} />
+          <EventsMultiLineInput
+            eventGroupId={eventGroupId}
+            onSubmit={handleSubmit}
+          />
         </ModalBody>
       </ModalContent>
     </Modal>

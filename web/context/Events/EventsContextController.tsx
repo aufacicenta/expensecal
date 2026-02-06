@@ -6,6 +6,7 @@ import { useCalendarV2Context } from "../CalendarV2/useCalendarV2Context";
 
 import { EventsContext } from "./EventsContext";
 import {
+  CreateEventFromTextOptions,
   EventsContextActionStates,
   EventsContextControllerProps,
   EventsContextType,
@@ -21,13 +22,25 @@ import {
   UpdateEventRequestBody,
   UpdateEventSuccessResponse,
 } from "@/app/api/v1/events/[id]/types";
+import {
+  CreateFromFileRequestBody,
+  CreateFromFileSuccessResponse,
+} from "@/app/api/v1/events/create-from-file/types";
 import { CreateFromTextSuccessResponse } from "@/app/api/v1/events/create-from-text/types";
+import {
+  CreateInventoryFromTextRequestBody,
+  CreateInventoryFromTextResponse,
+} from "@/app/api/v1/inventory/create-from-text/types";
 import { CreateEventRequestBody } from "@/app/api/v1/events/create/types";
 import {
   CreateInstallmentsRequestBody,
   DeleteInstallmentsRequestBody,
 } from "@/app/api/v1/events/installments/types";
 import { ParseRequestBody } from "@/app/api/v1/events/parse/types";
+import {
+  UpdateMultipleEventsRequestBody,
+  UpdateMultipleEventsSuccessResponse,
+} from "@/app/api/v1/events/update-multiple/types";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 
 export const EventsContextController = ({
@@ -37,12 +50,15 @@ export const EventsContextController = ({
   const calendarContext = useCalendarV2Context();
   const [actionStates, setActionStates] = useState<EventsContextActionStates>({
     createEventFromText: { isLoading: false, error: undefined },
+    createEventFromFile: { isLoading: false, error: undefined },
+    createInventoryFromText: { isLoading: false, error: undefined },
     parseEventText: { isLoading: false, error: undefined },
     createEvent: { isLoading: false, error: undefined },
     createInstallments: { isLoading: false, error: undefined },
     listInstallments: { isLoading: false, error: undefined },
     deleteInstallments: { isLoading: false, error: undefined },
     updateEvent: { isLoading: false, error: undefined },
+    updateEventMultiple: { isLoading: false, error: undefined },
     deleteEvent: { isLoading: false, error: undefined },
     deleteEventMultiple: { isLoading: false, error: undefined },
     fetchChildEvents: { isLoading: false, error: undefined },
@@ -60,6 +76,7 @@ export const EventsContextController = ({
 
   const createEventFromText = async (
     body: ParseRequestBody & { create_installments?: boolean },
+    options?: CreateEventFromTextOptions,
   ) => {
     setActionStates((prev) => ({
       ...prev,
@@ -84,7 +101,10 @@ export const EventsContextController = ({
 
       const data = (await response.json()) as CreateFromTextSuccessResponse;
 
-      await reloadCalendar();
+      // Skip reload if specified (useful for batch operations)
+      if (!options?.skipReload) {
+        await reloadCalendar();
+      }
 
       setActionStates((prev) => ({
         ...prev,
@@ -100,6 +120,86 @@ export const EventsContextController = ({
         createEventFromText: { isLoading: false, error: errorMsg },
       }));
       console.error("Error creating event from text:", error);
+      throw error;
+    }
+  };
+
+  const createEventFromFile = async (body: CreateFromFileRequestBody) => {
+    setActionStates((prev) => ({
+      ...prev,
+      createEventFromFile: { isLoading: true, error: undefined },
+    }));
+    try {
+      const response = await fetch(routes.api.v1.events.createFromFile(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = (await response.json()) as CreateFromFileSuccessResponse;
+
+      // Reload calendar to show new events
+      await reloadCalendar();
+
+      setActionStates((prev) => ({
+        ...prev,
+        createEventFromFile: { isLoading: false, error: undefined },
+      }));
+
+      return data;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
+      setActionStates((prev) => ({
+        ...prev,
+        createEventFromFile: { isLoading: false, error: errorMsg },
+      }));
+      console.error("Error creating events from file:", error);
+      throw error;
+    }
+  };
+
+  const createInventoryFromText = async (
+    body: CreateInventoryFromTextRequestBody,
+  ): Promise<CreateInventoryFromTextResponse> => {
+    setActionStates((prev) => ({
+      ...prev,
+      createInventoryFromText: { isLoading: true, error: undefined },
+    }));
+    try {
+      const response = await fetch(routes.api.v1.inventory.createFromText(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = (await response.json()) as CreateInventoryFromTextResponse;
+
+      // Reload calendar to show new inventory events
+      await reloadCalendar();
+
+      setActionStates((prev) => ({
+        ...prev,
+        createInventoryFromText: { isLoading: false, error: undefined },
+      }));
+
+      return data;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
+      setActionStates((prev) => ({
+        ...prev,
+        createInventoryFromText: { isLoading: false, error: errorMsg },
+      }));
+      console.error("Error creating inventory from text:", error);
       throw error;
     }
   };
@@ -348,6 +448,48 @@ export const EventsContextController = ({
     }
   };
 
+  const updateEventMultiple = async (body: UpdateMultipleEventsRequestBody) => {
+    setActionStates((prev) => ({
+      ...prev,
+      updateEventMultiple: { isLoading: true, error: undefined },
+    }));
+    try {
+      const response = await fetch(routes.api.v1.events.updateMultiple(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data =
+        (await response.json()) as UpdateMultipleEventsSuccessResponse;
+
+      // Reload calendar after bulk update
+      await reloadCalendar();
+
+      setActionStates((prev) => ({
+        ...prev,
+        updateEventMultiple: { isLoading: false, error: undefined },
+      }));
+
+      return data;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+
+      setActionStates((prev) => ({
+        ...prev,
+        updateEventMultiple: { isLoading: false, error: errorMsg },
+      }));
+      console.error("Error updating multiple events:", error);
+      throw error;
+    }
+  };
+
   const deleteEvent = async (
     eventId: string,
     deleteMode: DeleteMode = "single",
@@ -522,12 +664,16 @@ export const EventsContextController = ({
   const props: EventsContextType = {
     actionStates,
     createEventFromText,
+    createEventFromFile,
+    createInventoryFromText,
+    reloadCalendar,
     parseEventText,
     createEvent,
     createInstallments,
     listInstallments,
     deleteInstallments,
     updateEvent,
+    updateEventMultiple,
     deleteEvent,
     deleteEventMultiple,
     fetchChildEvents,

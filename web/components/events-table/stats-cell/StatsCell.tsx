@@ -1,4 +1,3 @@
-import { Divider } from "@heroui/divider";
 import clsx from "clsx";
 import Decimal from "decimal.js";
 import { TrendingDown, TrendingUp } from "lucide-react";
@@ -63,7 +62,7 @@ export const StatsCell: React.FC<StatsCellProps> = ({
           }
         }}
       >
-        <span className="w-6/12">{formatCurrency(stats.totalIncome)}</span>
+        <span>{formatCurrency(stats.totalIncome)}</span>
       </div>
 
       {/* Total Expenses */}
@@ -82,34 +81,36 @@ export const StatsCell: React.FC<StatsCellProps> = ({
           }
         }}
       >
-        <span className="w-6/12">{formatCurrency(stats.totalExpenses)}</span>
+        <span>{formatCurrency(stats.totalExpenses)}</span>
       </div>
 
       {/* Net with optional percent change */}
       <div
         className={clsx(
-          "flex items-center",
-          hasPercentChange ? "justify-between gap-1" : "justify-end",
+          "flex items-center justify-end",
           isPositive ? "text-success" : "text-danger",
         )}
       >
-        {hasPercentChange && (
-          <>
-            <div className="flex items-center gap-1">
-              {percentChangeValue >= 0 ? (
-                <TrendingUp size={12} />
-              ) : (
-                <TrendingDown size={12} />
-              )}
-              {stats.netPercentChange}%
-            </div>
-            <Divider className="h-3" orientation="vertical" />
-          </>
-        )}
-        <div className="flex w-6/12 items-center justify-end">
-          <span>{formatCurrency(net.toString())}</span>
-        </div>
+        <span>{formatCurrency(net.toString())}</span>
       </div>
+
+      {hasPercentChange && (
+        <div
+          className={clsx(
+            "flex items-center justify-end",
+            isPositive ? "text-success" : "text-danger",
+          )}
+        >
+          <span className="flex items-center gap-1">
+            {percentChangeValue >= 0 ? (
+              <TrendingUp size={12} />
+            ) : (
+              <TrendingDown size={12} />
+            )}
+            {stats.netPercentChange}%
+          </span>
+        </div>
+      )}
     </div>
   );
 };

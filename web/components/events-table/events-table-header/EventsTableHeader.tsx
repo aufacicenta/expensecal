@@ -1,15 +1,45 @@
+import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
+import { DatePicker } from "@heroui/date-picker";
 import {
   Dropdown,
   DropdownItem,
   DropdownMenu,
+  DropdownSection,
   DropdownTrigger,
 } from "@heroui/dropdown";
-import { ArrowLeftRight, Circle, ListFilter } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@heroui/popover";
+import { CalendarDate } from "@internationalized/date";
+import {
+  ArrowLeft,
+  ArrowLeftRight,
+  Calendar,
+  CalendarSearch,
+  ChevronDown,
+  Circle,
+  CircleCheckBig,
+  CircleDashed,
+  Coins,
+  DollarSign,
+  FolderOpen,
+  FolderPlus,
+  ListFilter,
+  Loader2,
+  Table,
+  Tag,
+} from "lucide-react";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 
 import { EventsTableHeaderProps } from "./EventsTableHeader.types";
 
+import { BaseCurrencySelector } from "@/components/base-currency-selector/BaseCurrencySelector";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { useEventGroupsContext } from "@/context/EventGroups/useEventGroupsContext";
+import { useUserPreferencesContext } from "@/context/UserPreferences/useUserPreferencesContext";
+import { useRoutes } from "@/hooks/useRoutes/useRoutes";
+import { UNCATEGORIZED_FILTER_ID } from "@/lib/calendar/filterEvents";
+import { toDateString } from "@/lib/date";
 
 export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
   selectedCount,
@@ -20,9 +50,104 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
   categories,
   selectedCategoryIds,
   onCategoryFilterChange,
+  currencies,
+  onBulkCategoryUpdate,
+  onBulkCurrencyUpdate,
+  onBulkDateUpdate,
+  selectedEventIds,
+  onCreateViewClick,
+  currentView,
+  onBulkValuate,
+  isBulkValuating,
+  onHeightChange,
+  onScrollToToday,
 }) => {
+  const { baseCurrency } = useUserPreferencesContext();
+  const { eventGroups } = useEventGroupsContext();
+  const routes = useRoutes();
+  const navRef = useRef<HTMLElement>(null);
+
+  // Report header height changes to parent for dynamic padding
+  useEffect(() => {
+    if (!navRef.current || !onHeightChange) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        onHeightChange(entry.contentRect.height);
+      }
+    });
+
+    resizeObserver.observe(navRef.current);
+
+    // Report initial height
+    onHeightChange(navRef.current.offsetHeight);
+
+    return () => resizeObserver.disconnect();
+  }, [onHeightChange]);
   const isAllSelected = selectedCount > 0 && selectedCount === totalCount;
   const isIndeterminate = selectedCount > 0 && selectedCount < totalCount;
+
+  // Bulk category update state
+  const [bulkCategoryIds, setBulkCategoryIds] = useState<Set<string>>(
+    new Set(),
+  );
+  // Bulk currency update state
+  const [bulkCurrencyId, setBulkCurrencyId] = useState<string>("");
+  // Bulk date update state
+  const [bulkDate, setBulkDate] = useState<CalendarDate | null>(null);
+  const [isDatePopoverOpen, setIsDatePopoverOpen] = useState(false);
+
+  const handleBulkCategorySelectionChange = (
+    newSelection: "all" | Set<React.Key>,
+  ) => {
+    const selectedSet: Set<string> =
+      newSelection === "all"
+        ? new Set(
+            categories
+              .map((cat) => cat.id)
+              .filter((id): id is string => Boolean(id)),
+          )
+        : new Set(
+            Array.from(newSelection as Set<React.Key>)
+              .map((id) => String(id))
+              .filter((id): id is string => Boolean(id)),
+          );
+
+    setBulkCategoryIds(selectedSet);
+  };
+
+  const handleBulkCurrencySelectionChange = (
+    newSelection: "all" | Set<React.Key>,
+  ) => {
+    if (newSelection === "all") return;
+    const selectedArray = Array.from(newSelection as Set<React.Key>);
+    const currencyId = selectedArray[0] ? String(selectedArray[0]) : "";
+
+    setBulkCurrencyId(currencyId);
+  };
+
+  const handleApplyBulkChanges = () => {
+    // Apply category changes if any selected
+    if (bulkCategoryIds.size > 0) {
+      onBulkCategoryUpdate(Array.from(bulkCategoryIds));
+      setBulkCategoryIds(new Set());
+    }
+
+    // Apply currency changes if selected
+    if (bulkCurrencyId) {
+      onBulkCurrencyUpdate(bulkCurrencyId);
+      setBulkCurrencyId("");
+    }
+
+    // Apply date changes if selected
+    if (bulkDate) {
+      onBulkDateUpdate(bulkDate.toDate("UTC"));
+      setBulkDate(null);
+    }
+  };
+
+  const hasPendingChanges =
+    bulkCategoryIds.size > 0 || !!bulkCurrencyId || !!bulkDate;
 
   const handleCategoryToggle = (categoryId: string) => {
     if (selectedCategoryIds.includes(categoryId)) {
@@ -39,17 +164,323 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
   };
 
   return (
-    <nav className="bg-background fixed top-0 left-0 z-50 text-xs">
+    <nav ref={navRef} className="bg-background fixed top-0 left-0 z-50 text-xs">
       {/* App Top Bar */}
       <div className="flex w-screen items-center justify-between px-2 [&>div]:p-1">
-        <div className="flex gap-1 font-mono">
-          <span className="">ExpenseCal</span>
-          <span className="text-default-400">v0.0.2</span>
+        <div className="flex items-center gap-3 font-mono">
+          {/* Back button when viewing a saved view */}
+          {currentView && (
+            <Link href={routes.table.index()}>
+              <Button
+                isIconOnly
+                aria-label="Back to all events"
+                size="sm"
+                variant="light"
+              >
+                <ArrowLeft size={16} />
+              </Button>
+            </Link>
+          )}
+          <div className="flex gap-1">
+            <span className="">ExpenseCal</span>
+            <span className="text-default-400">v1.0.0</span>
+          </div>
+          {/* Views Dropdown */}
+          <Dropdown>
+            <DropdownTrigger>
+              <Button
+                className="hover:bg-default-100 flex h-auto min-w-0 items-center gap-1 rounded-md px-2 py-1"
+                size="sm"
+                variant="light"
+              >
+                <FolderOpen
+                  className={currentView ? "text-primary" : "text-default-500"}
+                  size={14}
+                />
+                <span
+                  className={
+                    currentView
+                      ? "text-primary text-xs font-medium"
+                      : "text-default-600 text-xs"
+                  }
+                >
+                  {currentView ? currentView.name : "Views"}
+                </span>
+                {currentView ? (
+                  <span className="text-default-500 text-[10px]">
+                    ({currentView.eventCount} event
+                    {currentView.eventCount !== 1 ? "s" : ""})
+                  </span>
+                ) : (
+                  eventGroups.length > 0 && (
+                    <span className="bg-default-200 text-default-600 ml-1 rounded-full px-1.5 py-0.5 text-[10px]">
+                      {eventGroups.length}
+                    </span>
+                  )
+                )}
+                <ChevronDown className="text-default-400" size={12} />
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              aria-label="Event views"
+              className="max-h-[300px] min-w-[200px] overflow-y-auto"
+            >
+              <DropdownSection showDivider title="All Events">
+                <DropdownItem
+                  key="all-events"
+                  className={!currentView ? "bg-primary/10" : undefined}
+                  href={routes.table.index()}
+                  startContent={
+                    <Table
+                      className={!currentView ? "text-primary" : undefined}
+                      size={14}
+                    />
+                  }
+                >
+                  All Events
+                </DropdownItem>
+              </DropdownSection>
+              <DropdownSection title="Saved Views">
+                {eventGroups.length > 0 ? (
+                  eventGroups.map((group) => (
+                    <DropdownItem
+                      key={group.id}
+                      className={
+                        currentView?.id === group.id
+                          ? "bg-primary/10"
+                          : undefined
+                      }
+                      description="Saved view"
+                      href={routes.table.view(group.id)}
+                      startContent={
+                        <FolderOpen
+                          className={
+                            currentView?.id === group.id
+                              ? "text-primary"
+                              : undefined
+                          }
+                          size={14}
+                        />
+                      }
+                    >
+                      {group.name}
+                    </DropdownItem>
+                  ))
+                ) : (
+                  <DropdownItem
+                    key="no-views"
+                    isReadOnly
+                    className="text-default-400"
+                  >
+                    No saved views yet
+                  </DropdownItem>
+                )}
+              </DropdownSection>
+            </DropdownMenu>
+          </Dropdown>
         </div>
-        <div className="text-right">
+        <div className="flex items-center gap-2 text-right">
+          <BaseCurrencySelector />
+          <Button
+            isIconOnly
+            aria-label="Scroll to today"
+            size="sm"
+            title="Scroll to today"
+            variant="light"
+            onPress={onScrollToToday}
+          >
+            <CalendarSearch className="text-default-500" size={16} />
+          </Button>
           <ThemeSwitch />
         </div>
       </div>
+
+      {/* Bulk Actions Bar - visible when events are selected */}
+      {selectedCount > 0 && (
+        <div className="bg-primary/10 border-primary/20 flex w-screen items-center justify-between border-y px-2 py-1">
+          <div className="flex items-center gap-2">
+            <span className="text-primary font-medium">
+              {selectedCount} event{selectedCount > 1 ? "s" : ""} selected
+            </span>
+            <Button
+              color="secondary"
+              size="sm"
+              startContent={<FolderPlus size={14} />}
+              title={`Create view from ${selectedEventIds.size} selected event${selectedEventIds.size !== 1 ? "s" : ""}`}
+              variant="flat"
+              onPress={onCreateViewClick}
+            >
+              Create View
+            </Button>
+            <Button
+              color="warning"
+              isDisabled={isBulkValuating || selectedEventIds.size > 10}
+              isLoading={isBulkValuating}
+              size="sm"
+              spinner={<Loader2 className="animate-spin" size={14} />}
+              startContent={!isBulkValuating && <DollarSign size={14} />}
+              title={
+                selectedEventIds.size > 10
+                  ? "Maximum 10 items can be valuated at once"
+                  : `Valuate ${selectedEventIds.size} selected item${selectedEventIds.size !== 1 ? "s" : ""}`
+              }
+              variant="flat"
+              onPress={onBulkValuate}
+            >
+              {selectedEventIds.size > 10
+                ? "Max 10 items"
+                : `Valuate${selectedEventIds.size > 1 ? ` (${selectedEventIds.size})` : ""}`}
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Bulk Category Dropdown */}
+            <Dropdown>
+              <DropdownTrigger>
+                <Button
+                  className="flex h-auto min-w-0 items-center gap-1 px-1"
+                  size="sm"
+                  variant="light"
+                >
+                  <Tag className="text-default-500" size={14} />
+                  <span className="text-default-500 text-xs">
+                    {bulkCategoryIds.size > 0
+                      ? `${bulkCategoryIds.size} selected`
+                      : "Set categories..."}
+                  </span>
+                  <ChevronDown className="text-default-400" size={12} />
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu
+                aria-label="Bulk category selection"
+                className="max-h-[300px] overflow-y-auto"
+                closeOnSelect={false}
+                selectedKeys={bulkCategoryIds}
+                selectionMode="multiple"
+                variant="flat"
+                onSelectionChange={handleBulkCategorySelectionChange}
+              >
+                {categories
+                  .filter(
+                    (category): category is typeof category & { id: string } =>
+                      category.id !== undefined,
+                  )
+                  .map((category) => (
+                    <DropdownItem
+                      key={category.id}
+                      startContent={
+                        <Circle
+                          fill={
+                            bulkCategoryIds.has(category.id)
+                              ? category.color
+                              : "transparent"
+                          }
+                          size={12}
+                          stroke={category.color}
+                        />
+                      }
+                    >
+                      {category.name}
+                    </DropdownItem>
+                  ))}
+              </DropdownMenu>
+            </Dropdown>
+
+            {/* Bulk Currency Dropdown */}
+            <Dropdown>
+              <DropdownTrigger>
+                <Button
+                  className="flex h-auto min-w-0 items-center gap-1 px-1"
+                  size="sm"
+                  variant="light"
+                >
+                  <Coins className="text-default-500" size={14} />
+                  <span className="text-default-500 text-xs">
+                    {bulkCurrencyId
+                      ? currencies.find((c) => c.id === bulkCurrencyId)
+                          ?.symbol || "Set currency..."
+                      : "Set currency..."}
+                  </span>
+                  <ChevronDown className="text-default-400" size={12} />
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu
+                aria-label="Bulk currency selection"
+                className="max-h-[300px] overflow-y-auto"
+                selectedKeys={bulkCurrencyId ? [bulkCurrencyId] : []}
+                selectionMode="single"
+                variant="flat"
+                onSelectionChange={handleBulkCurrencySelectionChange}
+              >
+                {currencies
+                  .filter(
+                    (currency): currency is typeof currency & { id: string } =>
+                      currency.id !== undefined,
+                  )
+                  .map((currency) => (
+                    <DropdownItem
+                      key={currency.id}
+                      className={
+                        currency.id === bulkCurrencyId
+                          ? "bg-primary/10"
+                          : undefined
+                      }
+                      description={currency.name}
+                    >
+                      {currency.symbol}
+                    </DropdownItem>
+                  ))}
+              </DropdownMenu>
+            </Dropdown>
+
+            {/* Bulk Date Picker */}
+            <Popover
+              isOpen={isDatePopoverOpen}
+              placement="bottom"
+              onOpenChange={setIsDatePopoverOpen}
+            >
+              <PopoverTrigger>
+                <Button
+                  className="flex h-auto min-w-0 items-center gap-1 px-1"
+                  size="sm"
+                  variant="light"
+                >
+                  <Calendar className="text-default-500" size={14} />
+                  <span className="text-default-500 text-xs">
+                    {bulkDate
+                      ? toDateString(bulkDate.toDate("UTC"))
+                      : "Set date..."}
+                  </span>
+                  <ChevronDown className="text-default-400" size={12} />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-2">
+                <DatePicker
+                  label="Select new date"
+                  size="sm"
+                  value={bulkDate}
+                  variant="bordered"
+                  onChange={(date) => {
+                    setBulkDate(date);
+                    setIsDatePopoverOpen(false);
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+
+            {/* Single Apply Button */}
+            <Button
+              color="primary"
+              isDisabled={!hasPendingChanges}
+              size="sm"
+              startContent={<CircleCheckBig size={14} />}
+              variant="flat"
+              onPress={handleApplyBulkChanges}
+            >
+              Apply
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Table Columns */}
       <div className="text-default-900 [&>div]:border-default-300 flex w-fit items-center font-semibold [&>div]:flex [&>div]:h-[25px] [&>div]:items-center [&>div]:gap-1 [&>div]:border-[0.5px] [&>div]:p-1">
@@ -87,7 +518,7 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
           <ListFilter size={12} />
         </div>
         <div className="w-[120px] justify-end">
-          <span>Ex. Rate (USD)</span>
+          <span>Ex. Rate ({baseCurrency?.symbol || "USD"})</span>
         </div>
         <div className="w-[90px] justify-center">
           <span>Type</span>
@@ -125,6 +556,9 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
           <DropdownMenu
             aria-label="Category filter"
             closeOnSelect={false}
+            disabledKeys={
+              selectedCategoryIds.length === 0 ? ["clear-filter"] : []
+            }
             variant="flat"
           >
             {categories.length === 0 ? (
@@ -136,7 +570,6 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
                 <DropdownItem
                   key="clear-filter"
                   className="text-default-500"
-                  isDisabled={selectedCategoryIds.length === 0}
                   onPress={handleClearFilter}
                 >
                   Clear filter
@@ -165,6 +598,23 @@ export const EventsTableHeader: React.FC<EventsTableHeaderProps> = ({
                       {category.name}
                     </DropdownItem>
                   ))}
+                <DropdownItem
+                  key={UNCATEGORIZED_FILTER_ID}
+                  className="text-default-500"
+                  startContent={
+                    <CircleDashed
+                      fill={
+                        selectedCategoryIds.includes(UNCATEGORIZED_FILTER_ID)
+                          ? "currentColor"
+                          : "transparent"
+                      }
+                      size={12}
+                    />
+                  }
+                  onPress={() => handleCategoryToggle(UNCATEGORIZED_FILTER_ID)}
+                >
+                  Uncategorized
+                </DropdownItem>
               </>
             )}
           </DropdownMenu>

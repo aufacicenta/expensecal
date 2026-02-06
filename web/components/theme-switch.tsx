@@ -6,7 +6,69 @@ import { VisuallyHidden } from "@react-aria/visually-hidden";
 import clsx from "clsx";
 import { useTheme } from "next-themes";
 import { FC } from "react";
-import { Moon, Sun } from "lucide-react";
+import {
+  Moon,
+  Sun,
+  Sparkles,
+  Waves,
+  TreePine,
+  Sunset,
+  Flower2,
+  Zap,
+  Coffee,
+  Snowflake,
+  Heart,
+  CloudFog,
+  Pyramid,
+  IceCreamCone,
+  Leaf,
+  Monitor,
+  Gamepad2,
+} from "lucide-react";
+
+import { THEMES, ThemeName } from "@/config/themes";
+
+// Icons for each theme
+const THEME_ICONS: Record<ThemeName, React.ReactNode> = {
+  light: <Sun size={16} />,
+  dark: <Moon size={16} />,
+  purple: <Sparkles size={16} />,
+  ocean: <Waves size={16} />,
+  forest: <TreePine size={16} />,
+  sunset: <Sunset size={16} />,
+  lavender: <Flower2 size={16} />,
+  cyberpunk: <Zap size={16} />,
+  mocha: <Coffee size={16} />,
+  nord: <Snowflake size={16} />,
+  rose: <Heart size={16} />,
+  mist: <CloudFog size={16} />,
+  desert: <Pyramid size={16} />,
+  icecream: <IceCreamCone size={16} />,
+  "light-forest": <Leaf size={16} />,
+  win98: <Monitor size={16} />,
+  retro64: <Gamepad2 size={16} />,
+};
+
+// Labels for each theme
+const THEME_LABELS: Record<ThemeName, string> = {
+  light: "Light",
+  dark: "Dark",
+  purple: "Purple Dream",
+  ocean: "Ocean",
+  forest: "Forest",
+  sunset: "Sunset",
+  lavender: "Lavender",
+  cyberpunk: "Cyberpunk",
+  mocha: "Mocha",
+  nord: "Nord",
+  rose: "Rose",
+  mist: "Mist",
+  desert: "Desert",
+  icecream: "Ice Cream",
+  "light-forest": "Light Forest",
+  win98: "Windows 98",
+  retro64: "64-Bit",
+};
 
 export interface ThemeSwitchProps {
   className?: string;
@@ -20,22 +82,28 @@ export const ThemeSwitch: FC<ThemeSwitchProps> = ({
   const { theme, setTheme } = useTheme();
   const isSSR = useIsSSR();
 
+  // Get current theme index, default to 0 (light) if not found
+  const currentTheme = (theme as ThemeName) || "lavender";
+  const currentIndex = THEMES.indexOf(currentTheme);
+  const validIndex = currentIndex === -1 ? 0 : currentIndex;
+
+  // Get next theme in cycle
+  const nextIndex = (validIndex + 1) % THEMES.length;
+  const nextTheme = THEMES[nextIndex];
+
   const onChange = () => {
-    theme === "light" ? setTheme("dark") : setTheme("light");
+    setTheme(nextTheme);
   };
 
-  const {
-    Component,
-    slots,
-    isSelected,
-    getBaseProps,
-    getInputProps,
-    getWrapperProps,
-  } = useSwitch({
-    isSelected: theme === "light" || isSSR,
-    "aria-label": `Switch to ${theme === "light" || isSSR ? "dark" : "light"} mode`,
-    onChange,
-  });
+  const { Component, slots, getBaseProps, getInputProps, getWrapperProps } =
+    useSwitch({
+      isSelected: !isSSR,
+      "aria-label": `Current theme: ${THEME_LABELS[currentTheme]}. Switch to ${THEME_LABELS[nextTheme]}`,
+      onChange,
+    });
+
+  // Get the icon for current theme
+  const currentIcon = isSSR ? THEME_ICONS.light : THEME_ICONS[currentTheme];
 
   return (
     <Component
@@ -46,6 +114,7 @@ export const ThemeSwitch: FC<ThemeSwitchProps> = ({
           classNames?.base,
         ),
       })}
+      title={`${THEME_LABELS[currentTheme]} - Click to switch to ${THEME_LABELS[nextTheme]}`}
     >
       <VisuallyHidden>
         <input {...getInputProps()} />
@@ -69,7 +138,7 @@ export const ThemeSwitch: FC<ThemeSwitchProps> = ({
           ),
         })}
       >
-        {!isSelected || isSSR ? <Sun size={16} /> : <Moon size={16} />}
+        {currentIcon}
       </div>
     </Component>
   );

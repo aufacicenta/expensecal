@@ -3,10 +3,11 @@ import { StackProvider, StackTheme } from "@stackframe/stack";
 import clsx from "clsx";
 import { Metadata, Viewport } from "next";
 
-import { Providers } from "./providers";
+import { BaseProviders } from "./BaseProviders";
 
 import { fontSans } from "@/config/fonts";
 import { siteConfig } from "@/config/site";
+import { THEMES } from "@/config/themes";
 import { stackClientApp } from "@/stack/client";
 
 export const metadata: Metadata = {
@@ -43,15 +44,19 @@ export default function RootLayout({
       >
         <StackProvider app={stackClientApp}>
           <StackTheme>
-            <Providers
-              themeProps={{ attribute: "class", defaultTheme: "dark" }}
+            <BaseProviders
+              themeProps={{
+                attribute: "class",
+                defaultTheme: "lavender",
+                themes: [...THEMES],
+              }}
             >
               <div className="relative flex h-screen flex-col">
                 <main className="relative mx-auto w-screen flex-grow">
                   {children}
                 </main>
               </div>
-            </Providers>
+            </BaseProviders>
           </StackTheme>
         </StackProvider>
       </body>

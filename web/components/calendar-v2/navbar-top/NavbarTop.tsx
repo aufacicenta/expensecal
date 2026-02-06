@@ -1,3 +1,4 @@
+import { Button } from "@heroui/button";
 import clsx from "clsx";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -24,33 +25,37 @@ export const NavbarTop: React.FC<NavbarTopProps> = ({
         </div>
       </div>
       <div className="flex items-center">
-        <button
+        <Button
+          isIconOnly
           aria-label="Previous month"
-          className="rounded-md p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={
+          isDisabled={
             actionStates.loadCalendarV2.isLoading || currentMonthIndex <= 0
           }
-          onClick={goToPreviousMonth}
+          size="sm"
+          variant="light"
+          onPress={goToPreviousMonth}
         >
           <ChevronLeft className="h-5 w-5" />
-        </button>
+        </Button>
 
         <h2 className="mb-0 text-lg font-semibold">
           {currentMonthIndex !== -1 && availableMonths[currentMonthIndex]
             ? availableMonths[currentMonthIndex].label
             : "Loading..."}
         </h2>
-        <button
+        <Button
+          isIconOnly
           aria-label="Next month"
-          className="rounded-md p-2 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={
+          isDisabled={
             actionStates.loadCalendarV2.isLoading ||
             currentMonthIndex >= availableMonths.length - 1
           }
-          onClick={goToNextMonth}
+          size="sm"
+          variant="light"
+          onPress={goToNextMonth}
         >
           <ChevronRight className="h-5 w-5" />
-        </button>
+        </Button>
       </div>
       <div>
         <EventCategories />

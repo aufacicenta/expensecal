@@ -163,11 +163,7 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
     }
   };
 
-  const handleOpenChildEvent = (
-    childEvent: CalendarEventData,
-    e: React.MouseEvent,
-  ) => {
-    e.stopPropagation();
+  const handleOpenChildEvent = (childEvent: CalendarEventData) => {
     openModal(childEvent, modalId);
   };
 
@@ -243,28 +239,31 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <button
-                    className="hover:bg-content2 block w-full rounded p-2 text-left disabled:opacity-50"
-                    disabled={loading}
-                    onClick={() => setEditingField("amount")}
+                  <Button
+                    className="hover:bg-content2 block h-auto w-full justify-start rounded p-2 text-left"
+                    isDisabled={loading}
+                    variant="light"
+                    onPress={() => setEditingField("amount")}
                   >
-                    <div className="text-content4 text-xs">
-                      Amount & Currency
+                    <div className="flex flex-col items-start">
+                      <div className="text-content4 text-xs">
+                        Amount & Currency
+                      </div>
+                      <div
+                        className={clsx(
+                          "font-medium",
+                          event.type === "EXPENSE"
+                            ? "text-danger"
+                            : "text-success",
+                        )}
+                      >
+                        {event.quantity}x {currentCurrency?.symbol}{" "}
+                        {Number(event.amount).toFixed(
+                          currentCurrency?.decimal_units || 2,
+                        )}
+                      </div>
                     </div>
-                    <div
-                      className={clsx(
-                        "font-medium",
-                        event.type === "EXPENSE"
-                          ? "text-danger"
-                          : "text-success",
-                      )}
-                    >
-                      {event.quantity}x {currentCurrency?.symbol}{" "}
-                      {Number(event.amount).toFixed(
-                        currentCurrency?.decimal_units || 2,
-                      )}
-                    </div>
-                  </button>
+                  </Button>
                 )}
 
                 {/* Description */}
@@ -281,17 +280,20 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                     }
                   />
                 ) : (
-                  <button
-                    className="hover:bg-content2 block w-full rounded p-2 text-left disabled:opacity-50"
-                    disabled={loading}
-                    onClick={() => setEditingField("description")}
+                  <Button
+                    className="hover:bg-content2 block h-auto w-full justify-start rounded p-2 text-left"
+                    isDisabled={loading}
+                    variant="light"
+                    onPress={() => setEditingField("description")}
                   >
-                    <div className="text-content4 text-xs">Description</div>
-                    <div className="font-medium">{event.description}</div>
-                    <div className="text-content4 mt-2 text-xs">
-                      {event.original_text}
+                    <div className="flex flex-col items-start">
+                      <div className="text-content4 text-xs">Description</div>
+                      <div className="font-medium">{event.description}</div>
+                      <div className="text-content4 mt-2 text-xs">
+                        {event.original_text}
+                      </div>
                     </div>
-                  </button>
+                  </Button>
                 )}
 
                 {/* Date */}
@@ -305,14 +307,17 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                     }
                   />
                 ) : (
-                  <button
-                    className="hover:bg-content2 block w-full rounded p-2 text-left disabled:opacity-50"
-                    disabled={loading}
-                    onClick={() => setEditingField("date")}
+                  <Button
+                    className="hover:bg-content2 block h-auto w-full justify-start rounded p-2 text-left"
+                    isDisabled={loading}
+                    variant="light"
+                    onPress={() => setEditingField("date")}
                   >
-                    <div className="text-content4 text-xs">Date</div>
-                    <div className="font-medium">{displayDate}</div>
-                  </button>
+                    <div className="flex flex-col items-start">
+                      <div className="text-content4 text-xs">Date</div>
+                      <div className="font-medium">{displayDate}</div>
+                    </div>
+                  </Button>
                 )}
 
                 {/* Categories */}
@@ -337,25 +342,28 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                     />
                   </div>
                 ) : (
-                  <button
-                    className="hover:bg-content2 block w-full rounded p-2 text-left disabled:opacity-50"
-                    disabled={loading}
-                    onClick={() => setEditingField("categories")}
+                  <Button
+                    className="hover:bg-content2 block h-auto w-full justify-start rounded p-2 text-left"
+                    isDisabled={loading}
+                    variant="light"
+                    onPress={() => setEditingField("categories")}
                   >
-                    <div className="text-content4 text-xs">
-                      Categories
-                      {(event.parent_event_id || event.recurrence_rule) && (
-                        <span className="text-info ml-1 text-xs">
-                          (all occurrences)
-                        </span>
-                      )}
+                    <div className="flex flex-col items-start">
+                      <div className="text-content4 text-xs">
+                        Categories
+                        {(event.parent_event_id || event.recurrence_rule) && (
+                          <span className="text-info ml-1 text-xs">
+                            (all occurrences)
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-medium">
+                        {formData.categoryIds.length > 0
+                          ? `${formData.categoryIds.length} selected`
+                          : "No categories"}
+                      </div>
                     </div>
-                    <div className="font-medium">
-                      {formData.categoryIds.length > 0
-                        ? `${formData.categoryIds.length} selected`
-                        : "No categories"}
-                    </div>
-                  </button>
+                  </Button>
                 )}
               </div>
 
@@ -369,13 +377,14 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                     </div>
                     <div className="max-h-32 space-y-1 overflow-y-auto">
                       {childEvents.map((childEvent) => (
-                        <button
+                        <Button
                           key={childEvent.id}
-                          className="bg-content2 hover:bg-content3 block w-full rounded p-2 text-left text-xs disabled:opacity-50"
-                          disabled={loading}
-                          onClick={(e) => handleOpenChildEvent(childEvent, e)}
+                          className="bg-content2 hover:bg-content3 block h-auto w-full justify-start rounded p-2 text-left text-xs"
+                          isDisabled={loading}
+                          variant="light"
+                          onPress={() => handleOpenChildEvent(childEvent)}
                         >
-                          <div className="flex items-center justify-between">
+                          <div className="flex w-full items-center justify-between">
                             <span className="font-medium">
                               {formatDateShort(childEvent.event_date)}
                             </span>
@@ -394,7 +403,7 @@ export const EventEditModal: React.FC<EventEditModalProps> = ({
                               )}
                             </span>
                           </div>
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   </div>

@@ -9,7 +9,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { deleteEventWithValidation } from "../delete-helpers";
 
-import { UpdateEventRequestBody, UpdateEventResponse } from "./types";
+import {
+  GetEventResponse,
+  UpdateEventRequestBody,
+  UpdateEventResponse,
+} from "./types";
 
 import { stackServerApp } from "@/stack/server";
 import {
@@ -20,6 +24,109 @@ import {
   validateRequiredString,
   validateUUID,
 } from "@/lib/validators";
+
+/**
+ * GET /api/v1/events/[id]
+ * Get a single event by ID
+ * Protected endpoint (requires authentication)
+ *
+ * Returns the full event with:
+ * - currency association
+ * - categories association
+ * - inventory_metadata (including valuation_status)
+ */
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+): Promise<NextResponse<GetEventResponse>> {
+  try {
+    const { id } = await params;
+
+    // Authenticate user
+    const user = await stackServerApp.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized",
+          details: "You must be logged in to view events",
+        },
+        { status: 401 },
+      );
+    }
+
+    // Validate event ID
+    const idError = validateUUID(id, "id", true);
+
+    if (idError) {
+      return createValidationErrorResponse(idError);
+    }
+
+    // Initialize database models
+    initModels(db);
+
+    // Find the event with associations
+    const event = await Event.findByPk(id, {
+      include: [
+        {
+          model: Currency,
+          as: "currency",
+          attributes: ["id", "symbol", "name"],
+        },
+        {
+          model: Category,
+          as: "categories",
+          through: {
+            as: "event_categories",
+          },
+        },
+      ],
+    });
+
+    if (!event) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Event not found",
+          details: `No event found with id: ${id}`,
+        },
+        { status: 404 },
+      );
+    }
+
+    // Verify ownership
+    if (event.user_id !== user.id) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Forbidden",
+          details: "You do not have permission to view this event",
+        },
+        { status: 403 },
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: event,
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error("Get event endpoint error:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
+    );
+  }
+}
 
 /**
  * PUT /api/v1/events/[id]

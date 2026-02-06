@@ -9,6 +9,61 @@ export enum EventType {
   INCOME = "INCOME",
 }
 
+// Inventory tracking types
+
+export type InventoryValuationConfidence = "HIGH" | "MEDIUM" | "LOW";
+
+export type InventoryValuationSource = {
+  url: string;
+  title: string;
+  price?: number;
+};
+
+export type InventoryValuation = {
+  estimated_low: number;
+  estimated_high: number;
+  currency: string;
+  confidence: InventoryValuationConfidence;
+  data_points: number;
+  sources: InventoryValuationSource[];
+  last_updated: string; // ISO date
+  search_query_used: string; // LLM-generated query
+};
+
+export type InventoryAcquisitionType = "PURCHASED" | "INHERITED" | "GIFTED" | "TRADED" | "FOUND";
+
+export type InventoryAcquisition = {
+  type: InventoryAcquisitionType;
+  original_price?: number;
+  original_currency?: string;
+  date?: string; // ISO date
+};
+
+export type InventoryCondition = "MINT" | "EXCELLENT" | "GOOD" | "FAIR" | "POOR";
+
+export type InventoryDetails = {
+  condition?: InventoryCondition;
+  year?: number;
+  brand?: string;
+  model?: string;
+  serial_number?: string;
+  location?: string; // "Home Office", "Storage"
+};
+
+export type InventoryStatus = "OWNED" | "SOLD" | "DONATED" | "LOST";
+
+export type InventoryValuationStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "FAILED";
+
+export type InventoryMetadata = {
+  valuation?: InventoryValuation;
+  acquisition?: InventoryAcquisition;
+  details?: InventoryDetails;
+  status?: InventoryStatus;
+  needs_clarification?: string[];
+  valuation_status?: InventoryValuationStatus;
+  valuation_error?: string;
+};
+
 export interface EventAttributes {
   id?: string;
   user_id: string;
@@ -23,6 +78,7 @@ export interface EventAttributes {
   recurrence_rule?: string | null;
   recurrence_end_date?: Date | null;
   original_text?: string | null;
+  inventory_metadata?: InventoryMetadata | null; // JSONB for inventory tracking
   currency?: Currency;
   categories?: Category[]; // Categories associated with this event
   childEvents?: EventAttributes[]; // Brought from associations
@@ -46,6 +102,7 @@ export class Event extends Model<EventAttributes> implements EventAttributes {
   declare recurrence_rule: string | null;
   declare recurrence_end_date: Date | null;
   declare original_text: string | null;
+  declare inventory_metadata: InventoryMetadata | null;
 
   declare readonly created_at: Date;
   declare readonly updated_at: Date;
@@ -134,6 +191,11 @@ export class Event extends Model<EventAttributes> implements EventAttributes {
           type: DataTypes.TEXT,
           allowNull: true,
           comment: "Original text input from which this event was parsed",
+        },
+        inventory_metadata: {
+          type: DataTypes.JSONB,
+          allowNull: true,
+          comment: "JSONB metadata for inventory tracking (valuation, acquisition, details)",
         },
         deleted_at: {
           type: DataTypes.DATE,

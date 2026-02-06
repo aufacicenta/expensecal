@@ -6,6 +6,7 @@ import {
   DrawerHeader,
 } from "@heroui/drawer";
 import Decimal from "decimal.js";
+import { useEffect, useRef } from "react";
 
 import { EventInfoDrawerProps } from "./EventInfoDrawer.types";
 
@@ -18,7 +19,33 @@ export const EventInfoDrawer: React.FC<EventInfoDrawerProps> = ({
   calendarV2Data,
   isOpen,
   onClose,
+  onRefreshEvent,
 }) => {
+  // Track previous isOpen state to detect when drawer opens
+  const wasOpenRef = useRef(isOpen);
+
+  // Fetch event when drawer opens for a PENDING/IN_PROGRESS event
+  useEffect(() => {
+    const wasOpen = wasOpenRef.current;
+
+    wasOpenRef.current = isOpen;
+
+    // Only trigger on open transition (was closed, now open)
+    if (!wasOpen && isOpen && event?.id && onRefreshEvent) {
+      const status = event.inventory_metadata?.valuation_status;
+
+      if (status === "PENDING" || status === "IN_PROGRESS") {
+        // Refresh the event to get latest status
+        onRefreshEvent(event.id);
+      }
+    }
+  }, [
+    isOpen,
+    event?.id,
+    event?.inventory_metadata?.valuation_status,
+    onRefreshEvent,
+  ]);
+
   if (!event) {
     return (
       <Drawer
@@ -378,6 +405,243 @@ export const EventInfoDrawer: React.FC<EventInfoDrawerProps> = ({
                       {computePercent(eventAmount, yearlyIncome)}
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Inventory Metadata */}
+            {event.inventory_metadata && (
+              <div className="border-default-200 border-t pt-4">
+                <h4 className="text-default-600 mb-3 text-sm font-semibold">
+                  Inventory Details
+                </h4>
+                <div className="flex flex-col gap-4">
+                  {/* Valuation Status */}
+                  {event.inventory_metadata.valuation_status && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-default-400 text-sm">
+                        Valuation Status
+                      </span>
+                      <Chip
+                        color={
+                          event.inventory_metadata.valuation_status ===
+                          "COMPLETED"
+                            ? "success"
+                            : event.inventory_metadata.valuation_status ===
+                                "FAILED"
+                              ? "danger"
+                              : event.inventory_metadata.valuation_status ===
+                                  "IN_PROGRESS"
+                                ? "warning"
+                                : "default"
+                        }
+                        size="sm"
+                        variant="flat"
+                      >
+                        {event.inventory_metadata.valuation_status}
+                      </Chip>
+                    </div>
+                  )}
+
+                  {/* Valuation Error */}
+                  {event.inventory_metadata.valuation_error && (
+                    <div className="bg-danger-50 text-danger-600 rounded-lg p-3 text-sm">
+                      {event.inventory_metadata.valuation_error}
+                    </div>
+                  )}
+
+                  {/* Valuation Results */}
+                  {event.inventory_metadata.valuation && (
+                    <div className="bg-success-50 rounded-lg p-4">
+                      <div className="text-success-600 mb-2 text-sm font-medium">
+                        Estimated Value
+                      </div>
+                      <div className="text-success-700 text-xl font-bold">
+                        ${event.inventory_metadata.valuation.estimated_low} - $
+                        {event.inventory_metadata.valuation.estimated_high}{" "}
+                        {event.inventory_metadata.valuation.currency}
+                      </div>
+                      <div className="text-success-500 mt-2 flex flex-wrap gap-2 text-xs">
+                        <Chip size="sm" variant="flat">
+                          Confidence:{" "}
+                          {event.inventory_metadata.valuation.confidence}
+                        </Chip>
+                        <Chip size="sm" variant="flat">
+                          {event.inventory_metadata.valuation.data_points} data
+                          points
+                        </Chip>
+                      </div>
+                      {event.inventory_metadata.valuation.search_query_used && (
+                        <div className="text-default-500 mt-2 text-xs">
+                          Search:{" "}
+                          {event.inventory_metadata.valuation.search_query_used}
+                        </div>
+                      )}
+                      {event.inventory_metadata.valuation.last_updated && (
+                        <div className="text-default-400 mt-1 text-xs">
+                          Updated:{" "}
+                          {new Date(
+                            event.inventory_metadata.valuation.last_updated,
+                          ).toLocaleDateString()}
+                        </div>
+                      )}
+                      {/* Sources */}
+                      {event.inventory_metadata.valuation.sources &&
+                        event.inventory_metadata.valuation.sources.length >
+                          0 && (
+                          <div className="mt-3">
+                            <div className="text-default-500 mb-1 text-xs font-medium">
+                              Sources:
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              {event.inventory_metadata.valuation.sources.map(
+                                (source, idx) => (
+                                  <a
+                                    key={idx}
+                                    className="text-primary truncate text-xs hover:underline"
+                                    href={source.url}
+                                    rel="noopener noreferrer"
+                                    target="_blank"
+                                    title={source.title}
+                                  >
+                                    {source.title}
+                                    {source.price && ` ($${source.price})`}
+                                  </a>
+                                ),
+                              )}
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  )}
+
+                  {/* Item Details */}
+                  {event.inventory_metadata.details && (
+                    <div className="flex flex-col gap-2 text-sm">
+                      {event.inventory_metadata.details.brand && (
+                        <div className="flex justify-between">
+                          <span className="text-default-400">Brand</span>
+                          <span>{event.inventory_metadata.details.brand}</span>
+                        </div>
+                      )}
+                      {event.inventory_metadata.details.model && (
+                        <div className="flex justify-between">
+                          <span className="text-default-400">Model</span>
+                          <span>{event.inventory_metadata.details.model}</span>
+                        </div>
+                      )}
+                      {event.inventory_metadata.details.year && (
+                        <div className="flex justify-between">
+                          <span className="text-default-400">Year</span>
+                          <span>{event.inventory_metadata.details.year}</span>
+                        </div>
+                      )}
+                      {event.inventory_metadata.details.condition && (
+                        <div className="flex justify-between">
+                          <span className="text-default-400">Condition</span>
+                          <Chip size="sm" variant="bordered">
+                            {event.inventory_metadata.details.condition}
+                          </Chip>
+                        </div>
+                      )}
+                      {event.inventory_metadata.details.serial_number && (
+                        <div className="flex justify-between">
+                          <span className="text-default-400">Serial #</span>
+                          <span className="font-mono text-xs">
+                            {event.inventory_metadata.details.serial_number}
+                          </span>
+                        </div>
+                      )}
+                      {event.inventory_metadata.details.location && (
+                        <div className="flex justify-between">
+                          <span className="text-default-400">Location</span>
+                          <span>
+                            {event.inventory_metadata.details.location}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Acquisition Info */}
+                  {event.inventory_metadata.acquisition && (
+                    <div className="flex flex-col gap-2 text-sm">
+                      <div className="text-default-500 text-xs font-medium">
+                        Acquisition
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-default-400">Type</span>
+                        <Chip size="sm" variant="dot">
+                          {event.inventory_metadata.acquisition.type}
+                        </Chip>
+                      </div>
+                      {event.inventory_metadata.acquisition.original_price && (
+                        <div className="flex justify-between">
+                          <span className="text-default-400">
+                            Original Price
+                          </span>
+                          <span>
+                            {formatCurrency(
+                              event.inventory_metadata.acquisition.original_price.toString(),
+                            )}{" "}
+                            {event.inventory_metadata.acquisition
+                              .original_currency || ""}
+                          </span>
+                        </div>
+                      )}
+                      {event.inventory_metadata.acquisition.date && (
+                        <div className="flex justify-between">
+                          <span className="text-default-400">
+                            Acquisition Date
+                          </span>
+                          <span>
+                            {new Date(
+                              event.inventory_metadata.acquisition.date,
+                            ).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Ownership Status */}
+                  {event.inventory_metadata.status && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-default-400 text-sm">
+                        Ownership Status
+                      </span>
+                      <Chip
+                        color={
+                          event.inventory_metadata.status === "OWNED"
+                            ? "success"
+                            : event.inventory_metadata.status === "SOLD"
+                              ? "warning"
+                              : "default"
+                        }
+                        size="sm"
+                        variant="flat"
+                      >
+                        {event.inventory_metadata.status}
+                      </Chip>
+                    </div>
+                  )}
+
+                  {/* Needs Clarification */}
+                  {event.inventory_metadata.needs_clarification &&
+                    event.inventory_metadata.needs_clarification.length > 0 && (
+                      <div className="bg-warning-50 rounded-lg p-3">
+                        <div className="text-warning-600 mb-1 text-xs font-medium">
+                          Needs Clarification:
+                        </div>
+                        <ul className="text-warning-500 list-disc pl-4 text-xs">
+                          {event.inventory_metadata.needs_clarification.map(
+                            (item, idx) => (
+                              <li key={idx}>{item}</li>
+                            ),
+                          )}
+                        </ul>
+                      </div>
+                    )}
                 </div>
               </div>
             )}

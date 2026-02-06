@@ -1,4 +1,4 @@
-import { GetCalendarV2SuccessResponse } from "@/app/api/v2/calendar/types";
+import { ProcessedCalendarData } from "@/app/api/v2/calendar/types";
 
 export interface AvailableMonth {
   date: Date;
@@ -13,7 +13,7 @@ export interface AvailableMonth {
  * @returns Array of available months sorted chronologically
  */
 export const extractAvailableMonths = (
-  calendarData: GetCalendarV2SuccessResponse["data"] | undefined,
+  calendarData: ProcessedCalendarData | undefined,
 ): AvailableMonth[] => {
   if (!calendarData) {
     return [];

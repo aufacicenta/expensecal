@@ -11,9 +11,21 @@ import {
   UpdateEventResponse,
 } from "@/app/api/v1/events/[id]/types";
 import {
+  CreateFromFileRequestBody,
+  CreateFromFileResponse,
+} from "@/app/api/v1/events/create-from-file/types";
+import {
+  UpdateMultipleEventsRequestBody,
+  UpdateMultipleEventsResponse,
+} from "@/app/api/v1/events/update-multiple/types";
+import {
   CreateFromTextRequestBody,
   CreateFromTextResponse,
 } from "@/app/api/v1/events/create-from-text/types";
+import {
+  CreateInventoryFromTextRequestBody,
+  CreateInventoryFromTextResponse,
+} from "@/app/api/v1/inventory/create-from-text/types";
 import {
   CreateEventRequestBody,
   CreateEventResponse,
@@ -36,6 +48,14 @@ export type EventsContextControllerProps = {
 
 export type EventsContextActionStates = {
   createEventFromText: {
+    isLoading: boolean;
+    error?: string;
+  };
+  createEventFromFile: {
+    isLoading: boolean;
+    error?: string;
+  };
+  createInventoryFromText: {
     isLoading: boolean;
     error?: string;
   };
@@ -63,6 +83,10 @@ export type EventsContextActionStates = {
     isLoading: boolean;
     error?: string;
   };
+  updateEventMultiple: {
+    isLoading: boolean;
+    error?: string;
+  };
   deleteEvent: {
     isLoading: boolean;
     error?: string;
@@ -81,6 +105,14 @@ export type EventsContextActionStates = {
   };
 };
 
+export type CreateEventFromTextOptions = {
+  /**
+   * If true, skips calendar reload after event creation.
+   * Useful for batch processing where you want to reload once at the end.
+   */
+  skipReload?: boolean;
+};
+
 export type EventsContextType = {
   /**
    * Action States for all async functions
@@ -88,7 +120,26 @@ export type EventsContextType = {
   actionStates: EventsContextActionStates;
   createEventFromText: (
     body: CreateFromTextRequestBody,
+    options?: CreateEventFromTextOptions,
   ) => Promise<CreateFromTextResponse>;
+  /**
+   * Create events from an uploaded file
+   * The file content is sent to the LLM for intelligent parsing
+   */
+  createEventFromFile: (
+    body: CreateFromFileRequestBody,
+  ) => Promise<CreateFromFileResponse>;
+  /**
+   * Create inventory items from text
+   * Parses natural language descriptions and creates events with inventory_metadata
+   */
+  createInventoryFromText: (
+    body: CreateInventoryFromTextRequestBody,
+  ) => Promise<CreateInventoryFromTextResponse>;
+  /**
+   * Reload the calendar data. Exposed for batch operations that skip reload.
+   */
+  reloadCalendar: () => Promise<void>;
   parseEventText: (body: ParseRequestBody) => Promise<ParseResponse>;
   createEvent: (body: CreateEventRequestBody) => Promise<CreateEventResponse>;
   createInstallments: (
@@ -105,6 +156,13 @@ export type EventsContextType = {
     body: UpdateEventRequestBody,
     originalEventDate: Date,
   ) => Promise<UpdateEventResponse>;
+  /**
+   * Update multiple events in a single API call.
+   * This is optimized for bulk operations and runs in the background.
+   */
+  updateEventMultiple: (
+    body: UpdateMultipleEventsRequestBody,
+  ) => Promise<UpdateMultipleEventsResponse>;
   deleteEvent: (
     eventId: string,
     deleteMode?: DeleteMode,
