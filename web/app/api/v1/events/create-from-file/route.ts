@@ -1,9 +1,9 @@
 import db from "@expensecal/database/db";
 import { initModels } from "@expensecal/database/models";
-import { Category } from "@expensecal/database/models/Category";
 import { Currency } from "@expensecal/database/models/Currency";
 import { Event, EventType } from "@expensecal/database/models/Event";
-import { EventCategories } from "@expensecal/database/models/EventCategories";
+import { EventGroup } from "@expensecal/database/models/EventGroup";
+import { EventGroupEvents } from "@expensecal/database/models/EventGroupEvents";
 import { NextRequest, NextResponse } from "next/server";
 
 import {
@@ -20,18 +20,13 @@ import {
   validateRequiredString,
 } from "@/lib/validators";
 import { stackServerApp } from "@/stack/server";
-
-// File Upload category configuration
-const FILE_UPLOAD_CATEGORY = {
-  name: "File Upload",
-  color: "#8B5CF6", // Purple
-  description: "Events imported from file upload",
-};
+import { formatDateForDisplay } from "@/lib/date";
+import { routes } from "@/hooks/useRoutes/useRoutes";
 
 /**
  * POST /api/v1/events/create-from-file
  * Parse file content using LLM and create multiple events
- * Automatically assigns "File Upload" category to all created events
+ * Creates an EventGroup containing all events and returns a redirect URL to the view page
  * Protected endpoint (requires authentication)
  */
 export async function POST(
@@ -146,37 +141,6 @@ export async function POST(
     // Initialize database models
     initModels(db);
 
-    // Find or create "File Upload" category
-    let fileUploadCategory = await Category.findOne({
-      where: {
-        user_id: user.id,
-        name: FILE_UPLOAD_CATEGORY.name,
-      },
-    });
-
-    if (!fileUploadCategory) {
-      try {
-        fileUploadCategory = await Category.create({
-          user_id: user.id,
-          name: FILE_UPLOAD_CATEGORY.name,
-          color: FILE_UPLOAD_CATEGORY.color,
-          description: FILE_UPLOAD_CATEGORY.description,
-        });
-      } catch (error) {
-        console.error("Failed to create File Upload category:", error);
-
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Failed to create File Upload category",
-            details: error instanceof Error ? error.message : String(error),
-            stage: "category_creation",
-          },
-          { status: 500 },
-        );
-      }
-    }
-
     // Process each parsed event
     const results: (FileEventResult | FileEventError)[] = [];
     let totalCreated = 0;
@@ -218,12 +182,6 @@ export async function POST(
           original_text: parsedEvent.raw_text,
         });
 
-        // Assign the "File Upload" category to the event
-        await EventCategories.create({
-          event_id: event.id,
-          category_id: fileUploadCategory.id,
-        });
-
         // Add to results
         results.push({
           event: {
@@ -258,18 +216,59 @@ export async function POST(
       }
     }
 
+    // Create EventGroup and associate events if we have any successful events
+    let eventGroup: { id: string; name: string } = { id: "", name: "" };
+    let redirectUrl = routes.table.index();
+
+    if (totalCreated > 0) {
+      try {
+        // Generate group name from file name (remove extension) and date
+        const fileBaseName = body.file_name.replace(/\.[^/.]+$/, "");
+        const groupName = `${fileBaseName} - ${formatDateForDisplay(currentDate ?? new Date())}`;
+
+        // Create the EventGroup
+        const group = await EventGroup.create({
+          user_id: user.id,
+          name: groupName,
+        });
+
+        // Associate all successfully created events with the group
+        const successfulEventIds = results
+          .filter((r): r is FileEventResult => r.success)
+          .map((r) => r.event.id);
+
+        const eventGroupEventsData = successfulEventIds.map((eventId) => ({
+          event_group_id: group.id,
+          event_id: eventId,
+        }));
+
+        await EventGroupEvents.bulkCreate(eventGroupEventsData);
+
+        eventGroup = {
+          id: group.id,
+          name: group.name,
+        };
+
+        redirectUrl = routes.table.view(group.id);
+      } catch (error) {
+        console.error("Error creating event group:", error);
+        // Events were created but group failed - still return success with events
+        // Just won't have a group redirect
+      }
+    }
+
     // Return results
     return NextResponse.json(
       {
         success: true,
         data: {
           results,
+          event_group: eventGroup,
+          redirect_url: redirectUrl,
           summary: {
             total_parsed: parseResult.events.length,
             total_created: totalCreated,
             total_failed: totalFailed,
-            category_id: fileUploadCategory.id,
-            category_name: fileUploadCategory.name,
           },
           parse_notes: parseResult.parse_notes || null,
         },

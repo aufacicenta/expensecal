@@ -134,17 +134,25 @@ export const EventsMultiLineInput: React.FC<EventsMultiLineInputProps> = ({
         }
 
         // Show results
-        const { summary } = response.data;
+        const { summary, redirect_url } = response.data;
 
         if (summary.total_created > 0) {
           addToast({
             title: `Created ${summary.total_created} event${summary.total_created > 1 ? "s" : ""} from file`,
-            description: `Assigned to "${summary.category_name}" category${summary.total_failed > 0 ? `. ${summary.total_failed} failed.` : ""}`,
+            description:
+              summary.total_failed > 0
+                ? `${summary.total_failed} failed to parse`
+                : `Added to "${response.data.event_group.name}"`,
             color: "success",
           });
 
           if (onSubmit) {
             onSubmit();
+          }
+
+          // Navigate to the view page if we have a redirect URL
+          if (redirect_url && redirect_url !== "/table") {
+            router.push(redirect_url);
           }
         } else if (summary.total_failed > 0) {
           addToast({
