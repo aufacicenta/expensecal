@@ -47,7 +47,7 @@ export default function RootLayout({
             <BaseProviders
               themeProps={{
                 attribute: "class",
-                defaultTheme: "lavender",
+                defaultTheme: "light-forest",
                 themes: [...THEMES],
               }}
             >

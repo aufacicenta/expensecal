@@ -30,12 +30,15 @@ export type FileEventError = {
 export type CreateFromFileSuccessResponse = {
   data: {
     results: (FileEventResult | FileEventError)[];
+    event_group: {
+      id: string;
+      name: string;
+    };
+    redirect_url: string; // /table/view/[event_group_id]
     summary: {
       total_parsed: number;
       total_created: number;
       total_failed: number;
-      category_id: string; // "File Upload" category ID
-      category_name: string;
     };
     parse_notes?: string | null;
   };
@@ -43,7 +46,7 @@ export type CreateFromFileSuccessResponse = {
 
 export type CreateFromFileErrorResponse = {
   details?: string;
-  stage?: "parsing" | "category_creation" | "event_creation";
+  stage?: "parsing" | "event_creation" | "group_creation";
 } & BaseErrorResponse;
 
 export type CreateFromFileResponse =
