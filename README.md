@@ -2,6 +2,9 @@
 
 ExpenseCal is a SaaS for financial forecasting and expense tracking with AI-powered asset valuation. Track cash flow and inventory to see your complete net worth — a very powerful financial forecasting tool.
 
+<img width="1755" height="1084" alt="Screenshot 2026-02-08 at 21 30 02" src="https://github.com/user-attachments/assets/0fa1691a-de15-4f31-bfbb-a11fe03e1b1a" />
+
+
 ## Examples
 
 _100 USD for yesterday's dinner with friends_
