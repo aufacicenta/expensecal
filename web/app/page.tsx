@@ -8,7 +8,6 @@ import { useUser } from "@stackframe/stack";
 import {
   ArrowRight,
   Bot,
-  Calculator,
   Calendar,
   ChevronRight,
   Coins,
@@ -33,6 +32,7 @@ import {
 } from "lucide-react";
 import NextLink from "next/link";
 
+import { ExpenseCalLogo } from "@/components/icons";
 import { useRoutes } from "@/hooks/useRoutes/useRoutes";
 
 export default function LandingPage() {
@@ -52,9 +52,9 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="border-divider bg-background/80 sticky top-0 z-50 border-b backdrop-blur-lg">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2">
-            <div className="bg-primary flex h-8 w-8 items-center justify-center rounded-lg">
-              <Calculator className="h-5 w-5 text-white" />
+          <div className="flex items-center gap-1">
+            <div className="flex items-center justify-center">
+              <ExpenseCalLogo size={32} />
             </div>
             <span className="text-xl font-bold">ExpenseCal</span>
           </div>
@@ -886,11 +886,11 @@ export default function LandingPage() {
       <footer className="border-divider border-t px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-            <div className="flex items-center gap-2">
-              <div className="bg-primary flex h-8 w-8 items-center justify-center rounded-lg">
-                <Calculator className="h-5 w-5 text-white" />
+            <div className="flex items-center gap-1">
+              <div className="flex items-center justify-center">
+                <ExpenseCalLogo size={32} />
               </div>
-              <span className="font-semibold">ExpenseCal</span>
+              <span className="font-bold">ExpenseCal</span>
             </div>
             <p className="text-default-500 text-sm">
               The future of expense tracking, inventory valuation & financial
